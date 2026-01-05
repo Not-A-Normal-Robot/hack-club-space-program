@@ -1,1 +1,1 @@
-mod frame_sync;
+pub mod frame_sync;
