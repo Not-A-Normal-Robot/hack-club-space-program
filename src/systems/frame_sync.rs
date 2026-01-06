@@ -4,21 +4,21 @@ use crate::{
     components::{
         ParentBody,
         frames::{
-            ParentSpaceLinearVelocity, ParentSpacePosition, RigidSpaceTransform,
-            RigidSpaceVelocity, RigidSpaceVelocityImpl,
+            RigidSpaceTransform, RigidSpaceVelocity, RigidSpaceVelocityImpl,
+            RootSpaceLinearVelocity, RootSpacePosition,
         },
     },
     resources::ActiveVessel,
 };
 
-/// Updates parent-space position based on rigid-space transform (if any).
-pub fn sync_rigid_pos_to_parent(
+/// Updates root-space position based on rigid-space transform (if any).
+pub fn sync_rigid_pos_to_root(
     mut commands: Commands,
     parent_positionless: Query<
         (Entity, &RigidSpaceTransform, &ParentBody),
-        Without<ParentSpacePosition>,
+        Without<RootSpacePosition>,
     >,
-    mut with_parent_pos: Query<(&RigidSpaceTransform, &mut ParentSpacePosition, &ParentBody)>,
+    mut with_parent_pos: Query<(&RigidSpaceTransform, &mut RootSpacePosition, &ParentBody)>,
     active_vessel: Option<Res<ActiveVessel>>,
 ) {
     let Some(active_vessel) = active_vessel else {
@@ -31,7 +31,7 @@ pub fn sync_rigid_pos_to_parent(
 
         let new_parent_position = transform
             .position()
-            .to_parent_space_position(active_vessel.prev_tick_position);
+            .to_root_space_position(active_vessel.prev_tick_position);
 
         commands.entity(entity).insert(new_parent_position);
     }
@@ -42,20 +42,20 @@ pub fn sync_rigid_pos_to_parent(
 
         *parent_space_pos = rigid
             .position()
-            .to_parent_space_position(active_vessel.prev_tick_position);
+            .to_root_space_position(active_vessel.prev_tick_position);
     }
 }
 
 /// Updates parent-space position based on rigid-space transform (if any).
-pub fn sync_rigid_vel_to_parent(
+pub fn sync_rigid_vel_to_root(
     mut commands: Commands,
     parent_velless: Query<
         (Entity, &RigidSpaceVelocity, &ParentBody),
-        Without<ParentSpaceLinearVelocity>,
+        Without<RootSpaceLinearVelocity>,
     >,
     mut with_parent_vel: Query<(
         &RigidSpaceVelocity,
-        &mut ParentSpaceLinearVelocity,
+        &mut RootSpaceLinearVelocity,
         &ParentBody,
     )>,
     active_vessel: Option<Res<ActiveVessel>>,
@@ -69,7 +69,7 @@ pub fn sync_rigid_vel_to_parent(
         }
 
         let new_parent_velocity =
-            velocity.to_parent_space_linear_velocity(active_vessel.prev_tick_velocity);
+            velocity.to_root_space_linear_velocity(active_vessel.prev_tick_velocity);
 
         commands.entity(entity).insert(new_parent_velocity);
     }
@@ -79,17 +79,13 @@ pub fn sync_rigid_vel_to_parent(
         }
 
         *parent_space_vel =
-            rigid_vel.to_parent_space_linear_velocity(active_vessel.prev_tick_velocity);
+            rigid_vel.to_root_space_linear_velocity(active_vessel.prev_tick_velocity);
     }
 }
 
-/// Updates the "Last Tick Position" and "Last Parent Body" of the active vessel.
+/// Updates the last tick position and last parent body of the active vessel.
 pub fn update_active_vessel_res(
-    query: Query<(
-        &ParentSpacePosition,
-        &ParentSpaceLinearVelocity,
-        &ParentBody,
-    )>,
+    query: Query<(&RootSpacePosition, &RootSpaceLinearVelocity, &ParentBody)>,
     active_vessel: Option<ResMut<ActiveVessel>>,
 ) {
     let Some(mut active_vessel) = active_vessel else {
@@ -99,7 +95,7 @@ pub fn update_active_vessel_res(
         return;
     };
 
-    active_vessel.prev_tick_position = *position;
     active_vessel.prev_tick_parent = parent.0;
+    active_vessel.prev_tick_position = *position;
     active_vessel.prev_tick_velocity = *velocity;
 }

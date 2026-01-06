@@ -5,7 +5,7 @@ use crate::{
     components::{
         CelestialBody, Heightmap, ParentBody, Vessel,
         frames::{
-            ParentSpaceLinearVelocity, ParentSpacePosition, RigidSpaceTransform, RigidSpaceVelocity,
+            RigidSpaceTransform, RigidSpaceVelocity, RootSpaceLinearVelocity, RootSpacePosition,
         },
     },
     plugins::frame_sync::FrameSyncPlugin,
@@ -35,8 +35,8 @@ fn demo_startup(mut commands: Commands) {
         ))
         .id();
 
-    let vessel_pos = ParentSpacePosition(DVec2::new(0.0, 1.5 * ALTITUDE as f64));
-    let vessel_vel = ParentSpaceLinearVelocity(DVec2::new(1.0, 0.0));
+    let vessel_pos = RootSpacePosition(DVec2::new(0.0, 1.5 * ALTITUDE as f64));
+    let vessel_vel = RootSpaceLinearVelocity(DVec2::new(1.0, 0.0));
 
     let vessel = commands.spawn((
         Vessel,
