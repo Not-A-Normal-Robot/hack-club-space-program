@@ -14,7 +14,10 @@ use bevy_rapier2d::prelude::*;
 pub struct RootSpacePosition(pub DVec2);
 
 impl RootSpacePosition {
-    fn to_rigid_space_position(self, active_vessel_pos: RootSpacePosition) -> RigidSpacePosition {
+    pub fn to_rigid_space_position(
+        self,
+        active_vessel_pos: RootSpacePosition,
+    ) -> RigidSpacePosition {
         let position = self.0 - active_vessel_pos.0;
         RigidSpacePosition(Vec2::new(position.x as f32, position.y as f32))
     }
@@ -27,7 +30,7 @@ impl RootSpacePosition {
 pub struct RootSpaceLinearVelocity(pub DVec2);
 
 impl RootSpaceLinearVelocity {
-    fn to_rigid_space_velocity(
+    pub fn to_rigid_space_velocity(
         self,
         active_vessel_vel: RootSpaceLinearVelocity,
         angvel: f32,
@@ -104,7 +107,8 @@ impl RigidSpaceVelocityImpl for RigidSpaceVelocity {
 /// Coordinates relative to camera.
 ///
 /// Single precision, and scaled to camera zoom amount.
-pub type CameraSpaceTransform = Transform;
+#[derive(Clone, Copy, Component, PartialEq)]
+pub struct CameraSpaceTransform(pub Transform);
 
 #[cfg(test)]
 mod tests {
