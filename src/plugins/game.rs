@@ -12,8 +12,9 @@ use crate::{
     resources::ActiveVessel,
 };
 
-const DEMO_HEIGHTMAP: [f64; 10] = [10.0, 10.0, 10.0, 10.0, 10.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-const CELESTIAL_RADIUS: f64 = 100.0;
+const DEMO_HEIGHTMAP: [f32; 10] = [10.0, 10.0, 10.0, 10.0, 10.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+const CELESTIAL_RADIUS: f32 = 100.0;
+const ALTITUDE: f32 = 1.5 * CELESTIAL_RADIUS;
 
 fn demo_startup(mut commands: Commands) {
     commands.spawn((
@@ -27,12 +28,14 @@ fn demo_startup(mut commands: Commands) {
             CelestialBody {
                 radius: CELESTIAL_RADIUS,
             },
+            Collider::ball(CELESTIAL_RADIUS),
             AdditionalMassProperties::Mass(10.0),
             Heightmap(Box::from(DEMO_HEIGHTMAP)),
+            Transform::from_xyz(0.0, -ALTITUDE, 0.0),
         ))
         .id();
 
-    let vessel_pos = ParentSpacePosition(DVec2::new(0.0, CELESTIAL_RADIUS));
+    let vessel_pos = ParentSpacePosition(DVec2::new(0.0, 1.5 * ALTITUDE as f64));
     let vessel_vel = ParentSpaceLinearVelocity(DVec2::new(1.0, 0.0));
 
     let vessel = commands.spawn((

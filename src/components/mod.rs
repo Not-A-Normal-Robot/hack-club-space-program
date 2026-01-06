@@ -30,12 +30,12 @@ impl RelationshipTarget for ChildObjects {
 }
 
 #[derive(Component, Default)]
-pub struct Heightmap(pub Box<[f64]>);
+pub struct Heightmap(pub Box<[f32]>);
 
 #[derive(Component)]
 #[require(Heightmap)]
 pub struct CelestialBody {
-    pub radius: f64,
+    pub radius: f32,
 }
 
 #[derive(Component)]
