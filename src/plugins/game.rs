@@ -69,15 +69,21 @@ fn demo_startup(mut commands: Commands) {
     });
 }
 
-pub struct GamePlugin;
+pub struct GameLogicPlugin;
 
-impl Plugin for GamePlugin {
+impl Plugin for GameLogicPlugin {
     fn build(&self, app: &mut App) {
         let physics = RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(10.0).in_fixed_schedule();
 
-        app.add_plugins(physics)
-            .add_plugins(RapierDebugRenderPlugin::default())
-            .add_plugins(FrameSyncPlugin)
-            .add_systems(Startup, demo_startup);
+        app.add_plugins(physics).add_plugins(FrameSyncPlugin);
+    }
+}
+
+pub struct GameSetupPlugin;
+
+impl Plugin for GameSetupPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Startup, demo_startup)
+            .add_plugins(RapierDebugRenderPlugin::default());
     }
 }
