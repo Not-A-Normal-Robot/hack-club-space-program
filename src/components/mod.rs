@@ -1,8 +1,8 @@
-use bevy::prelude::*;
+use bevy::{math::DVec2, prelude::*};
 
 pub mod frames;
 
-#[derive(Component)]
+#[derive(Clone, Copy, Component)]
 #[relationship(relationship_target = ChildObjects)]
 pub struct ParentBody(pub Entity);
 
@@ -29,14 +29,23 @@ impl RelationshipTarget for ChildObjects {
     }
 }
 
-#[derive(Component, Default)]
+#[derive(Clone, Component, Default)]
 pub struct Heightmap(pub Box<[f32]>);
 
-#[derive(Component)]
+#[derive(Clone, Copy, Component)]
 #[require(Heightmap)]
 pub struct CelestialBody {
     pub radius: f32,
 }
 
-#[derive(Component)]
+#[derive(Clone, Copy, Component)]
 pub struct Vessel;
+
+#[derive(Clone, Copy, Component)]
+pub struct SimCameraTransform {
+    pub translation: DVec2,
+    pub zoom: f64,
+}
+
+#[derive(Clone, Copy, Component)]
+pub struct SimCamera;

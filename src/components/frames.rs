@@ -7,6 +7,8 @@
 use bevy::{math::DVec2, prelude::*};
 use bevy_rapier2d::prelude::*;
 
+use crate::components::SimCameraTransform;
+
 /// Coordinates relative to root body.
 ///
 /// Used for orbital physics and as source of truth.
@@ -20,6 +22,20 @@ impl RootSpacePosition {
     ) -> RigidSpacePosition {
         let position = self.0 - active_vessel_pos.0;
         RigidSpacePosition(Vec2::new(position.x as f32, position.y as f32))
+    }
+
+    pub fn to_camera_space_transform(
+        self,
+        rotation: Quat,
+        camera_transform: SimCameraTransform,
+    ) -> CameraSpaceTransform {
+        let offset = (self.0 - camera_transform.translation) * camera_transform.zoom;
+
+        CameraSpaceTransform(Transform {
+            rotation,
+            translation: Vec3::new(offset.x as f32, offset.y as f32, 0.0),
+            scale: Vec3::splat(camera_transform.zoom as f32),
+        })
     }
 }
 

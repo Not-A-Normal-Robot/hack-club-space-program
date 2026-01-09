@@ -3,7 +3,7 @@ use bevy_rapier2d::prelude::*;
 
 use crate::{
     components::{
-        CelestialBody, Heightmap, ParentBody, Vessel,
+        CelestialBody, Heightmap, ParentBody, SimCamera, SimCameraTransform, Vessel,
         frames::{
             RigidSpaceTransform, RigidSpaceVelocity, RootSpaceLinearVelocity, RootSpacePosition,
         },
@@ -18,8 +18,16 @@ const ALTITUDE: f32 = 1.5 * CELESTIAL_RADIUS;
 
 fn demo_startup(mut commands: Commands) {
     commands.spawn((
-        Camera::default(),
+        Camera {
+            is_active: true,
+            ..Default::default()
+        },
         Camera2d,
+        SimCamera,
+        SimCameraTransform {
+            translation: DVec2::ZERO,
+            zoom: 1.0,
+        },
         Transform::from_rotation(Quat::from_rotation_z(0.0)),
     ));
 
@@ -35,7 +43,7 @@ fn demo_startup(mut commands: Commands) {
         ))
         .id();
 
-    let vessel_pos = RootSpacePosition(DVec2::new(0.0, 1.5 * ALTITUDE as f64));
+    let vessel_pos = RootSpacePosition(DVec2::new(0.5 * ALTITUDE as f64, 1.5 * ALTITUDE as f64));
     let vessel_vel = RootSpaceLinearVelocity(DVec2::new(1.0, 0.0));
 
     let vessel = commands.spawn((
