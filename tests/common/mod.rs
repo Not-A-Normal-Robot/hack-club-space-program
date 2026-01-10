@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use core::time::Duration;
 
 use bevy::{prelude::*, time::TimeUpdateStrategy};
@@ -26,4 +28,33 @@ pub fn setup(forward_time_on_update: bool) -> App {
     }
     app.update();
     app
+}
+
+/// Trait for collection of assertions.
+pub trait Assertions {
+    type ExtraData: Copy;
+    /// Checks the app's state and panics if something's amiss.
+    fn check_assertions(&self, app: &App, extra: Self::ExtraData);
+}
+
+pub trait AssertionsCollection<'a, A>
+where
+    Self: IntoIterator<Item = &'a A> + Sized,
+    A: Assertions + 'a,
+{
+    fn run_assertions_collection(self, app: &mut App, extra: A::ExtraData) {
+        for (idx, assertions) in self.into_iter().enumerate() {
+            eprintln!(">> Running assertions: tick {idx}");
+            app.update();
+            assertions.check_assertions(app, extra);
+        }
+    }
+}
+
+impl<'a, S, A> AssertionsCollection<'a, A> for S
+where
+    S: 'a,
+    S: IntoIterator<Item = &'a A>,
+    A: Assertions + 'a,
+{
 }

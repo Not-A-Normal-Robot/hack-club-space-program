@@ -5,12 +5,16 @@ use crate::{
     components::{
         ParentBody, SimCamera, SimCameraTransform,
         frames::{
-            CameraSpaceTransform, RigidSpaceTransform, RigidSpaceVelocity, RigidSpaceVelocityImpl,
+            RigidSpaceTransform, RigidSpaceVelocity, RigidSpaceVelocityImpl,
             RootSpaceLinearVelocity, RootSpacePosition,
         },
     },
     resources::ActiveVessel,
 };
+
+fn sync_root_pos_to_rigid() {
+    todo!();
+}
 
 /// Updates root-space position based on rigid-space transform (if any).
 pub fn sync_rigid_pos_to_root(
@@ -95,7 +99,7 @@ pub fn apply_root_velocity(
 
 /// Updates the last tick position and last parent body of the active vessel.
 #[expect(clippy::type_complexity)]
-pub fn update_active_vessel_res(
+pub fn update_active_vessel_resource(
     query: Query<(
         &RootSpacePosition,
         &RootSpaceLinearVelocity,
@@ -137,9 +141,7 @@ pub fn update_active_vessel_res(
 }
 
 /// Sets transform into the rigid transform so that Rapier can process it
-pub fn pre_rapier_frame_switch(
-    query: Query<(&RigidSpaceTransform, &mut Transform), With<CameraSpaceTransform>>,
-) {
+pub fn pre_rapier_frame_switch(query: Query<(&RigidSpaceTransform, &mut Transform)>) {
     query.into_iter().for_each(|(rigid, mut tf)| *tf = rigid.0);
 }
 

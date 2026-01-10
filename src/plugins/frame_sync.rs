@@ -3,14 +3,14 @@ use bevy_rapier2d::plugin::NoUserData;
 
 use crate::systems::frame_sync::{
     apply_root_velocity, post_rapier_frame_switch, pre_rapier_frame_switch, sync_rigid_pos_to_root,
-    sync_rigid_vel_to_root, update_active_vessel_res,
+    sync_rigid_vel_to_root, update_active_vessel_resource,
 };
 
 pub struct FrameSyncPlugin;
 
 impl Plugin for FrameSyncPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(FixedPreUpdate, update_active_vessel_res);
+        app.add_systems(FixedPreUpdate, update_active_vessel_resource);
         app.add_systems(
             FixedUpdate,
             pre_rapier_frame_switch

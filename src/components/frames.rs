@@ -123,7 +123,7 @@ impl RigidSpaceVelocityImpl for RigidSpaceVelocity {
 /// Coordinates relative to camera.
 ///
 /// Single precision, and scaled to camera zoom amount.
-#[derive(Clone, Copy, Component, PartialEq)]
+#[derive(Clone, Copy, Component, Debug, PartialEq)]
 pub struct CameraSpaceTransform(pub Transform);
 
 #[cfg(test)]
