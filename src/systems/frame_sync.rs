@@ -3,7 +3,7 @@ use bevy_rapier2d::prelude::RigidBody;
 
 use crate::{
     components::{
-        ParentBody, SimCamera, SimCameraTransform,
+        ParentBody, SimCamera, SimCameraOffset, SimCameraZoom,
         frames::{
             RigidSpaceTransform, RigidSpaceVelocity, RigidSpaceVelocityImpl,
             RootSpaceLinearVelocity, RootSpacePosition,
@@ -170,14 +170,20 @@ pub fn pre_rapier_frame_switch(query: Query<(&RigidSpaceTransform, &mut Transfor
 /// Sets transform into the camera transform so Bevy can render it
 pub fn post_rapier_frame_switch(
     query: Query<(&mut RigidSpaceTransform, &mut Transform, &RootSpacePosition)>,
-    sim_camera: Query<(&SimCameraTransform, &Camera), With<SimCamera>>,
+    sim_camera: Query<(&mut SimCameraOffset, &SimCameraZoom, &Camera), With<SimCamera>>,
+    camera_offset_query: Query<&RootSpacePosition>,
 ) {
-    let Some((&cam_tf, _)) = sim_camera.into_iter().find(|&(_, c)| c.is_active) else {
+    let Some((mut cam_offset, &zoom, _)) = sim_camera.into_iter().find(|&(.., c)| c.is_active)
+    else {
         return;
     };
 
+    let cam_offset = cam_offset.get_root_position(camera_offset_query);
+
     query.into_iter().for_each(|(mut rigid, mut tf, root_pos)| {
         rigid.0 = *tf;
-        *tf = root_pos.to_camera_space_transform(tf.rotation, cam_tf).0;
+        *tf = root_pos
+            .to_camera_space_transform(tf.rotation, cam_offset, zoom)
+            .0;
     });
 }

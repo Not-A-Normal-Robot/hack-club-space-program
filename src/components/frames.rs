@@ -7,7 +7,7 @@
 use bevy::{math::DVec2, prelude::*};
 use bevy_rapier2d::prelude::*;
 
-use crate::components::SimCameraTransform;
+use crate::components::SimCameraZoom;
 
 /// Coordinates relative to root body.
 ///
@@ -27,14 +27,15 @@ impl RootSpacePosition {
     pub fn to_camera_space_transform(
         self,
         rotation: Quat,
-        camera_transform: SimCameraTransform,
+        camera_offset: RootSpacePosition,
+        camera_zoom: SimCameraZoom,
     ) -> CameraSpaceTransform {
-        let offset = (self.0 - camera_transform.translation) * camera_transform.zoom;
+        let offset = (self.0 - camera_offset.0) * camera_zoom.0;
 
         CameraSpaceTransform(Transform {
             rotation,
             translation: Vec3::new(offset.x as f32, offset.y as f32, 0.0),
-            scale: Vec3::splat(camera_transform.zoom as f32),
+            scale: Vec3::splat(camera_zoom.0 as f32),
         })
     }
 }

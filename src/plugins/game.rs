@@ -3,7 +3,7 @@ use bevy_rapier2d::prelude::*;
 
 use crate::{
     components::{
-        CelestialBody, Heightmap, ParentBody, SimCamera, SimCameraTransform, Vessel,
+        CelestialBody, Heightmap, ParentBody, SimCamera, SimCameraOffset, SimCameraZoom, Vessel,
         frames::{
             RigidSpaceTransform, RigidSpaceVelocity, RootSpaceLinearVelocity, RootSpacePosition,
         },
@@ -24,10 +24,8 @@ fn demo_startup(mut commands: Commands) {
         },
         Camera2d,
         SimCamera,
-        SimCameraTransform {
-            translation: DVec2::ZERO,
-            zoom: 1.0,
-        },
+        SimCameraOffset::Detached(RootSpacePosition(DVec2::ZERO)),
+        SimCameraZoom(1.0),
         Transform::from_rotation(Quat::from_rotation_z(0.0)),
     ));
 
