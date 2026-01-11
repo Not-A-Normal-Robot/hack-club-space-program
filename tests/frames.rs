@@ -34,22 +34,37 @@ struct TransformAssertions {
 }
 
 impl TransformAssertions {
-    fn check_assertions(&self, entity: EntityRef<'_>, camera_tf: SimCameraTransform) {
+    fn check_assertions(&self, entity: EntityRef<'_>, camera_tf: SimCameraTransform, object: &str) {
         let root_pos = entity.get::<RootSpacePosition>().cloned();
-        assert_eq!(root_pos, self.root_pos);
+        assert_eq!(
+            root_pos, self.root_pos,
+            "root pos didn't match expected value for {object}"
+        );
         let root_vel = entity.get::<RootSpaceLinearVelocity>().cloned();
-        assert_eq!(root_vel, self.root_vel);
+        assert_eq!(
+            root_vel, self.root_vel,
+            "root vel didn't match expected value for {object}"
+        );
         let rig_tf = entity.get::<RigidSpaceTransform>().cloned();
-        assert_eq!(rig_tf, self.rig_tf);
+        assert_eq!(
+            rig_tf, self.rig_tf,
+            "rigid tf didn't match expected value for {object}"
+        );
         let rig_vel = entity.get::<RigidSpaceVelocity>().cloned();
-        assert_eq!(rig_vel, self.rig_vel);
+        assert_eq!(
+            rig_vel, self.rig_vel,
+            "rigid vel didn't match expected value for {object}"
+        );
         if let Some(asserted_cam_tf) = self.cam_tf {
-            let rig_tf = rig_tf
-                .expect("rigid-space transform should exist for camera-space transform assertion");
+            let rig_tf =
+                rig_tf.expect("rigid tf should exist for camera-space transform assertion");
             let cam_tf = root_pos
-                .expect("root-space position should exist for camera-space transform assertion")
+                .expect("root pos should exist for camera-space transform assertion")
                 .to_camera_space_transform(rig_tf.0.rotation, camera_tf);
-            assert_eq!(cam_tf, asserted_cam_tf);
+            assert_eq!(
+                cam_tf, asserted_cam_tf,
+                "cam tf didn't match expected value for {object}"
+            );
         }
     }
 }
@@ -91,8 +106,9 @@ impl Assertions for PostTickAssertions {
             .copied()
             .expect("could not find SimCameraTransform");
 
-        self.body.check_assertions(entities.body, camera_tf);
-        self.vessel.check_assertions(entities.vessel, camera_tf);
+        self.body.check_assertions(entities.body, camera_tf, "body");
+        self.vessel
+            .check_assertions(entities.vessel, camera_tf, "vessel");
         if let Some(extra_assertions) = self.extra_assertions {
             extra_assertions(app, entities);
         }

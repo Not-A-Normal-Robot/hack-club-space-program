@@ -12,8 +12,30 @@ use crate::{
     resources::ActiveVessel,
 };
 
-fn sync_root_pos_to_rigid() {
-    todo!();
+/// Updates rigid-space transform based on root-space position (if any).
+pub fn sync_root_pos_to_rigid(
+    mut commands: Commands,
+    query: Query<(Entity, Option<&mut RigidSpaceTransform>, &RootSpacePosition)>,
+    active_vessel: Option<Res<ActiveVessel>>,
+) {
+    let Some(active_vessel) = active_vessel else {
+        return;
+    };
+
+    for (entity, rigid_tf, root_pos) in query {
+        if let Some(mut rigid_tf) = rigid_tf {
+            let rotation = rigid_tf.0.rotation;
+            *rigid_tf = root_pos
+                .to_rigid_space_position(active_vessel.prev_tick_position)
+                .to_rigid_space_transform(rotation, Vec3::ONE);
+        } else {
+            commands.entity(entity).insert(
+                root_pos
+                    .to_rigid_space_position(active_vessel.prev_tick_position)
+                    .to_rigid_space_transform(Quat::IDENTITY, Vec3::ONE),
+            );
+        }
+    }
 }
 
 /// Updates root-space position based on rigid-space transform (if any).
