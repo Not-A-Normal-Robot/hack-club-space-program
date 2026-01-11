@@ -113,10 +113,11 @@ pub fn sync_rigid_vel_to_root(
 
 pub fn apply_root_velocity(
     vels: Query<(&RootSpaceLinearVelocity, &mut RootSpacePosition, &RigidBody)>,
+    time: Res<Time>,
 ) {
     vels.into_iter()
         .filter(|&(.., &rb)| rb == RigidBody::Dynamic)
-        .for_each(|(root_vel, mut root_pos, _)| root_pos.0 += root_vel.0);
+        .for_each(|(root_vel, mut root_pos, _)| root_pos.0 += root_vel.0 * time.delta_secs_f64());
 }
 
 /// Updates the last tick position and last parent body of the active vessel.

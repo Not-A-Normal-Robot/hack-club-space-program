@@ -137,14 +137,14 @@ impl Assertions for PostTickAssertions {
             .copied()
             .expect("could not find SimCameraZoom");
 
+        if let Some(extra_assertions) = self.extra_assertions {
+            extra_assertions(app, entity_refs);
+        }
+
         self.body
             .check_assertions(entity_refs.body, camera_offset, camera_zoom, "body");
         self.vessel
             .check_assertions(entity_refs.vessel, camera_offset, camera_zoom, "vessel");
-
-        if let Some(extra_assertions) = self.extra_assertions {
-            extra_assertions(app, entity_refs);
-        }
     }
 }
 
@@ -154,7 +154,7 @@ static ASSERTION_COLLECTION: LazyLock<Box<[PostTickAssertions]>> = LazyLock::new
             root_pos: Some(RootSpacePosition(DVec2::ZERO)),
             root_vel: None,
             rig_tf: Some(RigidSpaceTransform(Transform {
-                translation: Vec3::new(0.5 + 1.0 / 32.0, 1.5, 0.0),
+                translation: Vec3::new(0.5 + 1.0 / 64.0, 1.5, 0.0),
                 rotation: Quat::IDENTITY,
                 scale: Vec3::ONE,
             })),
@@ -169,7 +169,7 @@ static ASSERTION_COLLECTION: LazyLock<Box<[PostTickAssertions]>> = LazyLock::new
             })),
         },
         vessel: TransformAssertions {
-            root_pos: Some(RootSpacePosition(DVec2::new(0.5 + 1.0 / 32.0, 1.5))),
+            root_pos: Some(RootSpacePosition(DVec2::new(0.5 + 1.0 / 64.0, 1.5))),
             root_vel: Some(RootSpaceLinearVelocity(DVec2::new(1.0, 0.0))),
             rig_tf: Some(RigidSpaceTransform(Transform {
                 translation: Vec3::ZERO,
@@ -178,12 +178,19 @@ static ASSERTION_COLLECTION: LazyLock<Box<[PostTickAssertions]>> = LazyLock::new
             })),
             rig_vel: Some(RigidSpaceVelocity::zero()),
             cam_tf: Some(CameraSpaceTransform(Transform {
-                translation: Vec3::new(0.5 + 1.0 / 32.0, 1.5, 0.0),
+                translation: Vec3::new(0.5 + 1.0 / 64.0, 1.5, 0.0),
                 rotation: Quat::IDENTITY,
                 scale: Vec3::ONE,
             })),
         },
-        extra_assertions: None,
+        extra_assertions: Some(|app, entity_refs| {
+            let camera_offset = get_camera_offset(app, &entity_refs);
+            assert_eq!(
+                camera_offset,
+                RootSpacePosition(DVec2::new(0.5 + 1.0 / 64.0, 1.5)),
+                "camera offset didn't match expected value"
+            );
+        }),
     }])
 });
 
