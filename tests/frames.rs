@@ -24,7 +24,7 @@ struct PostTickAssertions {
     pub extra_assertions: Option<fn(&App, TestEntityRefs)>,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 struct TransformAssertions {
     pub root_pos: Option<RootSpacePosition>,
     pub root_vel: Option<RootSpaceLinearVelocity>,
@@ -41,30 +41,46 @@ impl TransformAssertions {
         camera_zoom: SimCameraZoom,
         object: &str,
     ) {
-        let root_pos = entity.get::<RootSpacePosition>().cloned();
-        assert_eq!(
-            root_pos, self.root_pos,
-            "root pos didn't match expected value for {object}"
-        );
-        let root_vel = entity.get::<RootSpaceLinearVelocity>().cloned();
-        assert_eq!(
-            root_vel, self.root_vel,
-            "root vel didn't match expected value for {object}"
-        );
-        let rig_tf = entity.get::<RigidSpaceTransform>().cloned();
-        assert_eq!(
-            rig_tf, self.rig_tf,
-            "rigid tf didn't match expected value for {object}"
-        );
-        let rig_vel = entity.get::<RigidSpaceVelocity>().cloned();
-        assert_eq!(
-            rig_vel, self.rig_vel,
-            "rigid vel didn't match expected value for {object}"
-        );
+        if let Some(expected_root_pos) = self.root_pos {
+            assert_eq!(
+                entity.get::<RootSpacePosition>().cloned(),
+                Some(expected_root_pos),
+                "root pos didn't match expected value for {object}"
+            );
+        };
+
+        if let Some(expected_root_vel) = self.root_vel {
+            assert_eq!(
+                entity.get::<RootSpaceLinearVelocity>().cloned(),
+                Some(expected_root_vel),
+                "root vel didn't match expected value for {object}"
+            );
+        }
+
+        if let Some(expected_rig_tf) = self.rig_tf {
+            assert_eq!(
+                entity.get::<RigidSpaceTransform>().cloned(),
+                Some(expected_rig_tf),
+                "rigid tf didn't match expected value for {object}"
+            );
+        }
+
+        if let Some(expected_rig_vel) = self.rig_vel {
+            assert_eq!(
+                entity.get::<RigidSpaceVelocity>().cloned(),
+                Some(expected_rig_vel),
+                "rigid vel didn't match expected value for {object}"
+            );
+        }
+
         if let Some(asserted_cam_tf) = self.cam_tf {
-            let rig_tf =
-                rig_tf.expect("rigid tf should exist for camera-space transform assertion");
-            let cam_tf = root_pos
+            let rig_tf = entity
+                .get::<RigidSpaceTransform>()
+                .cloned()
+                .expect("rigid tf should exist for camera-space transform assertion");
+            let cam_tf = entity
+                .get::<RootSpacePosition>()
+                .cloned()
                 .expect("root pos should exist for camera-space transform assertion")
                 .to_camera_space_transform(rig_tf.0.rotation, camera_offset, camera_zoom);
             assert_eq!(
@@ -149,49 +165,60 @@ impl Assertions for PostTickAssertions {
 }
 
 static ASSERTION_COLLECTION: LazyLock<Box<[PostTickAssertions]>> = LazyLock::new(|| {
-    Box::new([PostTickAssertions {
-        body: TransformAssertions {
-            root_pos: Some(RootSpacePosition(DVec2::ZERO)),
-            root_vel: None,
-            rig_tf: Some(RigidSpaceTransform(Transform {
-                translation: Vec3::new(0.5 + 1.0 / 64.0, 1.5, 0.0),
-                rotation: Quat::IDENTITY,
-                scale: Vec3::ONE,
-            })),
-            rig_vel: Some(RigidSpaceVelocity {
-                angvel: 0.0,
-                linvel: Vec2::new(-1.0, 0.0),
+    Box::new([
+        PostTickAssertions {
+            body: TransformAssertions {
+                root_pos: Some(RootSpacePosition(DVec2::ZERO)),
+                root_vel: None,
+                // rigid transform is updated in FixedPreUpdate before the rigid step
+                // and so we see last tick's rigid transform here
+                rig_tf: Some(RigidSpaceTransform(Transform {
+                    translation: Vec3::new(-0.5, -1.5, 0.0),
+                    rotation: Quat::IDENTITY,
+                    scale: Vec3::ONE,
+                })),
+                rig_vel: Some(RigidSpaceVelocity {
+                    angvel: 0.0,
+                    linvel: Vec2::new(-1.0, 0.0),
+                }),
+                cam_tf: Some(CameraSpaceTransform(Transform {
+                    translation: Vec3::new(-0.515625, -1.5, 0.0),
+                    rotation: Quat::IDENTITY,
+                    scale: Vec3::ONE,
+                })),
+            },
+            vessel: TransformAssertions {
+                root_pos: Some(RootSpacePosition(DVec2::new(0.5 + 1.0 / 64.0, 1.5))),
+                root_vel: Some(RootSpaceLinearVelocity(DVec2::new(1.0, 0.0))),
+                rig_tf: Some(RigidSpaceTransform(Transform::IDENTITY)),
+                rig_vel: Some(RigidSpaceVelocity::zero()),
+                cam_tf: Some(CameraSpaceTransform(Transform::IDENTITY)),
+            },
+            extra_assertions: Some(|app, entity_refs| {
+                let camera_offset = get_camera_offset(app, &entity_refs);
+                assert_eq!(
+                    camera_offset,
+                    RootSpacePosition(DVec2::new(0.5 + 1.0 / 64.0, 1.5)),
+                    "camera offset didn't match expected value"
+                );
             }),
-            cam_tf: Some(CameraSpaceTransform(Transform {
-                translation: Vec3::new(0.5, 1.5, 0.0),
-                rotation: Quat::IDENTITY,
-                scale: Vec3::ONE,
-            })),
         },
-        vessel: TransformAssertions {
-            root_pos: Some(RootSpacePosition(DVec2::new(0.5 + 1.0 / 64.0, 1.5))),
-            root_vel: Some(RootSpaceLinearVelocity(DVec2::new(1.0, 0.0))),
-            rig_tf: Some(RigidSpaceTransform(Transform {
-                translation: Vec3::ZERO,
-                rotation: Quat::IDENTITY,
-                scale: Vec3::ONE,
-            })),
-            rig_vel: Some(RigidSpaceVelocity::zero()),
-            cam_tf: Some(CameraSpaceTransform(Transform {
-                translation: Vec3::new(0.5 + 1.0 / 64.0, 1.5, 0.0),
-                rotation: Quat::IDENTITY,
-                scale: Vec3::ONE,
-            })),
+        PostTickAssertions {
+            body: TransformAssertions {
+                rig_tf: Some(RigidSpaceTransform(Transform {
+                    translation: Vec3::new(-0.515625, -1.5, 0.0),
+                    rotation: Quat::IDENTITY,
+                    scale: Vec3::ONE,
+                })),
+                ..Default::default()
+            },
+            vessel: TransformAssertions {
+                rig_tf: Some(RigidSpaceTransform(Transform::IDENTITY)),
+                ..Default::default()
+            },
+            extra_assertions: None,
         },
-        extra_assertions: Some(|app, entity_refs| {
-            let camera_offset = get_camera_offset(app, &entity_refs);
-            assert_eq!(
-                camera_offset,
-                RootSpacePosition(DVec2::new(0.5 + 1.0 / 64.0, 1.5)),
-                "camera offset didn't match expected value"
-            );
-        }),
-    }])
+    ])
 });
 
 #[test]
@@ -202,6 +229,7 @@ fn reference_frames() {
         .world_mut()
         .spawn((
             CelestialBody { radius: 1.0 },
+            AdditionalMassProperties::Mass(0.0),
             RigidBody::Fixed,
             Collider::ball(1.0),
             Heightmap(Box::from([])),
@@ -216,7 +244,7 @@ fn reference_frames() {
         .world_mut()
         .spawn((
             Vessel,
-            Collider::ball(10.0),
+            Collider::ball(1.0),
             RigidBody::Dynamic,
             AdditionalMassProperties::Mass(1e4),
             Transform::IDENTITY,

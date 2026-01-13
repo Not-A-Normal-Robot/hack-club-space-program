@@ -43,7 +43,7 @@ impl RootSpacePosition {
 /// Coordinates relative to root body.
 ///
 /// Used for orbital physics and as source of truth.
-#[derive(Clone, Copy, Component, Debug, PartialEq)]
+#[derive(Clone, Copy, Component, Debug, Default, PartialEq)]
 pub struct RootSpaceLinearVelocity(pub DVec2);
 
 impl RootSpaceLinearVelocity {

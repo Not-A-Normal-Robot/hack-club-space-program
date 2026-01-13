@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_rapier2d::prelude::RigidBody;
+use bevy_rapier2d::prelude::{Collider, RigidBody};
 
 use crate::{
     components::{
@@ -12,17 +12,27 @@ use crate::{
     resources::ActiveVessel,
 };
 
-/// Updates rigid-space transform based on root-space position (if any).
-pub fn sync_root_pos_to_rigid(
+/// Updates rigid-space transform based on root-space position (if any),
+/// and updates rigid-space velocity based on root-space velocity (if any).
+#[expect(clippy::type_complexity)]
+pub fn sync_root_to_rigid(
     mut commands: Commands,
-    query: Query<(Entity, Option<&mut RigidSpaceTransform>, &RootSpacePosition)>,
+    tf_query: Query<(Entity, Option<&mut RigidSpaceTransform>, &RootSpacePosition)>,
+    vel_query: Query<
+        (
+            Entity,
+            Option<&mut RigidSpaceVelocity>,
+            Option<&RootSpaceLinearVelocity>,
+        ),
+        With<Collider>,
+    >,
     active_vessel: Option<Res<ActiveVessel>>,
 ) {
     let Some(active_vessel) = active_vessel else {
         return;
     };
 
-    for (entity, rigid_tf, root_pos) in query {
+    for (entity, rigid_tf, root_pos) in tf_query {
         if let Some(mut rigid_tf) = rigid_tf {
             let rotation = rigid_tf.0.rotation;
             *rigid_tf = root_pos
@@ -34,6 +44,18 @@ pub fn sync_root_pos_to_rigid(
                     .to_rigid_space_position(active_vessel.prev_tick_position)
                     .to_rigid_space_transform(Quat::IDENTITY, Vec3::ONE),
             );
+        }
+    }
+
+    for (entity, rigid_vel, root_vel) in vel_query {
+        let root_vel = root_vel.copied().unwrap_or_default();
+        if let Some(mut rigid_vel) = rigid_vel {
+            *rigid_vel = root_vel
+                .to_rigid_space_velocity(active_vessel.prev_tick_velocity, rigid_vel.angvel);
+        } else {
+            commands
+                .entity(entity)
+                .insert(root_vel.to_rigid_space_velocity(active_vessel.prev_tick_velocity, 0.0));
         }
     }
 }
