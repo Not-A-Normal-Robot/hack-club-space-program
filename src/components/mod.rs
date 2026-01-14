@@ -1,4 +1,5 @@
 use bevy::{math::DVec2, prelude::*};
+use bevy_rapier2d::prelude::RigidBody;
 
 pub mod frames;
 
@@ -34,6 +35,7 @@ pub struct Heightmap(pub Box<[f32]>);
 
 #[derive(Clone, Copy, Component)]
 #[require(Heightmap)]
+#[require(RigidBody::Fixed)]
 pub struct CelestialBody {
     pub radius: f32,
 }

@@ -28,13 +28,13 @@ impl Plugin for FrameSyncPlugin {
         app.add_systems(
             FixedPostUpdate,
             (
-                sync_rigid_pos_to_root,
                 sync_rigid_vel_to_root,
+                sync_rigid_pos_to_root,
                 post_rapier_frame_switch,
+                apply_root_velocity,
             )
                 .chain()
                 .after(bevy_rapier2d::prelude::systems::step_simulation::<NoUserData>),
         );
-        app.add_systems(FixedPostUpdate, apply_root_velocity);
     }
 }

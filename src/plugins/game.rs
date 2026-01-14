@@ -1,5 +1,5 @@
 use bevy::{math::DVec2, prelude::*};
-use bevy_rapier2d::prelude::*;
+use bevy_rapier2d::{prelude::*, rapier::prelude::IntegrationParameters};
 
 use crate::{
     components::{
@@ -34,28 +34,33 @@ fn demo_startup(mut commands: Commands) {
             CelestialBody {
                 radius: CELESTIAL_RADIUS,
             },
+            RigidBody::Fixed,
             Collider::ball(CELESTIAL_RADIUS),
-            AdditionalMassProperties::Mass(10.0),
+            // AdditionalMassProperties::Mass(10.0),
             Heightmap(Box::from(DEMO_HEIGHTMAP)),
-            Transform::from_xyz(0.0, -ALTITUDE, 0.0),
+            RootSpacePosition(DVec2::ZERO),
+            RootSpaceLinearVelocity(DVec2::ZERO),
+            Transform::from_translation(Vec3::NAN),
         ))
         .id();
 
-    let vessel_pos = RootSpacePosition(DVec2::new(0.5 * ALTITUDE as f64, 1.5 * ALTITUDE as f64));
-    let vessel_vel = RootSpaceLinearVelocity(DVec2::new(1.0, 0.0));
+    let vessel_pos = RootSpacePosition(DVec2::new(-1.5 * ALTITUDE as f64, 0.5 * ALTITUDE as f64));
+    let vessel_vel = RootSpaceLinearVelocity(DVec2::new(10.0, 0.0));
 
     let vessel = commands.spawn((
         Vessel,
         Collider::ball(10.0),
         RigidBody::Dynamic,
-        AdditionalMassProperties::Mass(1e4),
+        // AdditionalMassProperties::Mass(0.1),
         ParentBody(body),
-        Transform::IDENTITY,
         RigidSpaceTransform(Transform::IDENTITY),
         RigidSpaceVelocity::zero(),
+        Transform::from_translation(Vec3::NAN),
         vessel_pos,
         vessel_vel,
-        GravityScale(0.0),
+        Friction::coefficient(0.1),
+        Restitution::coefficient(1.0),
+        Ccd::enabled(),
     ));
     let vessel_entity = vessel.id();
 
@@ -69,11 +74,25 @@ fn demo_startup(mut commands: Commands) {
 
 pub struct GameLogicPlugin;
 
+pub const RAPIER_CONFIGURATION: RapierConfiguration = RapierConfiguration {
+    gravity: Vec2::ZERO,
+    physics_pipeline_active: true,
+    scaled_shape_subdivision: 10,
+    force_update_from_transform_changes: false,
+};
+
 impl Plugin for GameLogicPlugin {
     fn build(&self, app: &mut App) {
-        let physics = RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(10.0).in_fixed_schedule();
+        let physics = RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(10.0)
+            .in_fixed_schedule()
+            .with_custom_initialization(
+                RapierContextInitialization::InitializeDefaultRapierContext {
+                    integration_parameters: IntegrationParameters::default(),
+                    rapier_configuration: RAPIER_CONFIGURATION,
+                },
+            );
 
-        app.add_plugins(physics).add_plugins(FrameSyncPlugin);
+        app.add_plugins((physics, FrameSyncPlugin));
     }
 }
 
@@ -82,6 +101,14 @@ pub struct GameSetupPlugin;
 impl Plugin for GameSetupPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, demo_startup)
-            .add_plugins(RapierDebugRenderPlugin::default());
+            .add_plugins(RapierDebugRenderPlugin {
+                enabled: true,
+                default_collider_debug: ColliderDebug::AlwaysRender,
+                mode: DebugRenderMode::all(),
+                style: DebugRenderStyle {
+                    rigid_body_axes_length: 20.0,
+                    ..Default::default()
+                },
+            });
     }
 }

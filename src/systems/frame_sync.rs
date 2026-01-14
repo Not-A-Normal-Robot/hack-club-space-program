@@ -120,7 +120,7 @@ pub fn sync_rigid_vel_to_root(
         }
 
         let new_root_velocity =
-            velocity.to_root_space_linear_velocity(active_vessel.prev_tick_velocity);
+            dbg!(velocity.to_root_space_linear_velocity(active_vessel.prev_tick_velocity));
 
         commands.entity(entity).insert(new_root_velocity);
     }
@@ -128,8 +128,10 @@ pub fn sync_rigid_vel_to_root(
         if parent.0 != active_vessel.prev_tick_parent {
             continue;
         }
+        dbg!(rigid_vel);
 
-        *root_space_vel = rigid_vel.to_root_space_linear_velocity(active_vessel.prev_tick_velocity);
+        *root_space_vel =
+            dbg!(rigid_vel.to_root_space_linear_velocity(active_vessel.prev_tick_velocity));
     }
 }
 
@@ -138,7 +140,6 @@ pub fn apply_root_velocity(
     time: Res<Time>,
 ) {
     vels.into_iter()
-        .filter(|&(.., &rb)| rb == RigidBody::Dynamic)
         .for_each(|(root_vel, mut root_pos, _)| root_pos.0 += root_vel.0 * time.delta_secs_f64());
 }
 
