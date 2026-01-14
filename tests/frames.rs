@@ -43,7 +43,7 @@ impl TransformAssertions {
     ) {
         if let Some(expected_root_pos) = self.root_pos {
             assert_eq!(
-                entity.get::<RootSpacePosition>().cloned(),
+                dbg!(entity.get::<RootSpacePosition>().copied()),
                 Some(expected_root_pos),
                 "root pos didn't match expected value for {object}"
             );
@@ -51,15 +51,24 @@ impl TransformAssertions {
 
         if let Some(expected_root_vel) = self.root_vel {
             assert_eq!(
-                entity.get::<RootSpaceLinearVelocity>().cloned(),
+                dbg!(entity.get::<RootSpaceLinearVelocity>().copied()),
                 Some(expected_root_vel),
                 "root vel didn't match expected value for {object}"
             );
         }
 
+        // DEBUG
+        if let Some(expected_rig_vel) = self.rig_vel {
+            assert_eq!(
+                dbg!(entity.get::<RigidSpaceVelocity>().cloned()),
+                Some(expected_rig_vel),
+                "rigid vel didn't match expected value for {object}"
+            );
+        }
+
         if let Some(expected_rig_tf) = self.rig_tf {
             assert_eq!(
-                entity.get::<RigidSpaceTransform>().cloned(),
+                dbg!(entity.get::<RigidSpaceTransform>().cloned()),
                 Some(expected_rig_tf),
                 "rigid tf didn't match expected value for {object}"
             );
@@ -67,19 +76,17 @@ impl TransformAssertions {
 
         if let Some(expected_rig_vel) = self.rig_vel {
             assert_eq!(
-                entity.get::<RigidSpaceVelocity>().cloned(),
+                dbg!(entity.get::<RigidSpaceVelocity>().cloned()),
                 Some(expected_rig_vel),
                 "rigid vel didn't match expected value for {object}"
             );
         }
 
         if let Some(asserted_cam_tf) = self.cam_tf {
-            let rig_tf = entity
-                .get::<RigidSpaceTransform>()
+            let rig_tf = dbg!(entity.get::<RigidSpaceTransform>())
                 .cloned()
                 .expect("rigid tf should exist for camera-space transform assertion");
-            let cam_tf = entity
-                .get::<RootSpacePosition>()
+            let cam_tf = dbg!(entity.get::<RootSpacePosition>())
                 .cloned()
                 .expect("root pos should exist for camera-space transform assertion")
                 .to_camera_space_transform(rig_tf.0.rotation, camera_offset, camera_zoom);
@@ -154,11 +161,15 @@ impl Assertions for PostTickAssertions {
             .expect("could not find SimCameraZoom");
 
         if let Some(extra_assertions) = self.extra_assertions {
+            eprintln!(">>> Running extra assertions");
             extra_assertions(app, entity_refs);
         }
 
+        eprintln!(">>> Running body assertions");
         self.body
             .check_assertions(entity_refs.body, camera_offset, camera_zoom, "body");
+
+        eprintln!(">>> Running vessel assertions");
         self.vessel
             .check_assertions(entity_refs.vessel, camera_offset, camera_zoom, "vessel");
     }
@@ -201,6 +212,28 @@ static ASSERTION_COLLECTION: LazyLock<Box<[PostTickAssertions]>> = LazyLock::new
                     RootSpacePosition(DVec2::new(0.5 + 1.0 / 64.0, 1.5)),
                     "camera offset didn't match expected value"
                 );
+
+                let active_vessel = app.world().resource::<ActiveVessel>();
+                assert_eq!(
+                    active_vessel.entity,
+                    entity_refs.vessel.entity(),
+                    "active vessel entity mismatch"
+                );
+                assert_eq!(
+                    active_vessel.prev_tick_parent,
+                    entity_refs.body.entity(),
+                    "active vessel parent mismatch"
+                );
+                assert_eq!(
+                    active_vessel.prev_tick_position,
+                    RootSpacePosition(DVec2::new(0.5, 1.5)),
+                    "active vessel position mismatch"
+                );
+                assert_eq!(
+                    active_vessel.prev_tick_velocity,
+                    RootSpaceLinearVelocity(DVec2::new(1.0, 0.0)),
+                    "active vessel velocity mismatch"
+                );
             }),
         },
         PostTickAssertions {
@@ -228,10 +261,10 @@ fn reference_frames() {
     let body = app
         .world_mut()
         .spawn((
-            CelestialBody { radius: 1.0 },
+            CelestialBody { radius: 1.0 / 32.0 },
             AdditionalMassProperties::Mass(0.0),
             RigidBody::Fixed,
-            Collider::ball(1.0),
+            Collider::ball(1.0 / 32.0),
             Heightmap(Box::from([])),
             RootSpacePosition(DVec2::ZERO),
         ))
@@ -244,7 +277,7 @@ fn reference_frames() {
         .world_mut()
         .spawn((
             Vessel,
-            Collider::ball(1.0),
+            Collider::ball(1.0 / 512.0),
             RigidBody::Dynamic,
             AdditionalMassProperties::Mass(1e4),
             Transform::IDENTITY,
