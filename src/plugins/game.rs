@@ -34,13 +34,14 @@ fn demo_startup(mut commands: Commands) {
             CelestialBody {
                 radius: CELESTIAL_RADIUS,
             },
-            RigidBody::Fixed,
+            RigidBody::KinematicVelocityBased,
             Collider::ball(CELESTIAL_RADIUS),
-            // AdditionalMassProperties::Mass(10.0),
+            AdditionalMassProperties::Mass(1e30),
             Heightmap(Box::from(DEMO_HEIGHTMAP)),
             RootSpacePosition(DVec2::ZERO),
             RootSpaceLinearVelocity(DVec2::ZERO),
             Transform::from_translation(Vec3::NAN),
+            Sleeping::disabled(),
         ))
         .id();
 
@@ -51,16 +52,17 @@ fn demo_startup(mut commands: Commands) {
         Vessel,
         Collider::ball(10.0),
         RigidBody::Dynamic,
-        // AdditionalMassProperties::Mass(0.1),
+        AdditionalMassProperties::Mass(1e6),
         ParentBody(body),
         RigidSpaceTransform(Transform::IDENTITY),
         RigidSpaceVelocity::zero(),
         Transform::from_translation(Vec3::NAN),
         vessel_pos,
         vessel_vel,
-        Friction::coefficient(0.1),
-        Restitution::coefficient(1.0),
+        Friction::coefficient(0.2),
+        Restitution::coefficient(0.02),
         Ccd::enabled(),
+        Sleeping::disabled(),
     ));
     let vessel_entity = vessel.id();
 
