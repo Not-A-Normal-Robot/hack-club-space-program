@@ -19,12 +19,6 @@ impl Plugin for FrameSyncPlugin {
             )
                 .chain(),
         );
-        // app.add_systems(
-        //     FixedUpdate,
-        //     (sync_root_to_rigid, pre_rapier_frame_switch)
-        //         .chain()
-        //         .before(bevy_rapier2d::prelude::systems::step_simulation::<NoUserData>),
-        // );
         app.add_systems(
             FixedPostUpdate,
             (

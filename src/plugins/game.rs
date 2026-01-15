@@ -46,7 +46,7 @@ fn demo_startup(mut commands: Commands) {
         .id();
 
     let vessel_pos = RootSpacePosition(DVec2::new(-1.5 * ALTITUDE as f64, 0.5 * ALTITUDE as f64));
-    let vessel_vel = RootSpaceLinearVelocity(DVec2::new(10.0, 0.0));
+    let vessel_vel = RootSpaceLinearVelocity(DVec2::new(100.0, 0.0));
 
     let vessel = commands.spawn((
         Vessel,

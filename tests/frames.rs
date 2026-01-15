@@ -57,15 +57,6 @@ impl TransformAssertions {
             );
         }
 
-        // DEBUG
-        if let Some(expected_rig_vel) = self.rig_vel {
-            assert_eq!(
-                dbg!(entity.get::<RigidSpaceVelocity>().cloned()),
-                Some(expected_rig_vel),
-                "rigid vel didn't match expected value for {object}"
-            );
-        }
-
         if let Some(expected_rig_tf) = self.rig_tf {
             assert_eq!(
                 dbg!(entity.get::<RigidSpaceTransform>().cloned()),

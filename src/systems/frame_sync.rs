@@ -128,7 +128,6 @@ pub fn sync_rigid_vel_to_root(
         if parent.0 != active_vessel.prev_tick_parent {
             continue;
         }
-        rigid_vel;
 
         *root_space_vel = rigid_vel.to_root_space_linear_velocity(active_vessel.prev_tick_velocity);
     }
