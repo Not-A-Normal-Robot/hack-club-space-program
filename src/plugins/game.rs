@@ -54,7 +54,6 @@ fn demo_startup(mut commands: Commands) {
         RigidBody::Dynamic,
         AdditionalMassProperties::Mass(1e6),
         ParentBody(body),
-        RigidSpaceTransform(Transform::IDENTITY),
         RigidSpaceVelocity::zero(),
         Transform::from_translation(Vec3::NAN),
         vessel_pos,

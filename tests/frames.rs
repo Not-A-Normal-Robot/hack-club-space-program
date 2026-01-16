@@ -57,14 +57,6 @@ impl TransformAssertions {
             );
         }
 
-        if let Some(expected_rig_tf) = self.rig_tf {
-            assert_eq!(
-                dbg!(entity.get::<RigidSpaceTransform>().cloned()),
-                Some(expected_rig_tf),
-                "rigid tf didn't match expected value for {object}"
-            );
-        }
-
         if let Some(expected_rig_vel) = self.rig_vel {
             assert_eq!(
                 dbg!(entity.get::<RigidSpaceVelocity>().cloned()),
@@ -74,16 +66,20 @@ impl TransformAssertions {
         }
 
         if let Some(asserted_cam_tf) = self.cam_tf {
-            let rig_tf = dbg!(entity.get::<RigidSpaceTransform>())
+            let cam_tf = dbg!(entity.get::<Transform>())
                 .cloned()
-                .expect("rigid tf should exist for camera-space transform assertion");
-            let cam_tf = dbg!(entity.get::<RootSpacePosition>())
+                .expect("transform should exist forr camera-space transform assertion");
+            let recalc_cam_tf = dbg!(entity.get::<RootSpacePosition>())
                 .cloned()
                 .expect("root pos should exist for camera-space transform assertion")
-                .to_camera_space_transform(rig_tf.0.rotation, camera_offset, camera_zoom);
+                .to_camera_space_transform(cam_tf.rotation, camera_offset, camera_zoom);
             assert_eq!(
-                cam_tf, asserted_cam_tf,
+                recalc_cam_tf, asserted_cam_tf,
                 "cam tf didn't match expected value for {object}"
+            );
+            assert_eq!(
+                cam_tf, *recalc_cam_tf,
+                "cam tf didn't match recalculated vaalue for {object}"
             );
         }
     }
@@ -171,7 +167,7 @@ static ASSERTION_COLLECTION: LazyLock<Box<[PostTickAssertions]>> = LazyLock::new
         PostTickAssertions {
             body: TransformAssertions {
                 root_pos: Some(RootSpacePosition(DVec2::ZERO)),
-                root_vel: None,
+                root_vel: Some(RootSpaceLinearVelocity(DVec2::ZERO)),
                 // rigid transform is updated in FixedPreUpdate before the rigid step
                 // and so we see last tick's rigid transform here
                 rig_tf: Some(RigidSpaceTransform(Transform {
@@ -252,12 +248,15 @@ fn reference_frames() {
     let body = app
         .world_mut()
         .spawn((
-            CelestialBody { radius: 1.0 / 32.0 },
+            CelestialBody { radius: 1.0 / 4.0 },
             AdditionalMassProperties::Mass(0.0),
-            RigidBody::Fixed,
-            Collider::ball(1.0 / 32.0),
+            RigidBody::KinematicVelocityBased,
+            Collider::ball(1.0 / 4.0),
             Heightmap(Box::from([])),
             RootSpacePosition(DVec2::ZERO),
+            RootSpaceLinearVelocity(DVec2::ZERO),
+            RigidSpaceVelocity::zero(),
+            Transform::from_translation(Vec3::NAN),
         ))
         .id();
 
@@ -268,11 +267,10 @@ fn reference_frames() {
         .world_mut()
         .spawn((
             Vessel,
-            Collider::ball(1.0 / 512.0),
+            Collider::ball(1.0 / 8.0),
             RigidBody::Dynamic,
             AdditionalMassProperties::Mass(1e4),
-            Transform::IDENTITY,
-            RigidSpaceTransform(Transform::IDENTITY),
+            Transform::from_translation(Vec3::NAN),
             RigidSpaceVelocity::zero(),
             vessel_pos,
             vessel_vel,
@@ -305,6 +303,8 @@ fn reference_frames() {
         prev_tick_position: vessel_pos,
         prev_tick_velocity: vessel_vel,
     });
+
+    eprintln!(">> App setup complete");
 
     ASSERTION_COLLECTION.run_assertions_collection(
         &mut app,

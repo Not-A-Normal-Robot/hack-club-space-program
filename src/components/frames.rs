@@ -1,13 +1,30 @@
 //! # Reference Frames
 //!
-//! Root Space converts into Parent Space
-//! Parent Space converts into Rigid Space position (with its own rotation)
-//! Parent Space position + Rigid Space rotation = Camera Space transform
+//! Root Space converts into Rigid Space position (with its own rotation)
+//! Root Space position + Rigid Space rotation + Camera offset = Camera Space transform
 
 use bevy::{math::DVec2, prelude::*};
 use bevy_rapier2d::prelude::*;
 
 use crate::components::SimCameraZoom;
+
+macro_rules! wrapper {
+    ($( $outer:ty : $inner:ty ),* $(,)?) => {
+        $(
+            impl ::core::ops::Deref for $outer {
+                type Target = $inner;
+                fn deref(&self) -> &Self::Target {
+                    &self.0
+                }
+            }
+            impl From<$outer> for $inner {
+                fn from(value: $outer) -> Self {
+                    value.0
+                }
+            }
+        )*
+    };
+}
 
 /// Coordinates relative to root body.
 ///
@@ -47,16 +64,12 @@ impl RootSpacePosition {
 pub struct RootSpaceLinearVelocity(pub DVec2);
 
 impl RootSpaceLinearVelocity {
-    pub fn to_rigid_space_velocity(
+    pub fn to_rigid_space_linear_velocity(
         self,
         active_vessel_vel: RootSpaceLinearVelocity,
-        angvel: f32,
-    ) -> RigidSpaceVelocity {
-        let linvel = self.0 - active_vessel_vel.0;
-        RigidSpaceVelocity {
-            linvel: Vec2::new(linvel.x as f32, linvel.y as f32),
-            angvel,
-        }
+    ) -> RigidSpaceLinearVelocity {
+        let vel = self.0 - active_vessel_vel.0;
+        RigidSpaceLinearVelocity(Vec2::new(vel.x as f32, vel.y as f32))
     }
 }
 
@@ -90,12 +103,35 @@ impl RigidSpacePosition {
 /// Coordinates relative to active vessel.
 ///
 /// Single precision, and unscaled. Used for bevy_rapier2d.
-#[derive(Clone, Copy, Component, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct RigidSpaceTransform(pub Transform);
 
 impl RigidSpaceTransform {
     pub fn position(&self) -> RigidSpacePosition {
         RigidSpacePosition(self.0.translation.truncate())
+    }
+}
+
+/// Coordinates relative to active vessel.
+///
+/// Single precision, and unscaled. Used as intermediary for bevy_rapier2d.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct RigidSpaceLinearVelocity(pub Vec2);
+
+impl RigidSpaceLinearVelocity {
+    pub fn to_rigid_space_velocity(self, angvel: f32) -> RigidSpaceVelocity {
+        RigidSpaceVelocity {
+            linvel: self.0,
+            angvel,
+        }
+    }
+
+    pub fn to_root_space_linear_velocity(
+        self,
+        active_vessel_vel: RootSpaceLinearVelocity,
+    ) -> RootSpaceLinearVelocity {
+        let linvel = DVec2::new(self.0.x as f64, self.0.y as f64);
+        RootSpaceLinearVelocity(active_vessel_vel.0 + linvel)
     }
 }
 
@@ -127,35 +163,59 @@ impl RigidSpaceVelocityImpl for RigidSpaceVelocity {
 #[derive(Clone, Copy, Component, Debug, PartialEq)]
 pub struct CameraSpaceTransform(pub Transform);
 
+wrapper! {
+    RootSpacePosition: DVec2,
+    RootSpaceLinearVelocity: DVec2,
+    RigidSpacePosition: Vec2,
+    RigidSpaceTransform: Transform,
+    RigidSpaceLinearVelocity: Vec2,
+    CameraSpaceTransform: Transform
+}
+
 #[cfg(test)]
 mod tests {
     use bevy::math::{DVec2, Vec2};
 
     use crate::components::frames::{
-        RigidSpaceVelocityImpl as _, RootSpaceLinearVelocity, RootSpacePosition,
+        RigidSpaceVelocity, RigidSpaceVelocityImpl as _, RootSpaceLinearVelocity, RootSpacePosition,
     };
 
     #[test]
     fn root_rigid_conversion() {
         const REFERENCE_POS: RootSpacePosition = RootSpacePosition(DVec2::new(5.0, 9.0));
-        const PARENTSPACE_POS: RootSpacePosition = RootSpacePosition(DVec2::new(-4.0, -3.0));
+        const ROOTSPACE_POS: RootSpacePosition = RootSpacePosition(DVec2::new(-4.0, -3.0));
 
-        let rigid = PARENTSPACE_POS.to_rigid_space_position(REFERENCE_POS);
+        let rigid = ROOTSPACE_POS.to_rigid_space_position(REFERENCE_POS);
 
         assert_eq!(rigid.0, Vec2::new(-9.0, -12.0));
-        assert_eq!(rigid.to_root_space_position(REFERENCE_POS), PARENTSPACE_POS);
+        assert_eq!(rigid.to_root_space_position(REFERENCE_POS), ROOTSPACE_POS);
 
         const REFERENCE_VEL: RootSpaceLinearVelocity =
             RootSpaceLinearVelocity(DVec2::new(5.0, 9.0));
-        const PARENTSPACE_VEL: RootSpaceLinearVelocity =
+        const ROOTSPACE_VEL: RootSpaceLinearVelocity =
             RootSpaceLinearVelocity(DVec2::new(-4.0, -3.0));
 
-        let rigid = PARENTSPACE_VEL.to_rigid_space_velocity(REFERENCE_VEL, 0.0);
+        let rigid = ROOTSPACE_VEL.to_rigid_space_linear_velocity(REFERENCE_VEL);
 
-        assert_eq!(rigid.linvel, Vec2::new(-9.0, -12.0));
+        assert_eq!(*rigid, Vec2::new(-9.0, -12.0));
         assert_eq!(
             rigid.to_root_space_linear_velocity(REFERENCE_VEL),
-            PARENTSPACE_VEL
+            ROOTSPACE_VEL
         );
+
+        const ANG_VEL: f32 = 0.0;
+        let rigid_full = rigid.to_rigid_space_velocity(ANG_VEL);
+
+        assert_eq!(
+            rigid_full,
+            RigidSpaceVelocity {
+                linvel: Vec2::new(-9.0, -12.0),
+                angvel: ANG_VEL
+            }
+        );
+        assert_eq!(
+            rigid_full.to_root_space_linear_velocity(REFERENCE_VEL),
+            ROOTSPACE_VEL
+        )
     }
 }
