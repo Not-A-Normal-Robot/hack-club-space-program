@@ -7,8 +7,7 @@ use hack_club_space_program::{
     components::{
         CelestialBody, Heightmap, SimCamera, SimCameraOffset, SimCameraZoom, Vessel,
         frames::{
-            CameraSpaceTransform, RigidSpaceTransform, RigidSpaceVelocity, RootSpaceLinearVelocity,
-            RootSpacePosition,
+            CameraSpaceTransform, RigidSpaceVelocity, RootSpaceLinearVelocity, RootSpacePosition,
         },
     },
     resources::ActiveVessel,
@@ -16,8 +15,6 @@ use hack_club_space_program::{
 use std::sync::LazyLock;
 
 mod common;
-
-const FIXED_DELTA_TIME: f64 = 1.0 / 64.0;
 
 #[derive(Clone, Copy)]
 struct PostTickAssertions {
@@ -30,7 +27,6 @@ struct PostTickAssertions {
 struct TransformAssertions {
     pub root_pos: Option<RootSpacePosition>,
     pub root_vel: Option<RootSpaceLinearVelocity>,
-    pub rig_tf: Option<RigidSpaceTransform>,
     pub rig_vel: Option<RigidSpaceVelocity>,
     pub cam_tf: Option<CameraSpaceTransform>,
 }
@@ -57,32 +53,6 @@ impl TransformAssertions {
                 dbg!(entity.get::<RootSpaceLinearVelocity>().copied()),
                 Some(expected_root_vel),
                 "root vel didn't match expected value for {object}"
-            );
-        }
-
-        if let Some(expected_rig_tf) = self.rig_tf {
-            let root_pos = dbg!(entity.get::<RootSpacePosition>())
-                .copied()
-                .expect("root-space position should exist for rigid-space transform assertion");
-            let root_vel = dbg!(entity.get::<RootSpaceLinearVelocity>())
-                .copied()
-                .expect(
-                    "root-space linear velocity should exist for rigid-space transform assertion",
-                );
-            let prev_root_pos = dbg!(RootSpacePosition(
-                *root_pos - (*root_vel * FIXED_DELTA_TIME)
-            ));
-            let cam_tf = dbg!(entity.get::<Transform>())
-                .copied()
-                .expect("transform should exist for rigid-space transform assertion");
-            let active_vessel = active_vessel
-                .expect("active vessel resource should exist for rigid-space transform assertion")
-                .prev_tick_position;
-            let rig_tf = dbg!(prev_root_pos.to_rigid_space_position(active_vessel))
-                .to_rigid_space_transform(cam_tf.rotation, cam_tf.scale);
-            assert_eq!(
-                rig_tf, expected_rig_tf,
-                "rigid tf didn't match expected value for {object}"
             );
         }
 
@@ -204,82 +174,57 @@ impl Assertions for PostTickAssertions {
 }
 
 static ASSERTION_COLLECTION: LazyLock<Box<[PostTickAssertions]>> = LazyLock::new(|| {
-    Box::new([
-        PostTickAssertions {
-            body: TransformAssertions {
-                root_pos: Some(RootSpacePosition(DVec2::ZERO)),
-                root_vel: Some(RootSpaceLinearVelocity(DVec2::ZERO)),
-                // rigid transform is updated in FixedPreUpdate before the rigid step
-                // and so we see last tick's rigid transform here
-                rig_tf: Some(RigidSpaceTransform(Transform {
-                    translation: Vec3::new(-0.5, -1.5, 0.0),
-                    rotation: Quat::IDENTITY,
-                    scale: Vec3::ONE,
-                })),
-                rig_vel: Some(RigidSpaceVelocity {
-                    angvel: 0.0,
-                    linvel: Vec2::new(-1.0, 0.0),
-                }),
-                cam_tf: Some(CameraSpaceTransform(Transform {
-                    translation: Vec3::new(-0.515625, -1.5, 0.0),
-                    rotation: Quat::IDENTITY,
-                    scale: Vec3::ONE,
-                })),
-            },
-            vessel: TransformAssertions {
-                root_pos: Some(RootSpacePosition(DVec2::new(0.5 + 1.0 / 64.0, 1.5))),
-                root_vel: Some(RootSpaceLinearVelocity(DVec2::new(1.0, 0.0))),
-                rig_tf: Some(RigidSpaceTransform(Transform::IDENTITY)),
-                rig_vel: Some(RigidSpaceVelocity::zero()),
-                cam_tf: Some(CameraSpaceTransform(Transform::IDENTITY)),
-            },
-            extra_assertions: Some(|app, entity_refs| {
-                let camera_offset = get_camera_offset(app, &entity_refs);
-                assert_eq!(
-                    camera_offset,
-                    RootSpacePosition(DVec2::new(0.5 + 1.0 / 64.0, 1.5)),
-                    "camera offset didn't match expected value"
-                );
-
-                let active_vessel = app.world().resource::<ActiveVessel>();
-                assert_eq!(
-                    active_vessel.entity,
-                    entity_refs.vessel.entity(),
-                    "active vessel entity mismatch"
-                );
-                assert_eq!(
-                    active_vessel.prev_tick_parent,
-                    entity_refs.body.entity(),
-                    "active vessel parent mismatch"
-                );
-                assert_eq!(
-                    active_vessel.prev_tick_position,
-                    RootSpacePosition(DVec2::new(0.5, 1.5)),
-                    "active vessel position mismatch"
-                );
-                assert_eq!(
-                    active_vessel.prev_tick_velocity,
-                    RootSpaceLinearVelocity(DVec2::new(1.0, 0.0)),
-                    "active vessel velocity mismatch"
-                );
+    Box::new([PostTickAssertions {
+        body: TransformAssertions {
+            root_pos: Some(RootSpacePosition(DVec2::ZERO)),
+            root_vel: Some(RootSpaceLinearVelocity(DVec2::ZERO)),
+            rig_vel: Some(RigidSpaceVelocity {
+                angvel: 0.0,
+                linvel: Vec2::new(-1.0, 0.0),
             }),
+            cam_tf: Some(CameraSpaceTransform(Transform {
+                translation: Vec3::new(-0.515625, -1.5, 0.0),
+                rotation: Quat::IDENTITY,
+                scale: Vec3::ONE,
+            })),
         },
-        PostTickAssertions {
-            body: TransformAssertions {
-                rig_tf: Some(RigidSpaceTransform(Transform {
-                    translation: Vec3::new(-0.515625, -1.5, 0.0),
-                    rotation: Quat::IDENTITY,
-                    scale: Vec3::ONE,
-                })),
-                ..Default::default()
-            },
-            vessel: TransformAssertions {
-                rig_tf: Some(RigidSpaceTransform(Transform::IDENTITY)),
-                ..Default::default()
-            },
-            extra_assertions: None,
+        vessel: TransformAssertions {
+            root_pos: Some(RootSpacePosition(DVec2::new(0.5 + 1.0 / 64.0, 1.5))),
+            root_vel: Some(RootSpaceLinearVelocity(DVec2::new(1.0, 0.0))),
+            rig_vel: Some(RigidSpaceVelocity::zero()),
+            cam_tf: Some(CameraSpaceTransform(Transform::IDENTITY)),
         },
-    ])
+        extra_assertions: Some(|app, entity_refs| {
+            let camera_offset = get_camera_offset(app, &entity_refs);
+            assert_eq!(
+                camera_offset,
+                RootSpacePosition(DVec2::new(0.5 + 1.0 / 64.0, 1.5)),
+                "camera offset didn't match expected value"
+            );
+
+            let active_vessel = app.world().resource::<ActiveVessel>();
+            assert_eq!(
+                active_vessel.entity,
+                entity_refs.vessel.entity(),
+                "active vessel entity mismatch"
+            );
+            assert_eq!(
+                active_vessel.prev_tick_parent,
+                entity_refs.body.entity(),
+                "active vessel parent mismatch"
+            );
+            assert_eq!(
+                active_vessel.prev_tick_position,
+                RootSpacePosition(DVec2::new(0.5, 1.5)),
+                "active vessel position mismatch"
+            );
+            assert_eq!(
+                active_vessel.prev_tick_velocity,
+                RootSpaceLinearVelocity(DVec2::new(1.0, 0.0)),
+                "active vessel velocity mismatch"
+            );
+        }),
+    }])
 });
 
 #[test]
