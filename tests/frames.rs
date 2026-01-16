@@ -37,7 +37,7 @@ impl TransformAssertions {
         entity: EntityRef<'_>,
         camera_offset: RootSpacePosition,
         camera_zoom: SimCameraZoom,
-        active_vessel: Option<&ActiveVessel>,
+        _active_vessel: Option<&ActiveVessel>,
         object: &str,
     ) {
         if let Some(expected_root_pos) = self.root_pos {
