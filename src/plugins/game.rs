@@ -4,9 +4,7 @@ use bevy_rapier2d::{prelude::*, rapier::prelude::IntegrationParameters};
 use crate::{
     components::{
         CelestialBody, Heightmap, ParentBody, SimCamera, SimCameraOffset, SimCameraZoom, Vessel,
-        frames::{
-            RigidSpaceTransform, RigidSpaceVelocity, RootSpaceLinearVelocity, RootSpacePosition,
-        },
+        frames::{RigidSpaceVelocity, RootSpaceLinearVelocity, RootSpacePosition},
     },
     plugins::frame_sync::FrameSyncPlugin,
     resources::ActiveVessel,

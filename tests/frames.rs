@@ -17,6 +17,8 @@ use std::sync::LazyLock;
 
 mod common;
 
+const FIXED_DELTA_TIME: f64 = 1.0 / 64.0;
+
 #[derive(Clone, Copy)]
 struct PostTickAssertions {
     pub vessel: TransformAssertions,
@@ -39,6 +41,7 @@ impl TransformAssertions {
         entity: EntityRef<'_>,
         camera_offset: RootSpacePosition,
         camera_zoom: SimCameraZoom,
+        active_vessel: Option<&ActiveVessel>,
         object: &str,
     ) {
         if let Some(expected_root_pos) = self.root_pos {
@@ -57,9 +60,35 @@ impl TransformAssertions {
             );
         }
 
+        if let Some(expected_rig_tf) = self.rig_tf {
+            let root_pos = dbg!(entity.get::<RootSpacePosition>())
+                .copied()
+                .expect("root-space position should exist for rigid-space transform assertion");
+            let root_vel = dbg!(entity.get::<RootSpaceLinearVelocity>())
+                .copied()
+                .expect(
+                    "root-space linear velocity should exist for rigid-space transform assertion",
+                );
+            let prev_root_pos = dbg!(RootSpacePosition(
+                *root_pos - (*root_vel * FIXED_DELTA_TIME)
+            ));
+            let cam_tf = dbg!(entity.get::<Transform>())
+                .copied()
+                .expect("transform should exist for rigid-space transform assertion");
+            let active_vessel = active_vessel
+                .expect("active vessel resource should exist for rigid-space transform assertion")
+                .prev_tick_position;
+            let rig_tf = dbg!(prev_root_pos.to_rigid_space_position(active_vessel))
+                .to_rigid_space_transform(cam_tf.rotation, cam_tf.scale);
+            assert_eq!(
+                rig_tf, expected_rig_tf,
+                "rigid tf didn't match expected value for {object}"
+            );
+        }
+
         if let Some(expected_rig_vel) = self.rig_vel {
             assert_eq!(
-                dbg!(entity.get::<RigidSpaceVelocity>().cloned()),
+                dbg!(entity.get::<RigidSpaceVelocity>().copied()),
                 Some(expected_rig_vel),
                 "rigid vel didn't match expected value for {object}"
             );
@@ -67,10 +96,10 @@ impl TransformAssertions {
 
         if let Some(asserted_cam_tf) = self.cam_tf {
             let cam_tf = dbg!(entity.get::<Transform>())
-                .cloned()
-                .expect("transform should exist forr camera-space transform assertion");
+                .copied()
+                .expect("transform should exist for camera-space transform assertion");
             let recalc_cam_tf = dbg!(entity.get::<RootSpacePosition>())
-                .cloned()
+                .copied()
                 .expect("root pos should exist for camera-space transform assertion")
                 .to_camera_space_transform(cam_tf.rotation, camera_offset, camera_zoom);
             assert_eq!(
@@ -152,13 +181,25 @@ impl Assertions for PostTickAssertions {
             extra_assertions(app, entity_refs);
         }
 
+        let active_vessel = app.world().get_resource::<ActiveVessel>();
+
         eprintln!(">>> Running body assertions");
-        self.body
-            .check_assertions(entity_refs.body, camera_offset, camera_zoom, "body");
+        self.body.check_assertions(
+            entity_refs.body,
+            camera_offset,
+            camera_zoom,
+            active_vessel,
+            "body",
+        );
 
         eprintln!(">>> Running vessel assertions");
-        self.vessel
-            .check_assertions(entity_refs.vessel, camera_offset, camera_zoom, "vessel");
+        self.vessel.check_assertions(
+            entity_refs.vessel,
+            camera_offset,
+            camera_zoom,
+            active_vessel,
+            "vessel",
+        );
     }
 }
 

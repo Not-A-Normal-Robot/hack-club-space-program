@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_rapier2d::prelude::{Collider, RigidBody};
+use bevy_rapier2d::prelude::RigidBody;
 
 use crate::{
     components::{
@@ -98,7 +98,6 @@ pub fn apply_root_velocity(
 }
 
 /// Updates the last tick position and last parent body of the active vessel.
-#[expect(clippy::type_complexity)]
 pub fn update_active_vessel_resource(
     query: Query<(&RootSpacePosition, &RootSpaceLinearVelocity, &ParentBody)>,
     active_vessel: Option<ResMut<ActiveVessel>>,
