@@ -173,62 +173,62 @@ impl Assertions for PostTickAssertions {
     }
 }
 
-static ASSERTION_COLLECTION: LazyLock<Box<[PostTickAssertions]>> = LazyLock::new(|| {
-    Box::new([PostTickAssertions {
-        body: TransformAssertions {
-            root_pos: Some(RootSpacePosition(DVec2::ZERO)),
-            root_vel: Some(RootSpaceLinearVelocity(DVec2::ZERO)),
-            rig_vel: Some(RigidSpaceVelocity {
-                angvel: 0.0,
-                linvel: Vec2::new(-1.0, 0.0),
-            }),
-            cam_tf: Some(CameraSpaceTransform(Transform {
-                translation: Vec3::new(-0.515625, -1.5, 0.0),
-                rotation: Quat::IDENTITY,
-                scale: Vec3::ONE,
-            })),
-        },
-        vessel: TransformAssertions {
-            root_pos: Some(RootSpacePosition(DVec2::new(0.5 + 1.0 / 64.0, 1.5))),
-            root_vel: Some(RootSpaceLinearVelocity(DVec2::new(1.0, 0.0))),
-            rig_vel: Some(RigidSpaceVelocity::zero()),
-            cam_tf: Some(CameraSpaceTransform(Transform::IDENTITY)),
-        },
-        extra_assertions: Some(|app, entity_refs| {
-            let camera_offset = get_camera_offset(app, &entity_refs);
-            assert_eq!(
-                camera_offset,
-                RootSpacePosition(DVec2::new(0.5 + 1.0 / 64.0, 1.5)),
-                "camera offset didn't match expected value"
-            );
-
-            let active_vessel = app.world().resource::<ActiveVessel>();
-            assert_eq!(
-                active_vessel.entity,
-                entity_refs.vessel.entity(),
-                "active vessel entity mismatch"
-            );
-            assert_eq!(
-                active_vessel.prev_tick_parent,
-                entity_refs.body.entity(),
-                "active vessel parent mismatch"
-            );
-            assert_eq!(
-                active_vessel.prev_tick_position,
-                RootSpacePosition(DVec2::new(0.5, 1.5)),
-                "active vessel position mismatch"
-            );
-            assert_eq!(
-                active_vessel.prev_tick_velocity,
-                RootSpaceLinearVelocity(DVec2::new(1.0, 0.0)),
-                "active vessel velocity mismatch"
-            );
-        }),
-    }])
-});
-
 #[test]
 fn reference_frames() {
+    static ASSERTION_COLLECTION: LazyLock<Box<[PostTickAssertions]>> = LazyLock::new(|| {
+        Box::new([PostTickAssertions {
+            body: TransformAssertions {
+                root_pos: Some(RootSpacePosition(DVec2::ZERO)),
+                root_vel: Some(RootSpaceLinearVelocity(DVec2::ZERO)),
+                rig_vel: Some(RigidSpaceVelocity {
+                    angvel: 0.0,
+                    linvel: Vec2::new(-1.0, 0.0),
+                }),
+                cam_tf: Some(CameraSpaceTransform(Transform {
+                    translation: Vec3::new(-0.515625, -1.5, 0.0),
+                    rotation: Quat::IDENTITY,
+                    scale: Vec3::ONE,
+                })),
+            },
+            vessel: TransformAssertions {
+                root_pos: Some(RootSpacePosition(DVec2::new(0.5 + 1.0 / 64.0, 1.5))),
+                root_vel: Some(RootSpaceLinearVelocity(DVec2::new(1.0, 0.0))),
+                rig_vel: Some(RigidSpaceVelocity::zero()),
+                cam_tf: Some(CameraSpaceTransform(Transform::IDENTITY)),
+            },
+            extra_assertions: Some(|app, entity_refs| {
+                let camera_offset = get_camera_offset(app, &entity_refs);
+                assert_eq!(
+                    camera_offset,
+                    RootSpacePosition(DVec2::new(0.5 + 1.0 / 64.0, 1.5)),
+                    "camera offset didn't match expected value"
+                );
+
+                let active_vessel = app.world().resource::<ActiveVessel>();
+                assert_eq!(
+                    active_vessel.entity,
+                    entity_refs.vessel.entity(),
+                    "active vessel entity mismatch"
+                );
+                assert_eq!(
+                    active_vessel.prev_tick_parent,
+                    entity_refs.body.entity(),
+                    "active vessel parent mismatch"
+                );
+                assert_eq!(
+                    active_vessel.prev_tick_position,
+                    RootSpacePosition(DVec2::new(0.5, 1.5)),
+                    "active vessel position mismatch"
+                );
+                assert_eq!(
+                    active_vessel.prev_tick_velocity,
+                    RootSpaceLinearVelocity(DVec2::new(1.0, 0.0)),
+                    "active vessel velocity mismatch"
+                );
+            }),
+        }])
+    });
+
     let mut app = common::setup(true);
 
     let body = app
@@ -278,6 +278,110 @@ fn reference_frames() {
                 last_known_pos: RootSpacePosition(DVec2::ZERO),
                 offset: DVec2::ZERO,
             },
+            SimCameraZoom(1.0),
+            Transform::from_rotation(Quat::from_rotation_z(0.0)),
+        ))
+        .id();
+
+    app.world_mut().insert_resource(ActiveVessel {
+        entity: vessel,
+        prev_tick_parent: body,
+        prev_tick_position: vessel_pos,
+        prev_tick_velocity: vessel_vel,
+    });
+
+    eprintln!(">> App setup complete");
+
+    ASSERTION_COLLECTION.run_assertions_collection(
+        &mut app,
+        TestExtraData {
+            entities: TestEntities {
+                body,
+                camera,
+                vessel,
+            },
+        },
+    );
+}
+
+#[test]
+fn reference_frame_fixed_cam() {
+    const CAM_POSITION: RootSpacePosition = RootSpacePosition(DVec2::ONE);
+
+    static ASSERTION_COLLECTION: LazyLock<Box<[PostTickAssertions]>> = LazyLock::new(|| {
+        Box::new([PostTickAssertions {
+            body: TransformAssertions {
+                root_pos: Some(RootSpacePosition(DVec2::ZERO)),
+                root_vel: Some(RootSpaceLinearVelocity(DVec2::ZERO)),
+                rig_vel: Some(RigidSpaceVelocity {
+                    angvel: 0.0,
+                    linvel: Vec2::new(-1.0, 0.0),
+                }),
+                cam_tf: Some(CameraSpaceTransform(Transform::from_translation(
+                    Vec3::new(-1.0, -1.0, 0.0),
+                ))),
+            },
+            vessel: TransformAssertions {
+                root_pos: Some(RootSpacePosition(DVec2::new(0.5 + 1.0 / 64.0, 1.5))),
+                root_vel: Some(RootSpaceLinearVelocity(DVec2::new(1.0, 0.0))),
+                rig_vel: Some(RigidSpaceVelocity::zero()),
+                cam_tf: Some(CameraSpaceTransform(Transform::from_translation(
+                    Vec3::new(
+                        (0.5 + 1.0 / 64.0) - CAM_POSITION.x as f32,
+                        1.5 - CAM_POSITION.y as f32,
+                        0.0,
+                    ),
+                ))),
+            },
+            extra_assertions: None,
+        }])
+    });
+
+    let mut app = common::setup(true);
+
+    let body = app
+        .world_mut()
+        .spawn((
+            CelestialBody { radius: 1.0 / 4.0 },
+            AdditionalMassProperties::Mass(0.0),
+            RigidBody::KinematicVelocityBased,
+            Collider::ball(1.0 / 4.0),
+            Heightmap(Box::from([])),
+            RootSpacePosition(DVec2::ZERO),
+            RootSpaceLinearVelocity(DVec2::ZERO),
+            RigidSpaceVelocity::zero(),
+            Transform::from_translation(Vec3::NAN),
+        ))
+        .id();
+
+    let vessel_pos = RootSpacePosition(DVec2::new(0.5, 1.5));
+    let vessel_vel = RootSpaceLinearVelocity(DVec2::new(1.0, 0.0));
+
+    let vessel = app
+        .world_mut()
+        .spawn((
+            Vessel,
+            Collider::ball(1.0 / 8.0),
+            RigidBody::Dynamic,
+            AdditionalMassProperties::Mass(1e4),
+            Transform::from_translation(Vec3::NAN),
+            RigidSpaceVelocity::zero(),
+            vessel_pos,
+            vessel_vel,
+            GravityScale(0.0),
+        ))
+        .id();
+
+    let camera = app
+        .world_mut()
+        .spawn((
+            Camera {
+                is_active: true,
+                ..Default::default()
+            },
+            Camera2d,
+            SimCamera,
+            SimCameraOffset::Detached(CAM_POSITION),
             SimCameraZoom(1.0),
             Transform::from_rotation(Quat::from_rotation_z(0.0)),
         ))
