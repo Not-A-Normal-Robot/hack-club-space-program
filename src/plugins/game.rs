@@ -3,8 +3,11 @@ use bevy_rapier2d::{prelude::*, rapier::prelude::IntegrationParameters};
 
 use crate::{
     components::{
-        CelestialBody, Heightmap, ParentBody, SimCamera, SimCameraOffset, SimCameraZoom, Vessel,
+        camera::{SimCamera, SimCameraOffset, SimCameraZoom},
+        celestial::{CelestialBody, Heightmap},
         frames::{RigidSpaceVelocity, RootSpaceLinearVelocity, RootSpacePosition},
+        relations::ParentBody,
+        vessel::Vessel,
     },
     plugins::physics::HcspPhysicsPlugin,
     resources::ActiveVessel,

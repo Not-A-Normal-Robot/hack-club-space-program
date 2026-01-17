@@ -5,10 +5,12 @@ use bevy::{math::DVec2, prelude::*};
 use bevy_rapier2d::prelude::*;
 use hack_club_space_program::{
     components::{
-        CelestialBody, Heightmap, SimCamera, SimCameraOffset, SimCameraZoom, Vessel,
+        camera::{SimCamera, SimCameraOffset, SimCameraZoom},
+        celestial::{CelestialBody, Heightmap},
         frames::{
             CameraSpaceTransform, RigidSpaceVelocity, RootSpaceLinearVelocity, RootSpacePosition,
         },
+        vessel::Vessel,
     },
     resources::ActiveVessel,
 };

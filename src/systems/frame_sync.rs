@@ -3,11 +3,12 @@ use bevy_rapier2d::prelude::RigidBody;
 
 use crate::{
     components::{
-        ParentBody, SimCamera, SimCameraOffset, SimCameraZoom,
+        camera::{SimCamera, SimCameraOffset, SimCameraZoom},
         frames::{
             RigidSpaceTransform, RigidSpaceVelocity, RigidSpaceVelocityImpl,
             RootSpaceLinearVelocity, RootSpacePosition,
         },
+        relations::ParentBody,
     },
     resources::ActiveVessel,
 };

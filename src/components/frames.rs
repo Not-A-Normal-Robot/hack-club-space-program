@@ -6,7 +6,7 @@
 use bevy::{math::DVec2, prelude::*};
 use bevy_rapier2d::prelude::*;
 
-use crate::components::SimCameraZoom;
+use crate::components::camera::SimCameraZoom;
 
 macro_rules! wrapper {
     ($( $outer:ty : $inner:ty ),* $(,)?) => {
