@@ -6,7 +6,7 @@ use crate::{
         CelestialBody, Heightmap, ParentBody, SimCamera, SimCameraOffset, SimCameraZoom, Vessel,
         frames::{RigidSpaceVelocity, RootSpaceLinearVelocity, RootSpacePosition},
     },
-    plugins::frame_sync::FrameSyncPlugin,
+    plugins::physics::HcspPhysicsPlugin,
     resources::ActiveVessel,
 };
 
@@ -91,7 +91,7 @@ impl Plugin for GameLogicPlugin {
                 },
             );
 
-        app.add_plugins((physics, FrameSyncPlugin));
+        app.add_plugins((physics, HcspPhysicsPlugin));
     }
 }
 
