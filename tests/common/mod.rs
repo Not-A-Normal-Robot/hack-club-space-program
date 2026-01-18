@@ -14,12 +14,23 @@ fn setup_time(
     commands.insert_resource(TimeUpdateStrategy::ManualDuration(fixed_time.timestep()));
 }
 
+pub fn enable_backtrace() {
+    const BACKTRACE_KEY: &str = "RUST_BACKTRACE";
+    unsafe {
+        if std::env::var(BACKTRACE_KEY).is_err() {
+            std::env::set_var(BACKTRACE_KEY, "1");
+        }
+    }
+}
+
 /// `forward_time_on_update`: Whether or not the app's time should
 /// increase every time update() is called.
 ///
 /// The amount of time the time is increased is by the fixed timestep
 /// interval (default 64 Hz).
 pub fn setup(forward_time_on_update: bool) -> App {
+    enable_backtrace();
+
     let mut app = App::new();
     app.add_plugins((MinimalPlugins, GameLogicPlugin));
     app.insert_resource(TimeUpdateStrategy::ManualDuration(Duration::ZERO));

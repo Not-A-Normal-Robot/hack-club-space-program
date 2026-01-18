@@ -12,6 +12,7 @@ pub struct CelestialBodyBuilder {
     pub radius: f32,
     pub heightmap: Heightmap,
     pub mass: AdditionalMassProperties,
+    pub angle: f32,
 }
 
 impl CelestialBodyBuilder {
@@ -20,7 +21,6 @@ impl CelestialBodyBuilder {
             RigidBody::KinematicVelocityBased,
             RootSpacePosition(DVec2::ZERO),
             RootSpaceLinearVelocity(DVec2::ZERO),
-            Transform::IDENTITY,
         )
     }
 
@@ -38,6 +38,7 @@ impl CelestialBodyBuilder {
                 angvel: 0.0,
                 linvel: Vec2::NAN,
             },
+            Transform::from_rotation(Quat::from_rotation_z(self.angle)),
         )
     }
 }

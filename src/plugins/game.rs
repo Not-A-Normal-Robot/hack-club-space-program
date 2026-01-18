@@ -34,6 +34,7 @@ fn demo_startup(mut commands: Commands) {
         radius: CELESTIAL_RADIUS,
         heightmap: Heightmap(Box::from(DEMO_HEIGHTMAP)),
         mass: AdditionalMassProperties::Mass(1e30),
+        angle: 0.0,
     }
     .build();
     let body = commands.spawn(body).id();

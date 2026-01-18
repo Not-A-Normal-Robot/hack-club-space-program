@@ -4,12 +4,14 @@ use crate::common::{Assertions, AssertionsCollection};
 use bevy::{math::DVec2, prelude::*};
 use bevy_rapier2d::prelude::*;
 use hack_club_space_program::{
+    builders::{celestial::CelestialBodyBuilder, vessel::VesselBuilder},
     components::{
         camera::{SimCamera, SimCameraOffset, SimCameraZoom},
         celestial::{CelestialBody, Heightmap},
         frames::{
             CameraSpaceTransform, RigidSpaceVelocity, RootSpaceLinearVelocity, RootSpacePosition,
         },
+        relations::ParentBody,
         vessel::Vessel,
     },
     resources::ActiveVessel,
@@ -343,17 +345,15 @@ fn reference_frame_fixed_cam() {
 
     let body = app
         .world_mut()
-        .spawn((
-            CelestialBody { radius: 1.0 / 4.0 },
-            AdditionalMassProperties::Mass(0.0),
-            RigidBody::KinematicVelocityBased,
-            Collider::ball(1.0 / 4.0),
-            Heightmap(Box::from([])),
-            RootSpacePosition(DVec2::ZERO),
-            RootSpaceLinearVelocity(DVec2::ZERO),
-            RigidSpaceVelocity::zero(),
-            Transform::from_translation(Vec3::NAN),
-        ))
+        .spawn(
+            CelestialBodyBuilder {
+                radius: 1.0 / 4.0,
+                heightmap: Heightmap(Box::from([])),
+                mass: AdditionalMassProperties::Mass(0.0),
+                angle: 0.0,
+            }
+            .build(),
+        )
         .id();
 
     let vessel_pos = RootSpacePosition(DVec2::new(0.5, 1.5));
@@ -361,17 +361,18 @@ fn reference_frame_fixed_cam() {
 
     let vessel = app
         .world_mut()
-        .spawn((
-            Vessel,
-            Collider::ball(1.0 / 8.0),
-            RigidBody::Dynamic,
-            AdditionalMassProperties::Mass(1e4),
-            Transform::from_translation(Vec3::NAN),
-            RigidSpaceVelocity::zero(),
-            vessel_pos,
-            vessel_vel,
-            GravityScale(0.0),
-        ))
+        .spawn(
+            VesselBuilder {
+                collider: Collider::ball(1.0 / 8.0),
+                mass: AdditionalMassProperties::Mass(1e4),
+                parent: ParentBody(body),
+                position: vessel_pos,
+                linvel: vessel_vel,
+                angvel: 0.0,
+                angle: 0.0,
+            }
+            .build(),
+        )
         .id();
 
     let camera = app
