@@ -140,6 +140,7 @@ pub fn pre_rapier_frame_switch(
     active_vessel: Option<Res<ActiveVessel>>,
 ) {
     let Some(active_vessel) = active_vessel else {
+        warn!("active vessel resource not loaded");
         return;
     };
 
@@ -150,18 +151,6 @@ pub fn pre_rapier_frame_switch(
         });
 }
 
-fn post_rapier_frame_switch_inner(
-    mut transform: Mut<'_, Transform>,
-    root_pos: RootSpacePosition,
-    cam_offset: RootSpacePosition,
-    cam_zoom: SimCameraZoom,
-) {
-    let rotation = transform.rotation;
-    *transform = root_pos
-        .to_camera_space_transform(rotation, cam_offset, cam_zoom)
-        .0;
-}
-
 /// Sets transform into the camera transform so Bevy can render it
 pub fn post_rapier_frame_switch(
     query: Query<(&mut Transform, &RootSpacePosition)>,
@@ -170,12 +159,16 @@ pub fn post_rapier_frame_switch(
 ) {
     let Some((mut cam_offset, &cam_zoom, _)) = sim_camera.into_iter().find(|&(.., c)| c.is_active)
     else {
+        warn!("sim camera not found");
         return;
     };
 
     let cam_offset = cam_offset.get_root_position(camera_offset_query);
 
-    query.into_iter().for_each(|(transform, root_pos)| {
-        post_rapier_frame_switch_inner(transform, *root_pos, cam_offset, cam_zoom);
+    query.into_iter().for_each(|(mut transform, &root_pos)| {
+        let rotation = transform.rotation;
+        *transform = root_pos
+            .to_camera_space_transform(rotation, cam_offset, cam_zoom)
+            .0;
     });
 }

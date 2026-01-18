@@ -26,8 +26,7 @@ impl Plugin for HcspPhysicsPlugin {
                 write_rigid_pos_to_root,
                 post_rapier_frame_switch,
             )
-                .chain()
-                .after(bevy_rapier2d::prelude::systems::step_simulation::<NoUserData>),
+                .chain(),
         );
     }
 }

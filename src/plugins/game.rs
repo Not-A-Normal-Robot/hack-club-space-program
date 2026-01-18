@@ -2,12 +2,12 @@ use bevy::{math::DVec2, prelude::*};
 use bevy_rapier2d::{prelude::*, rapier::prelude::IntegrationParameters};
 
 use crate::{
+    builders::{celestial::CelestialBodyBuilder, vessel::VesselBuilder},
     components::{
         camera::{SimCamera, SimCameraOffset, SimCameraZoom},
         celestial::{CelestialBody, Heightmap},
-        frames::{RigidSpaceVelocity, RootSpaceLinearVelocity, RootSpacePosition},
+        frames::{RootSpaceLinearVelocity, RootSpacePosition},
         relations::ParentBody,
-        vessel::Vessel,
     },
     plugins::physics::HcspPhysicsPlugin,
     resources::ActiveVessel,
@@ -30,40 +30,29 @@ fn demo_startup(mut commands: Commands) {
         Transform::from_rotation(Quat::from_rotation_z(0.0)),
     ));
 
-    let body = commands
-        .spawn((
-            CelestialBody {
-                radius: CELESTIAL_RADIUS,
-            },
-            RigidBody::KinematicVelocityBased,
-            Collider::ball(CELESTIAL_RADIUS),
-            AdditionalMassProperties::Mass(1e30),
-            Heightmap(Box::from(DEMO_HEIGHTMAP)),
-            RootSpacePosition(DVec2::ZERO),
-            RootSpaceLinearVelocity(DVec2::ZERO),
-            Transform::from_translation(Vec3::NAN),
-            Sleeping::disabled(),
-        ))
-        .id();
+    let body = CelestialBodyBuilder {
+        radius: CELESTIAL_RADIUS,
+        heightmap: Heightmap(Box::from(DEMO_HEIGHTMAP)),
+        mass: AdditionalMassProperties::Mass(1e30),
+    }
+    .build();
+    let body = commands.spawn(body).id();
 
     let vessel_pos = RootSpacePosition(DVec2::new(-1.5 * ALTITUDE as f64, 0.5 * ALTITUDE as f64));
     let vessel_vel = RootSpaceLinearVelocity(DVec2::new(100.0, 0.0));
 
-    let vessel = commands.spawn((
-        Vessel,
-        Collider::ball(10.0),
-        RigidBody::Dynamic,
-        AdditionalMassProperties::Mass(1e6),
-        ParentBody(body),
-        RigidSpaceVelocity::zero(),
-        Transform::from_translation(Vec3::NAN),
-        vessel_pos,
-        vessel_vel,
-        Friction::coefficient(0.2),
-        Restitution::coefficient(0.02),
-        Ccd::enabled(),
-        Sleeping::disabled(),
-    ));
+    let vessel = VesselBuilder {
+        collider: Collider::ball(10.0),
+        mass: AdditionalMassProperties::Mass(1e6),
+        parent: ParentBody(body),
+        position: vessel_pos,
+        linvel: vessel_vel,
+        angvel: 0.0,
+        angle: 0.0,
+    }
+    .build();
+    let mut vessel = commands.spawn(vessel);
+    vessel.insert(Sleeping::disabled());
     let vessel_entity = vessel.id();
 
     commands.insert_resource(ActiveVessel {

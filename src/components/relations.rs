@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
-#[derive(Clone, Copy, Component)]
+#[derive(Clone, Copy, Component, Debug)]
 #[relationship(relationship_target = ChildObjects)]
-pub struct ParentBody(pub Entity);
+pub struct ParentBody(pub Entity); // TODO: Add Orbit
 
 #[derive(Component)]
 pub struct ChildObjects(Vec<Entity>);
