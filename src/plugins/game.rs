@@ -5,7 +5,7 @@ use crate::{
     builders::{celestial::CelestialBodyBuilder, vessel::VesselBuilder},
     components::{
         camera::{SimCamera, SimCameraOffset, SimCameraZoom},
-        celestial::{CelestialBody, Heightmap},
+        celestial::Heightmap,
         frames::{RootSpaceLinearVelocity, RootSpacePosition},
         relations::ParentBody,
     },

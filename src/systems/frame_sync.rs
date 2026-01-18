@@ -116,8 +116,8 @@ pub fn update_active_vessel_resource(
 }
 
 fn pre_rapier_frame_switch_inner(
-    root_pos: &RootSpacePosition,
-    root_vel: &RootSpaceLinearVelocity,
+    root_pos: RootSpacePosition,
+    root_vel: RootSpaceLinearVelocity,
     mut transform: Mut<'_, Transform>,
     mut rigid_vel: Mut<'_, RigidSpaceVelocity>,
     active_vessel: &ActiveVessel,
@@ -146,7 +146,7 @@ pub fn pre_rapier_frame_switch(
 
     query
         .into_iter()
-        .for_each(|(root_pos, root_vel, transform, rigid_vel)| {
+        .for_each(|(&root_pos, &root_vel, transform, rigid_vel)| {
             pre_rapier_frame_switch_inner(root_pos, root_vel, transform, rigid_vel, &active_vessel);
         });
 }

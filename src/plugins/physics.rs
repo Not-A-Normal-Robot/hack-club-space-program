@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy_rapier2d::plugin::NoUserData;
 
 use crate::systems::frame_sync::{
     apply_root_velocity, post_rapier_frame_switch, pre_rapier_frame_switch,

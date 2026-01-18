@@ -1,6 +1,6 @@
 use crate::components::{
     celestial::{CelestialBody, Heightmap},
-    frames::{RootSpaceLinearVelocity, RootSpacePosition},
+    frames::{RigidSpaceVelocity, RootSpaceLinearVelocity, RootSpacePosition},
 };
 use bevy::{math::DVec2, prelude::*};
 use bevy_rapier2d::prelude::*;
@@ -21,7 +21,6 @@ impl CelestialBodyBuilder {
             RootSpacePosition(DVec2::ZERO),
             RootSpaceLinearVelocity(DVec2::ZERO),
             Transform::IDENTITY,
-            RigidBodyDisabled,
         )
     }
 
@@ -34,6 +33,11 @@ impl CelestialBodyBuilder {
             self.heightmap,
             self.mass,
             Self::base_bundle(),
+            RigidSpaceVelocity {
+                // TODO: Celestial rotation
+                angvel: 0.0,
+                linvel: Vec2::NAN,
+            },
         )
     }
 }

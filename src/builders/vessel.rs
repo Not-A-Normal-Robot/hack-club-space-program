@@ -23,7 +23,6 @@ impl VesselBuilder {
             Friction::coefficient(0.2),
             Restitution::coefficient(0.02),
             Ccd { enabled: true },
-            // TODO: Disable sleeping
         )
     }
     pub fn build(self) -> impl Bundle {
