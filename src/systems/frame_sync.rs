@@ -8,7 +8,7 @@ use crate::{
             RigidSpaceTransform, RigidSpaceVelocity, RigidSpaceVelocityImpl,
             RootSpaceLinearVelocity, RootSpacePosition,
         },
-        relations::ParentBody,
+        relations::CelestialParent,
     },
     resources::ActiveVessel,
 };
@@ -18,15 +18,15 @@ use crate::{
 /// Assumes the current Transform is a rigid-space transform.
 pub fn write_rigid_pos_to_root(
     mut commands: Commands,
-    root_positionless: Query<(Entity, &Transform, &ParentBody), Without<RootSpacePosition>>,
-    mut with_root_pos: Query<(&Transform, &mut RootSpacePosition, &ParentBody)>,
+    root_positionless: Query<(Entity, &Transform, &CelestialParent), Without<RootSpacePosition>>,
+    mut with_root_pos: Query<(&Transform, &mut RootSpacePosition, &CelestialParent)>,
     active_vessel: Option<Res<ActiveVessel>>,
 ) {
     let Some(active_vessel) = active_vessel else {
         return;
     };
     for (entity, transform, parent) in &root_positionless {
-        if parent.0 != active_vessel.prev_tick_parent {
+        if parent.entity != active_vessel.prev_tick_parent {
             continue;
         }
 
@@ -39,7 +39,7 @@ pub fn write_rigid_pos_to_root(
         commands.entity(entity).insert(new_root_position);
     }
     for (transform, mut root_space_pos, parent) in &mut with_root_pos {
-        if parent.0 != active_vessel.prev_tick_parent {
+        if parent.entity != active_vessel.prev_tick_parent {
             continue;
         }
 
@@ -56,13 +56,13 @@ pub fn write_rigid_pos_to_root(
 pub fn write_rigid_vel_to_root(
     mut commands: Commands,
     root_velless: Query<
-        (Entity, &RigidSpaceVelocity, &ParentBody),
+        (Entity, &RigidSpaceVelocity, &CelestialParent),
         Without<RootSpaceLinearVelocity>,
     >,
     mut with_root_vel: Query<(
         &RigidSpaceVelocity,
         &mut RootSpaceLinearVelocity,
-        &ParentBody,
+        &CelestialParent,
     )>,
     active_vessel: Option<Res<ActiveVessel>>,
 ) {
@@ -70,7 +70,7 @@ pub fn write_rigid_vel_to_root(
         return;
     };
     for (entity, velocity, parent) in &root_velless {
-        if parent.0 != active_vessel.prev_tick_parent {
+        if parent.entity != active_vessel.prev_tick_parent {
             continue;
         }
 
@@ -80,7 +80,7 @@ pub fn write_rigid_vel_to_root(
         commands.entity(entity).insert(new_root_velocity);
     }
     for (rigid_vel, mut root_space_vel, parent) in &mut with_root_vel {
-        if parent.0 != active_vessel.prev_tick_parent {
+        if parent.entity != active_vessel.prev_tick_parent {
             continue;
         }
 
@@ -100,7 +100,7 @@ pub fn apply_root_velocity(
 
 /// Updates the last tick position and last parent body of the active vessel.
 pub fn update_active_vessel_resource(
-    query: Query<(&RootSpacePosition, &RootSpaceLinearVelocity, &ParentBody)>,
+    query: Query<(&RootSpacePosition, &RootSpaceLinearVelocity, &CelestialParent)>,
     active_vessel: Option<ResMut<ActiveVessel>>,
 ) {
     let Some(mut active_vessel) = active_vessel else {
@@ -110,7 +110,7 @@ pub fn update_active_vessel_resource(
         return;
     };
 
-    active_vessel.prev_tick_parent = parent.0;
+    active_vessel.prev_tick_parent = parent.entity;
     active_vessel.prev_tick_position = *position;
     active_vessel.prev_tick_velocity = *velocity;
 }

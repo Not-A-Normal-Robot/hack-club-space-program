@@ -1,6 +1,7 @@
 use crate::components::{
     frames::{RigidSpaceVelocity, RootSpaceLinearVelocity, RootSpacePosition},
-    relations::ParentBody,
+    relations::{CelestialParent, RailMode},
+    vessel::Vessel,
 };
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
@@ -9,7 +10,8 @@ use bevy_rapier2d::prelude::*;
 pub struct VesselBuilder {
     pub collider: Collider,
     pub mass: AdditionalMassProperties,
-    pub parent: ParentBody,
+    pub parent: CelestialParent,
+    pub rail_mode: RailMode,
     pub position: RootSpacePosition,
     pub linvel: RootSpaceLinearVelocity,
     pub angvel: f32,
@@ -19,17 +21,23 @@ pub struct VesselBuilder {
 impl VesselBuilder {
     pub const fn base_bundle() -> impl Bundle {
         (
+            Vessel,
             RigidBody::Dynamic,
             Friction::coefficient(0.2),
             Restitution::coefficient(0.02),
             Ccd { enabled: true },
         )
     }
-    pub fn build(self) -> impl Bundle {
+
+    /// Builds a vessel with the rigid body properties processed (i.e., not on rails).
+    ///
+    /// For the on-rails version, see [`build_on_rails`][Self::build_on_rails].
+    pub fn build_rigid(self) -> impl Bundle {
         (
             self.collider,
             self.mass,
             self.parent,
+            self.rail_mode,
             self.position,
             self.linvel,
             RigidSpaceVelocity {
@@ -39,5 +47,12 @@ impl VesselBuilder {
             Transform::from_rotation(Quat::from_rotation_z(self.angle)),
             Self::base_bundle(),
         )
+    }
+
+    /// Builds a vessel with the rigid body properties skipped (i.e., on rails).
+    ///
+    /// For the rigid-body version, see [`build_rigid`][Self::build_rigid].
+    pub fn build_on_rails(self) -> impl Bundle {
+        (self.build_rigid(), RigidBodyDisabled)
     }
 }

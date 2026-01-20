@@ -1,28 +1,38 @@
 use bevy::prelude::*;
+use keplerian_sim::Orbit2D;
 
+/// Marks this entity's relation with a parent celestial body.
 #[derive(Clone, Copy, Component, Debug)]
-#[relationship(relationship_target = ChildObjects)]
-pub struct ParentBody(pub Entity); // TODO: Add Orbit
+#[require(RailMode)]
+#[relationship(relationship_target = CelestialChild)]
+pub struct CelestialParent {
+    #[relationship]
+    pub entity: Entity,
+}
 
 #[derive(Component)]
-pub struct ChildObjects(Vec<Entity>);
+#[relationship_target(relationship = CelestialParent, linked_spawn)]
+pub struct CelestialChild(Vec<Entity>);
 
-impl RelationshipTarget for ChildObjects {
-    const LINKED_SPAWN: bool = true;
+/// How this entity behaves on-rails.
+#[derive(Clone, Component, Debug, Default)]
+pub enum RailMode {
+    /// When on-rails, the object should stay static in terms of root-space
+    /// coordinates.
+    #[default]
+    None,
+    /// When on-rails, the object should follow a Keplerian orbit.
+    Orbit(Orbit2D),
+    /// This vessel should stay static relative to land.
+    Surface(SurfaceAttachment),
+}
 
-    type Relationship = ParentBody;
-
-    type Collection = Vec<Entity>;
-
-    fn collection(&self) -> &Self::Collection {
-        &self.0
-    }
-
-    fn collection_mut_risky(&mut self) -> &mut Self::Collection {
-        &mut self.0
-    }
-
-    fn from_collection_risky(collection: Self::Collection) -> Self {
-        Self(collection)
-    }
+/// Denotes an attachment of a vessel relative to a body's surface.
+#[derive(Clone, Copy, Debug)]
+pub struct SurfaceAttachment {
+    /// The angle from the +x axis line that this
+    /// vessel is landed on.
+    pub angle: f64,
+    /// How far away from the planetary core this vessel is landed on.
+    pub radius: f64,
 }

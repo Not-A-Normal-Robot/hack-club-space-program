@@ -1,8 +1,11 @@
 use bevy::prelude::*;
 
-use crate::systems::frame_sync::{
-    apply_root_velocity, post_rapier_frame_switch, pre_rapier_frame_switch,
-    update_active_vessel_resource, write_rigid_pos_to_root, write_rigid_vel_to_root,
+use crate::systems::{
+    frame_sync::{
+        apply_root_velocity, post_rapier_frame_switch, pre_rapier_frame_switch,
+        update_active_vessel_resource, write_rigid_pos_to_root, write_rigid_vel_to_root,
+    },
+    orbit::write_sv_to_rail,
 };
 
 pub struct HcspPhysicsPlugin;
@@ -21,9 +24,8 @@ impl Plugin for HcspPhysicsPlugin {
         app.add_systems(
             FixedPostUpdate,
             (
-                write_rigid_vel_to_root,
-                write_rigid_pos_to_root,
-                post_rapier_frame_switch,
+                (write_rigid_vel_to_root, write_rigid_pos_to_root),
+                (post_rapier_frame_switch, write_sv_to_rail),
             )
                 .chain(),
         );

@@ -6,7 +6,8 @@ use bevy::{math::DVec2, prelude::*};
 use bevy_rapier2d::prelude::*;
 
 /// Recommended additional components:
-/// - [`ParentBody`][crate::components::relations::ParentBody]
+/// - [`CelestialParent`][crate::components::relations::CelestialParent]
+/// - [`RailMode`][crate::components::relations::RailMode]
 #[derive(Clone, Debug)]
 pub struct CelestialBodyBuilder {
     pub radius: f32,

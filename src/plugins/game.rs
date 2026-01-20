@@ -7,7 +7,7 @@ use crate::{
         camera::{SimCamera, SimCameraOffset, SimCameraZoom},
         celestial::Heightmap,
         frames::{RootSpaceLinearVelocity, RootSpacePosition},
-        relations::ParentBody,
+        relations::{CelestialParent, RailMode},
     },
     plugins::physics::HcspPhysicsPlugin,
     resources::ActiveVessel,
@@ -45,13 +45,14 @@ fn demo_startup(mut commands: Commands) {
     let vessel = VesselBuilder {
         collider: Collider::ball(10.0),
         mass: AdditionalMassProperties::Mass(1e6),
-        parent: ParentBody(body),
+        parent: CelestialParent { entity: body },
+        rail_mode: RailMode::None,
         position: vessel_pos,
         linvel: vessel_vel,
         angvel: 0.0,
         angle: 0.0,
     }
-    .build();
+    .build_rigid();
     let mut vessel = commands.spawn(vessel);
     vessel.insert(Sleeping::disabled());
     let vessel_entity = vessel.id();

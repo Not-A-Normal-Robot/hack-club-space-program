@@ -11,7 +11,7 @@ use hack_club_space_program::{
         frames::{
             CameraSpaceTransform, RigidSpaceVelocity, RootSpaceLinearVelocity, RootSpacePosition,
         },
-        relations::ParentBody,
+        relations::{CelestialParent, RailMode},
         vessel::Vessel,
     },
     resources::ActiveVessel,
@@ -365,13 +365,14 @@ fn reference_frame_fixed_cam() {
             VesselBuilder {
                 collider: Collider::ball(1.0 / 8.0),
                 mass: AdditionalMassProperties::Mass(1e4),
-                parent: ParentBody(body),
+                parent: CelestialParent { entity: body },
+                rail_mode: RailMode::None,
                 position: vessel_pos,
                 linvel: vessel_vel,
                 angvel: 0.0,
                 angle: 0.0,
             }
-            .build(),
+            .build_rigid(),
         )
         .id();
 
