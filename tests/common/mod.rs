@@ -48,6 +48,19 @@ pub trait Assertions {
     fn check_assertions(&self, app: &App, extra: Self::ExtraData);
 }
 
+impl<T, const N: usize> Assertions for [T; N]
+where
+    T: Assertions,
+{
+    type ExtraData = T::ExtraData;
+
+    fn check_assertions(&self, app: &App, extra: Self::ExtraData) {
+        self.iter().for_each(|assertions| {
+            assertions.check_assertions(app, extra);
+        });
+    }
+}
+
 pub trait AssertionsCollection<'a, A>
 where
     Self: IntoIterator<Item = &'a A> + Sized,

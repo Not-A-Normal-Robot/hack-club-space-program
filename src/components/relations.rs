@@ -27,6 +27,24 @@ pub enum RailMode {
     Surface(SurfaceAttachment),
 }
 
+impl RailMode {
+    /// Gets the orbit in this rail, if any.
+    pub fn as_orbit(&self) -> Option<Orbit2D> {
+        match self {
+            Self::Orbit(o) => Some(o.clone()),
+            _ => None,
+        }
+    }
+
+    /// Gets the surface attachment in this rail, if any.
+    pub fn as_attachment(&self) -> Option<SurfaceAttachment> {
+        match self {
+            Self::Surface(a) => Some(*a),
+            _ => None,
+        }
+    }
+}
+
 /// Denotes an attachment of a vessel relative to a body's surface.
 #[derive(Clone, Copy, Debug)]
 pub struct SurfaceAttachment {
