@@ -56,7 +56,7 @@ fn demo_startup(mut commands: Commands) {
         angle: 0.0,
     }
     .build_rigid();
-    let mut vessel = commands.spawn(vessel);
+    let vessel = commands.spawn(vessel);
     let vessel_entity = vessel.id();
 
     commands.insert_resource(ActiveVessel {
