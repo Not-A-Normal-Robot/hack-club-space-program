@@ -31,6 +31,7 @@ fn demo_startup(mut commands: Commands) {
     ));
 
     let body = CelestialBodyBuilder {
+        name: Name::new("Body"),
         radius: CELESTIAL_RADIUS,
         heightmap: Heightmap(Box::from(DEMO_HEIGHTMAP)),
         mass: AdditionalMassProperties::Mass(1e30),
@@ -43,6 +44,7 @@ fn demo_startup(mut commands: Commands) {
     let vessel_vel = RootSpaceLinearVelocity(DVec2::new(100.0, 0.0));
 
     let vessel = VesselBuilder {
+        name: Name::new("Vessel"),
         collider: Collider::ball(10.0),
         mass: AdditionalMassProperties::Mass(1e6),
         parent: CelestialParent { entity: body },

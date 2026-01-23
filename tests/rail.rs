@@ -6,14 +6,14 @@ use bevy_rapier2d::prelude::*;
 use hack_club_space_program::{
     builders::{celestial::CelestialBodyBuilder, vessel::VesselBuilder},
     components::{
-        celestial::Heightmap,
+        celestial::{CelestialBody, Heightmap},
         frames::{RootSpaceLinearVelocity, RootSpacePosition},
         relations::{CelestialParent, RailMode, SurfaceAttachment},
     },
     consts::GRAVITATIONAL_CONSTANT,
     resources::ActiveVessel,
 };
-use keplerian_sim::{CompactOrbit2D, StateVectors2D};
+use keplerian_sim::{CompactOrbit2D, Orbit2D, StateVectors2D};
 
 mod common;
 
@@ -28,6 +28,7 @@ fn test_writing_to_orbit_rails() {
         .world_mut()
         .spawn(
             CelestialBodyBuilder {
+                name: Name::new("Body"),
                 mass: AdditionalMassProperties::Mass(body_mass),
                 radius: 10.0,
                 heightmap: Heightmap(Box::from([])),
@@ -44,6 +45,7 @@ fn test_writing_to_orbit_rails() {
         .world_mut()
         .spawn(
             VesselBuilder {
+                name: Name::new("Vessel"),
                 angle: 0.0,
                 angvel: 0.0,
                 collider: Collider::ball(1.0),
@@ -98,12 +100,12 @@ fn test_writing_to_surface_rails() {
     let mut app = common::setup(true);
 
     let body_mass = 10.0f32;
-    let body_mu = body_mass as f64 * GRAVITATIONAL_CONSTANT;
 
     let body = app
         .world_mut()
         .spawn(
             CelestialBodyBuilder {
+                name: Name::new("Body"),
                 mass: AdditionalMassProperties::Mass(body_mass),
                 radius: 10.0,
                 heightmap: Heightmap(Box::from([])),
@@ -120,6 +122,7 @@ fn test_writing_to_surface_rails() {
         .world_mut()
         .spawn(
             VesselBuilder {
+                name: Name::new("Vessel"),
                 angle: 0.0,
                 angvel: 0.0,
                 collider: Collider::ball(1.0),
@@ -158,3 +161,80 @@ fn test_writing_to_surface_rails() {
         "rail didn't match expected value"
     );
 }
+
+/*
+#[test]
+fn test_body_orbit() {
+    let mut app = common::setup(true);
+
+    let alpha_mass = 10.0f32;
+    let beta_mass = 4.0f32;
+
+    let alpha = app
+        .world_mut()
+        .spawn(
+            CelestialBodyBuilder {
+                mass: AdditionalMassProperties::Mass(alpha_mass),
+                radius: 10.0,
+                heightmap: Heightmap(Box::from([])),
+                angle: 0.0,
+            }
+            .build(),
+        )
+        .id();
+
+    let beta = app
+        .world_mut()
+        .spawn(
+            CelestialBodyBuilder {
+                mass: AdditionalMassProperties::Mass(beta_mass),
+                radius: 2.0,
+                heightmap: Heightmap(Box::from([])),
+                angle: 0.0,
+            }
+            .build(),
+        )
+        .insert((
+            CelestialParent { entity: alpha },
+            RailMode::Orbit(Orbit2D::new(
+                0.0,
+                15.0,
+                0.0,
+                0.0,
+                alpha_mass as f64 * GRAVITATIONAL_CONSTANT,
+            )),
+        ));
+
+    let vessel_pos = RootSpacePosition(DVec2::new(0.0, 11.0));
+    let vessel_vel = RootSpaceLinearVelocity(DVec2::new(0.0, 0.0));
+
+    let vessel = app
+        .world_mut()
+        .spawn(
+            VesselBuilder {
+                angle: 0.0,
+                angvel: 0.0,
+                collider: Collider::ball(1.0),
+                linvel: vessel_vel,
+                mass: AdditionalMassProperties::Mass(1.0),
+                parent: CelestialParent { entity: alpha },
+                position: vessel_pos,
+                rail_mode: RailMode::None,
+            }
+            .build_rigid(),
+        )
+        .id();
+
+    app.insert_resource(ActiveVessel {
+        entity: vessel,
+        prev_tick_parent: alpha,
+        prev_tick_position: vessel_pos,
+        prev_tick_velocity: vessel_vel,
+    });
+
+    app.update();
+
+    todo!();
+}
+
+*/

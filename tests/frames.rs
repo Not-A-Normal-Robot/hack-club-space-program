@@ -347,6 +347,7 @@ fn reference_frame_fixed_cam() {
         .world_mut()
         .spawn(
             CelestialBodyBuilder {
+                name: Name::new("Body"),
                 radius: 1.0 / 4.0,
                 heightmap: Heightmap(Box::from([])),
                 mass: AdditionalMassProperties::Mass(0.0),
@@ -363,6 +364,7 @@ fn reference_frame_fixed_cam() {
         .world_mut()
         .spawn(
             VesselBuilder {
+                name: Name::new("Vessel"),
                 collider: Collider::ball(1.0 / 8.0),
                 mass: AdditionalMassProperties::Mass(1e4),
                 parent: CelestialParent { entity: body },

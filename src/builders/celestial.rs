@@ -10,6 +10,7 @@ use bevy_rapier2d::prelude::*;
 /// - [`RailMode`][crate::components::relations::RailMode]
 #[derive(Clone, Debug)]
 pub struct CelestialBodyBuilder {
+    pub name: Name,
     pub radius: f32,
     pub heightmap: Heightmap,
     pub mass: AdditionalMassProperties,
@@ -33,6 +34,7 @@ impl CelestialBodyBuilder {
             Collider::ball(self.radius),
             self.heightmap,
             self.mass,
+            self.name,
             Self::base_bundle(),
             RigidSpaceVelocity {
                 // TODO: Celestial rotation

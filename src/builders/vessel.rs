@@ -8,6 +8,7 @@ use bevy_rapier2d::prelude::*;
 
 #[derive(Clone, Debug)]
 pub struct VesselBuilder {
+    pub name: Name,
     pub collider: Collider,
     pub mass: AdditionalMassProperties,
     pub parent: CelestialParent,
@@ -34,6 +35,7 @@ impl VesselBuilder {
     /// For the on-rails version, see [`build_on_rails`][Self::build_on_rails].
     pub fn build_rigid(self) -> impl Bundle {
         (
+            self.name,
             self.collider,
             self.mass,
             self.parent,

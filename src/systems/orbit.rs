@@ -5,7 +5,7 @@ use crate::{
         relations::{CelestialParent, RailMode, SurfaceAttachment},
         vessel::Vessel,
     },
-    consts::GRAVITATIONAL_CONSTANT,
+    consts::{FilterLoadedVessels, GRAVITATIONAL_CONSTANT},
 };
 use bevy::{ecs::query::QueryData, prelude::*};
 use bevy_rapier2d::{
@@ -72,16 +72,10 @@ fn write_sv_to_rail_inner(
     *vessel.rail_mode = RailMode::Orbit(orbit);
 }
 
-type FilterLoadedVessels = (
-    With<Vessel>,
-    Without<RigidBodyDisabled>,
-    Without<CelestialBody>,
-);
-
 pub fn write_sv_to_rail(
     rapier_context: ReadRapierContext,
     mut vessels: Query<VesselData, FilterLoadedVessels>,
-    cel_query: Query<ParentData, Without<Vessel>>,
+    cel_query: Query<ParentData, (With<CelestialBody>, Without<Vessel>)>,
     time: Res<Time>,
 ) {
     let rapier_context = rapier_context
