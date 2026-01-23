@@ -15,7 +15,7 @@ pub struct CelestialParent {
 pub struct CelestialChild(Vec<Entity>);
 
 /// How this entity behaves on-rails.
-#[derive(Clone, Component, Debug, Default)]
+#[derive(Clone, Component, Debug, Default, PartialEq)]
 pub enum RailMode {
     /// When on-rails, the object should stay static in terms of root-space
     /// coordinates.
@@ -46,7 +46,7 @@ impl RailMode {
 }
 
 /// Denotes an attachment of a vessel relative to a body's surface.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SurfaceAttachment {
     /// The angle from the +x axis line that this
     /// vessel is landed on.
