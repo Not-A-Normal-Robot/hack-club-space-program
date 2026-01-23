@@ -15,7 +15,7 @@ use crate::{
 
 const DEMO_HEIGHTMAP: [f32; 10] = [10.0, 10.0, 10.0, 10.0, 10.0, 0.0, 0.0, 0.0, 0.0, 0.0];
 const CELESTIAL_RADIUS: f32 = 6378137.0;
-const ALTITUDE: f32 = CELESTIAL_RADIUS + 1.0;
+const ALTITUDE: f32 = CELESTIAL_RADIUS + 100.0;
 
 fn demo_startup(mut commands: Commands) {
     commands.spawn((
@@ -45,8 +45,9 @@ fn demo_startup(mut commands: Commands) {
 
     let vessel = VesselBuilder {
         name: Name::new("Vessel"),
-        collider: Collider::ball(10.0),
-        mass: AdditionalMassProperties::Mass(1e6),
+        // collider: Collider::ball(10.0),
+        collider: Collider::round_cuboid(10.0, 20.0, 8.0),
+        mass: AdditionalMassProperties::Mass(1e12),
         parent: CelestialParent { entity: body },
         rail_mode: RailMode::None,
         position: vessel_pos,
@@ -56,7 +57,6 @@ fn demo_startup(mut commands: Commands) {
     }
     .build_rigid();
     let mut vessel = commands.spawn(vessel);
-    vessel.insert(Sleeping::disabled());
     let vessel_entity = vessel.id();
 
     commands.insert_resource(ActiveVessel {
@@ -102,6 +102,9 @@ impl Plugin for GameSetupPlugin {
             mode: DebugRenderMode::all(),
             style: DebugRenderStyle {
                 rigid_body_axes_length: 20.0,
+                subdivisions: 512,
+                border_subdivisions: 20,
+                collider_aabb_color: [0.0, 0.0, 0.0, 0.0],
                 ..Default::default()
             },
         });

@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::components::{
-    frames::{RootSpaceLinearVelocity, RootSpacePosition},
+    frames::{RigidSpaceVelocity, RootSpaceLinearVelocity, RootSpacePosition},
     relations::RailMode,
     vessel::Vessel,
 };
@@ -20,12 +20,16 @@ fn print_vessel_sv(
             NameOrEntity,
             &RootSpacePosition,
             &RootSpaceLinearVelocity,
+            &RigidSpaceVelocity,
             &RailMode,
         ),
         With<Vessel>,
     >,
 ) {
-    vessels.iter().for_each(|(name, pos, vel, rail)| {
-        info!("{name}: {pos} | {vel} | {rail}");
+    vessels.iter().for_each(|(name, pos, vel, rvel, rail)| {
+        info!(
+            "{name}: {pos} | {vel} | {angvel} rad/s | {rail}",
+            angvel = rvel.angvel
+        );
     });
 }
