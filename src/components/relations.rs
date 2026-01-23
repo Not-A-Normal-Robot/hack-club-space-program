@@ -6,7 +6,7 @@ use keplerian_sim::{Orbit2D, OrbitTrait2D};
 /// Marks this entity's relation with a parent celestial body.
 #[derive(Clone, Copy, Component, Debug)]
 #[require(RailMode)]
-#[relationship(relationship_target = CelestialChild)]
+#[relationship(relationship_target = CelestialChildren)]
 pub struct CelestialParent {
     #[relationship]
     pub entity: Entity,
@@ -14,7 +14,7 @@ pub struct CelestialParent {
 
 #[derive(Component)]
 #[relationship_target(relationship = CelestialParent, linked_spawn)]
-pub struct CelestialChild(Vec<Entity>);
+pub struct CelestialChildren(Vec<Entity>);
 
 /// How this entity behaves on-rails.
 #[derive(Clone, Component, Debug, Default, PartialEq)]

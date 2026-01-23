@@ -10,6 +10,7 @@ use crate::{
         },
         relations::CelestialParent,
     },
+    consts::FilterLoadedVessels,
     resources::ActiveVessel,
 };
 
@@ -18,8 +19,14 @@ use crate::{
 /// Assumes the current Transform is a rigid-space transform.
 pub fn write_rigid_pos_to_root(
     mut commands: Commands,
-    root_positionless: Query<(Entity, &Transform, &CelestialParent), Without<RootSpacePosition>>,
-    mut with_root_pos: Query<(&Transform, &mut RootSpacePosition, &CelestialParent)>,
+    root_positionless: Query<
+        (Entity, &Transform, &CelestialParent),
+        (Without<RootSpacePosition>, FilterLoadedVessels),
+    >,
+    mut with_root_pos: Query<
+        (&Transform, &mut RootSpacePosition, &CelestialParent),
+        FilterLoadedVessels,
+    >,
     active_vessel: Option<Res<ActiveVessel>>,
 ) {
     let Some(active_vessel) = active_vessel else {
@@ -57,13 +64,16 @@ pub fn write_rigid_vel_to_root(
     mut commands: Commands,
     root_velless: Query<
         (Entity, &RigidSpaceVelocity, &CelestialParent),
-        Without<RootSpaceLinearVelocity>,
+        (Without<RootSpaceLinearVelocity>, FilterLoadedVessels),
     >,
-    mut with_root_vel: Query<(
-        &RigidSpaceVelocity,
-        &mut RootSpaceLinearVelocity,
-        &CelestialParent,
-    )>,
+    mut with_root_vel: Query<
+        (
+            &RigidSpaceVelocity,
+            &mut RootSpaceLinearVelocity,
+            &CelestialParent,
+        ),
+        FilterLoadedVessels,
+    >,
     active_vessel: Option<Res<ActiveVessel>>,
 ) {
     let Some(active_vessel) = active_vessel else {
@@ -91,7 +101,10 @@ pub fn write_rigid_vel_to_root(
 /// Shifts all entities' RootSpacePosition based on its RootSpaceLinearVelocity
 /// (if any).
 pub fn apply_root_velocity(
-    vels: Query<(&RootSpaceLinearVelocity, &mut RootSpacePosition, &RigidBody)>,
+    vels: Query<
+        (&RootSpaceLinearVelocity, &mut RootSpacePosition, &RigidBody),
+        FilterLoadedVessels,
+    >,
     time: Res<Time>,
 ) {
     vels.into_iter()
@@ -100,7 +113,11 @@ pub fn apply_root_velocity(
 
 /// Updates the last tick position and last parent body of the active vessel.
 pub fn update_active_vessel_resource(
-    query: Query<(&RootSpacePosition, &RootSpaceLinearVelocity, &CelestialParent)>,
+    query: Query<(
+        &RootSpacePosition,
+        &RootSpaceLinearVelocity,
+        &CelestialParent,
+    )>,
     active_vessel: Option<ResMut<ActiveVessel>>,
 ) {
     let Some(mut active_vessel) = active_vessel else {
