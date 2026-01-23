@@ -23,6 +23,7 @@ impl CelestialBodyBuilder {
             RigidBody::KinematicVelocityBased,
             RootSpacePosition(DVec2::ZERO),
             RootSpaceLinearVelocity(DVec2::ZERO),
+            Friction::new(0.7),
         )
     }
 

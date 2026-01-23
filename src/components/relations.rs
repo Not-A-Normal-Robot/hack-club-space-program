@@ -1,5 +1,7 @@
+use core::fmt::Display;
+
 use bevy::prelude::*;
-use keplerian_sim::Orbit2D;
+use keplerian_sim::{Orbit2D, OrbitTrait2D};
 
 /// Marks this entity's relation with a parent celestial body.
 #[derive(Clone, Copy, Component, Debug)]
@@ -41,6 +43,24 @@ impl RailMode {
         match self {
             Self::Surface(a) => Some(*a),
             _ => None,
+        }
+    }
+}
+
+impl Display for RailMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::None => write!(f, "== none =="),
+            Self::Orbit(o) => write!(
+                f,
+                "=( e={:.3e}; p={:.8e}; ω={:.3}; M={:.5e}; μ={:.3e} )=",
+                o.get_eccentricity(),
+                o.get_periapsis(),
+                o.get_arg_pe(),
+                o.get_mean_anomaly_at_epoch(),
+                o.get_gravitational_parameter(),
+            ),
+            Self::Surface(a) => write!(f, "=[ {:.8e} rad @ {:.5e} m ]=", a.angle, a.radius),
         }
     }
 }

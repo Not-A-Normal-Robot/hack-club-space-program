@@ -6,14 +6,14 @@ use bevy_rapier2d::prelude::*;
 use hack_club_space_program::{
     builders::{celestial::CelestialBodyBuilder, vessel::VesselBuilder},
     components::{
-        celestial::{CelestialBody, Heightmap},
+        celestial::Heightmap,
         frames::{RootSpaceLinearVelocity, RootSpacePosition},
         relations::{CelestialParent, RailMode, SurfaceAttachment},
     },
     consts::GRAVITATIONAL_CONSTANT,
     resources::ActiveVessel,
 };
-use keplerian_sim::{CompactOrbit2D, Orbit2D, StateVectors2D};
+use keplerian_sim::{CompactOrbit2D, StateVectors2D};
 
 mod common;
 

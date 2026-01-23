@@ -9,13 +9,13 @@ use crate::{
         frames::{RootSpaceLinearVelocity, RootSpacePosition},
         relations::{CelestialParent, RailMode},
     },
-    plugins::physics::HcspPhysicsPlugin,
+    plugins::{debug::HcspDebugPlugin, physics::HcspPhysicsPlugin},
     resources::ActiveVessel,
 };
 
 const DEMO_HEIGHTMAP: [f32; 10] = [10.0, 10.0, 10.0, 10.0, 10.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-const CELESTIAL_RADIUS: f32 = 100.0;
-const ALTITUDE: f32 = 1.5 * CELESTIAL_RADIUS;
+const CELESTIAL_RADIUS: f32 = 6378137.0;
+const ALTITUDE: f32 = CELESTIAL_RADIUS + 1.0;
 
 fn demo_startup(mut commands: Commands) {
     commands.spawn((
@@ -34,13 +34,13 @@ fn demo_startup(mut commands: Commands) {
         name: Name::new("Body"),
         radius: CELESTIAL_RADIUS,
         heightmap: Heightmap(Box::from(DEMO_HEIGHTMAP)),
-        mass: AdditionalMassProperties::Mass(1e30),
+        mass: AdditionalMassProperties::Mass(5.972e24),
         angle: 0.0,
     }
     .build();
     let body = commands.spawn(body).id();
 
-    let vessel_pos = RootSpacePosition(DVec2::new(-1.5 * ALTITUDE as f64, 0.5 * ALTITUDE as f64));
+    let vessel_pos = RootSpacePosition(DVec2::new(0.0, ALTITUDE as f64));
     let vessel_vel = RootSpaceLinearVelocity(DVec2::new(100.0, 0.0));
 
     let vessel = VesselBuilder {
@@ -95,15 +95,16 @@ pub struct GameSetupPlugin;
 
 impl Plugin for GameSetupPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, demo_startup)
-            .add_plugins(RapierDebugRenderPlugin {
-                enabled: true,
-                default_collider_debug: ColliderDebug::AlwaysRender,
-                mode: DebugRenderMode::all(),
-                style: DebugRenderStyle {
-                    rigid_body_axes_length: 20.0,
-                    ..Default::default()
-                },
-            });
+        app.add_systems(Startup, demo_startup);
+        app.add_plugins(RapierDebugRenderPlugin {
+            enabled: true,
+            default_collider_debug: ColliderDebug::AlwaysRender,
+            mode: DebugRenderMode::all(),
+            style: DebugRenderStyle {
+                rigid_body_axes_length: 20.0,
+                ..Default::default()
+            },
+        });
+        app.add_plugins(HcspDebugPlugin);
     }
 }

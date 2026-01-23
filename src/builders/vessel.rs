@@ -24,9 +24,13 @@ impl VesselBuilder {
         (
             Vessel,
             RigidBody::Dynamic,
-            Friction::coefficient(0.2),
+            Friction::coefficient(0.9),
             Restitution::coefficient(0.02),
             Ccd { enabled: true },
+            ExternalForce {
+                force: Vec2::ZERO,
+                torque: 0.0,
+            },
         )
     }
 

@@ -3,10 +3,10 @@
 //! Root Space converts into Rigid Space position (with its own rotation)
 //! Root Space position + Rigid Space rotation + Camera offset = Camera Space transform
 
+use crate::components::camera::SimCameraZoom;
 use bevy::{math::DVec2, prelude::*};
 use bevy_rapier2d::prelude::*;
-
-use crate::components::camera::SimCameraZoom;
+use std::fmt::Display;
 
 macro_rules! wrapper {
     ($( $outer:ty : $inner:ty ),* $(,)?) => {
@@ -57,6 +57,12 @@ impl RootSpacePosition {
     }
 }
 
+impl Display for RootSpacePosition {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[{:.7e}m, {:.7e}m]@root", self.x, self.y)
+    }
+}
+
 /// Coordinates relative to root body.
 ///
 /// Used for orbital physics and as source of truth.
@@ -70,6 +76,12 @@ impl RootSpaceLinearVelocity {
     ) -> RigidSpaceLinearVelocity {
         let vel = self.0 - active_vessel_vel.0;
         RigidSpaceLinearVelocity(Vec2::new(vel.x as f32, vel.y as f32))
+    }
+}
+
+impl Display for RootSpaceLinearVelocity {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[{:.7e}m/s, {:.7e}m/s]@root", self.x, self.y)
     }
 }
 

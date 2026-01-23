@@ -10,3 +10,9 @@ pub type FilterLoadedVessels = (
     Without<RigidBodyDisabled>,
     Without<CelestialBody>,
 );
+
+pub type FilterUnloadedVessels = (
+    With<Vessel>,
+    With<RigidBodyDisabled>,
+    Without<CelestialBody>,
+);

@@ -5,7 +5,7 @@ use crate::systems::{
         apply_root_velocity, post_rapier_frame_switch, pre_rapier_frame_switch,
         update_active_vessel_resource, write_rigid_pos_to_root, write_rigid_vel_to_root,
     },
-    gravity::apply_gravity,
+    gravity::{apply_gravity, unapply_gravity_to_unloaded},
     orbit::write_sv_to_rail,
 };
 
@@ -16,7 +16,7 @@ impl Plugin for HcspPhysicsPlugin {
         app.add_systems(
             FixedPreUpdate,
             (
-                apply_gravity,
+                (apply_gravity, unapply_gravity_to_unloaded),
                 apply_root_velocity,
                 update_active_vessel_resource,
                 pre_rapier_frame_switch,
