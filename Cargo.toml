@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 bevy = "0.17"
 bevy_rapier2d = "0.32.0"
-keplerian_sim = "0.7.1"
+keplerian_sim = "0.7.3"
 
 [profile.dev]
 opt-level = 1

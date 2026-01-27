@@ -39,11 +39,33 @@ impl RailMode {
     }
 
     /// Gets the surface attachment in this rail, if any.
-    pub fn as_attachment(&self) -> Option<SurfaceAttachment> {
+    pub const fn as_attachment(&self) -> Option<SurfaceAttachment> {
         match self {
             Self::Surface(a) => Some(*a),
             _ => None,
         }
+    }
+
+    pub const fn as_actionable(&self) -> Option<ActionableRailMode> {
+        todo!();
+    }
+}
+
+struct RailModeMismatch;
+
+impl TryInto<Orbit2D> for RailMode {
+    type Error = RailModeMismatch;
+
+    fn try_into(self) -> std::result::Result<Orbit2D, Self::Error> {
+        self.as_orbit().ok_or(RailModeMismatch)
+    }
+}
+
+impl TryFrom<RailMode> for SurfaceAttachment {
+    type Error = RailModeMismatch;
+
+    fn try_from(value: RailMode) -> std::result::Result<Self, Self::Error> {
+        value.as_attachment().ok_or(RailModeMismatch)
     }
 }
 
@@ -63,6 +85,14 @@ impl Display for RailMode {
             Self::Surface(a) => write!(f, "=[ {:.8e} rad @ {:.5e} m ]=", a.angle, a.radius),
         }
     }
+}
+
+#[derive(Clone, Component, Debug, PartialEq)]
+pub enum ActionableRailMode {
+    /// When on-rails, the object should follow a Keplerian orbit.
+    Orbit(Orbit2D),
+    /// This vessel should stay static relative to land.
+    Surface(SurfaceAttachment),
 }
 
 /// Denotes an attachment of a vessel relative to a body's surface.
