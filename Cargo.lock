@@ -2897,9 +2897,9 @@ dependencies = [
 
 [[package]]
 name = "keplerian_sim"
-version = "0.7.1"
+version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2671db0b16c7b7c2333f1d5b1b32252ab107f7c54032e5c0add67d93b6eea698"
+checksum = "7dc46186270a80194638cbe1c89867ee366f6b9fe0b0b9d7c8be2f572acea97e"
 dependencies = [
  "glam 0.30.10",
  "libm",

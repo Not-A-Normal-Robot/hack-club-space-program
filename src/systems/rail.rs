@@ -1,3 +1,5 @@
+use core::{ops::Sub, time::Duration};
+
 use crate::{
     components::{
         celestial::CelestialBody,
@@ -118,18 +120,40 @@ pub fn write_sv_to_rail(
     });
 }
 
-fn convert_rail_to_relative_sv(rail: RailMode, time: Time) -> (RootSpacePosition, RootSpaceLinearVelocity) {
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct RelativeStateVectors {
+    position: DVec2,
+    velocity: DVec2,
+}
+
+impl Sub for RelativeStateVectors {
+    type Output = RelativeStateVectors;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self {
+            position: self.position - rhs.position,
+            velocity: self.velocity - rhs.velocity,
+        }
+    }
+}
+
+fn convert_rail_to_relative_sv(rail: RailMode, time: Duration) -> RelativeStateVectors {
     match rail {
-        RailMode::None => {
-            warn!("RailMode set to None");
-            ZERO_SV
-        },
+        RailMode::None => unreachable!("RailMode::None should have been skipped"),
         RailMode::Orbit(o) => {
-            let sv = o.get_state_vectors_at_time(time.elapsed_secs_f64());
-            (
-                RootSpacePosition(sv.position),
-                RootSpaceLinearVelocity(sv.velocity),
-            )
+            let sv = o.get_state_vectors_at_time(time.as_secs_f64());
+            RelativeStateVectors {
+                position: sv.position,
+                velocity: sv.velocity,
+            }
+        }
+        RailMode::Surface(a) => {
+            // TODO: Consider celestial rotation
+            let position = DVec2::from_angle(a.angle) * a.radius;
+            RelativeStateVectors {
+                position,
+                velocity: DVec2::ZERO,
+            }
         }
     }
 }
@@ -146,21 +170,54 @@ fn write_rail_to_sv_inner(
     parent_sv: (RootSpacePosition, RootSpaceLinearVelocity),
     accum_shift: (RootSpacePosition, RootSpaceLinearVelocity),
     mut on_rails_query: Query<NodeData, FilterUnloadedVesselOrCelestialBody>,
-    off_rails_query: Query<SvData, (With<CelestialParent>, FilterLoadedVessels)>,
+    mut off_rails_query: Query<SvData, (With<CelestialParent>, FilterLoadedVessels)>,
+    time: Time,
 ) {
-    let Ok(node) = on_rails_query.get_mut(node) else {
+    let Ok(mut node) = on_rails_query.get_mut(node) else {
         return;
     };
 
-    let new_pos = node.rail_mode
+    if node.rail_mode.is_none() {
+        return;
+    };
 
-    todo!();
+    let old_rel_sv = convert_rail_to_relative_sv(*node.rail_mode, time.elapsed() - time.delta());
+    let new_rel_sv = convert_rail_to_relative_sv(*node.rail_mode, time.elapsed());
+
+    let new_root_pos = RootSpacePosition(parent_sv.0.0 + new_rel_sv.position);
+    let new_root_vel = RootSpaceLinearVelocity(parent_sv.1.0 + new_rel_sv.velocity);
+
+    let diff_rel_sv = new_rel_sv - old_rel_sv;
+
+    *node.pos = new_root_pos;
+    *node.vel = new_root_vel;
+
+    let Some(children) = node.children else {
+        return;
+    };
+
+    let children = children.clone_to_box();
+
+    children.into_iter().for_each(|child| {
+        write_rail_to_sv_inner(
+            child,
+            (new_root_pos, new_root_vel),
+            (
+                RootSpacePosition(accum_shift.0.0 + diff_rel_sv.position),
+                RootSpaceLinearVelocity(accum_shift.1.0 + diff_rel_sv.velocity),
+            ),
+            on_rails_query.reborrow(),
+            off_rails_query.reborrow(),
+            time,
+        );
+    });
 }
 
 pub fn write_rail_to_sv(
     roots: Query<RootData, Without<CelestialParent>>,
     mut on_rails_query: Query<NodeData, FilterUnloadedVesselOrCelestialBody>,
     mut off_rails_query: Query<SvData, (With<CelestialParent>, FilterLoadedVessels)>,
+    time: Res<Time>,
 ) {
     roots.iter().for_each(|root| {
         root.children.iter().for_each(|node| {
@@ -170,6 +227,7 @@ pub fn write_rail_to_sv(
                 ZERO_SV,
                 on_rails_query.reborrow(),
                 off_rails_query.reborrow(),
+                *time,
             )
         })
     });

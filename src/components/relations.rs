@@ -16,8 +16,14 @@ pub struct CelestialParent {
 #[relationship_target(relationship = CelestialParent, linked_spawn)]
 pub struct CelestialChildren(Vec<Entity>);
 
+impl CelestialChildren {
+    pub fn clone_to_box(&self) -> Box<[Entity]> {
+        Box::from(self.0.as_slice())
+    }
+}
+
 /// How this entity behaves on-rails.
-#[derive(Clone, Component, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Component, Debug, Default, PartialEq)]
 pub enum RailMode {
     /// When on-rails, the object should stay static in terms of root-space
     /// coordinates.
@@ -30,10 +36,25 @@ pub enum RailMode {
 }
 
 impl RailMode {
+    /// Checks whether or not this is the [`None`][RailMode::None] variant.
+    pub const fn is_none(&self) -> bool {
+        matches!(self, Self::None)
+    }
+
+    /// Checks whether or not this is the [`Orbit`][RailMode::Orbit] variant.
+    pub const fn is_orbit(&self) -> bool {
+        matches!(self, Self::Orbit(_))
+    }
+
+    /// Checks whether or not this is the [`Surface`][RailMode::Surface] variant.
+    pub const fn is_surface(&self) -> bool {
+        matches!(self, Self::Surface(_))
+    }
+
     /// Gets the orbit in this rail, if any.
-    pub fn as_orbit(&self) -> Option<Orbit2D> {
+    pub const fn as_orbit(&self) -> Option<Orbit2D> {
         match self {
-            Self::Orbit(o) => Some(o.clone()),
+            Self::Orbit(o) => Some(*o),
             _ => None,
         }
     }
@@ -45,13 +66,9 @@ impl RailMode {
             _ => None,
         }
     }
-
-    pub const fn as_actionable(&self) -> Option<ActionableRailMode> {
-        todo!();
-    }
 }
 
-struct RailModeMismatch;
+pub struct RailModeMismatch;
 
 impl TryInto<Orbit2D> for RailMode {
     type Error = RailModeMismatch;
@@ -85,14 +102,6 @@ impl Display for RailMode {
             Self::Surface(a) => write!(f, "=[ {:.8e} rad @ {:.5e} m ]=", a.angle, a.radius),
         }
     }
-}
-
-#[derive(Clone, Component, Debug, PartialEq)]
-pub enum ActionableRailMode {
-    /// When on-rails, the object should follow a Keplerian orbit.
-    Orbit(Orbit2D),
-    /// This vessel should stay static relative to land.
-    Surface(SurfaceAttachment),
 }
 
 /// Denotes an attachment of a vessel relative to a body's surface.
