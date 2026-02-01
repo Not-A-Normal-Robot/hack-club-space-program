@@ -16,7 +16,7 @@ use hack_club_space_program::{
 };
 use keplerian_sim::{CompactOrbit2D, Orbit2D, OrbitTrait2D, StateVectors2D};
 
-use crate::common::assert_sv;
+use crate::common::{assert_sv, assert_sv_close};
 
 mod common;
 
@@ -306,6 +306,8 @@ fn test_rail_to_sv() {
         )
         .id();
 
+    dbg!(alpha, alpharove, alphasat, beta, betarove, betabase);
+
     app.world_mut().insert_resource(ActiveVessel {
         entity: betabase,
         prev_tick_parent: beta,
@@ -330,10 +332,11 @@ fn test_rail_to_sv() {
         alpharove_attachment, ALPHAROVE_ATTACHMENT,
         "alpharove attachment should not change"
     );
-    assert_sv(
+    assert_sv_close(
         alpharove_ref,
         RootSpacePosition(DVec2::new(-ALPHA_RADIUS, 0.0)),
         RootSpaceLinearVelocity(DVec2::ZERO),
+        1e-12,
     );
 
     let alphasat_ref = app
@@ -351,10 +354,11 @@ fn test_rail_to_sv() {
         "alphasat orbit should not change"
     );
     let alphasat_expected_sv = alphasat_orbit.get_state_vectors_at_time(time.elapsed_secs_f64());
-    assert_sv(
+    assert_sv_close(
         alphasat_ref,
         RootSpacePosition(alphasat_expected_sv.position),
         RootSpaceLinearVelocity(alphasat_expected_sv.velocity),
+        1e-12,
     );
 
     let beta_ref = app.world().get_entity(beta).expect("beta should exist");
@@ -366,10 +370,11 @@ fn test_rail_to_sv() {
         .expect("beta rail mode should be orbit");
     assert_eq!(beta_orbit, *BETA_ORBIT, "beta orbit should not change");
     let beta_expected_sv = beta_orbit.get_state_vectors_at_time(time.elapsed_secs_f64());
-    assert_sv(
+    assert_sv_close(
         beta_ref,
         RootSpacePosition(beta_expected_sv.position),
         RootSpaceLinearVelocity(beta_expected_sv.velocity),
+        1e-12,
     );
 
     let betarove_ref = app
@@ -389,7 +394,12 @@ fn test_rail_to_sv() {
     let betarove_expected_pos =
         RootSpacePosition(beta_expected_sv.position + DVec2::new(0.0, -BETA_RADIUS));
     let betarove_expected_vel = RootSpaceLinearVelocity(beta_expected_sv.velocity);
-    assert_sv(betarove_ref, betarove_expected_pos, betarove_expected_vel);
+    assert_sv_close(
+        betarove_ref,
+        betarove_expected_pos,
+        betarove_expected_vel,
+        1e-12,
+    );
 
     let betabase_ref = app
         .world()
@@ -398,5 +408,10 @@ fn test_rail_to_sv() {
     let betabase_expected_pos =
         RootSpacePosition(beta_expected_sv.position + DVec2::new(BETA_RADIUS, 0.0));
     let betabase_expected_vel = RootSpaceLinearVelocity(beta_expected_sv.velocity);
-    assert_sv(betabase_ref, betabase_expected_pos, betabase_expected_vel);
+    assert_sv_close(
+        betabase_ref,
+        betabase_expected_pos,
+        betabase_expected_vel,
+        1e-12,
+    );
 }

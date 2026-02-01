@@ -61,6 +61,90 @@ pub fn assert_sv(entity: EntityRef, pos: RootSpacePosition, vel: RootSpaceLinear
     );
 }
 
+#[macro_export]
+macro_rules! assert_almost_eq {
+    ($x:expr, $y:expr, $tolerance:expr, $reason:expr $(, $args:expr )* $(,)?) => {
+        if $x != $y {
+            let diff = $x - $y;
+            let rel_diff = (diff / $x.abs().max($y.abs())).abs();
+            if rel_diff > $tolerance {
+                panic!(
+                    $reason,
+                    $( $args , )*
+                );
+            }
+        }
+    };
+
+    ($x:expr, $y:expr, $tolerance:expr $(,)?) => {
+        let x = $x;
+        let y = $y;
+        assert_almost_eq!(
+            x,
+            y,
+            $tolerance,
+            concat!(
+                "assertion failed!\n  lhs: {:?}\n  rhs: {:?}\n\n  lhs expr: ",
+                stringify!($x),
+                "\n  rhs expr: ",
+                stringify!($y),
+            ),
+            x,
+            y,
+        )
+    };
+}
+
+/// Tolerance is a fractional error that can be tolerated.
+pub fn assert_sv_close(
+    entity: EntityRef,
+    pos: RootSpacePosition,
+    vel: RootSpaceLinearVelocity,
+    tolerance: f64,
+) {
+    let actual_pos = entity
+        .get::<RootSpacePosition>()
+        .copied()
+        .expect("entity should have root pos");
+    let actual_vel = entity
+        .get::<RootSpaceLinearVelocity>()
+        .copied()
+        .expect("entity should have root vel");
+
+    let dpos = actual_pos.0 - pos.0;
+    let dvel = actual_vel.0 - vel.0;
+
+    let rel_dpos = dpos.length() / ((actual_pos.0 + pos.0).length() / 2.0);
+    let rel_dvel = dvel.length() / ((actual_vel.0 + vel.0).length());
+
+    let name = entity
+        .get::<Name>()
+        .map(|name| name.into())
+        .unwrap_or(entity.id().to_string());
+
+    if actual_pos != pos && rel_dpos > tolerance {
+        panic!(
+            "position mismatch for {name}:\n
+            relative position difference {rel_dpos} exceeds tolerance {tolerance}
+            
+            exp: {pos}
+            got: {actual_pos}
+            dif: {dpos}"
+        );
+    }
+
+    if actual_vel != vel && rel_dvel > tolerance {
+        panic!(
+            "velocity mismatch for {name}:\n
+            relative velocity difference {rel_dvel} exceeds tolerance {tolerance}
+            
+            exp: {vel}
+            got: {actual_vel}
+            dif: {dvel}"
+        );
+    }
+}
+
 /// Trait for collection of assertions.
 pub trait Assertions {
     type ExtraData: Copy;

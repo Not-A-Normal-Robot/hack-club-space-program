@@ -36,8 +36,8 @@ pub struct RootData {
 #[derive(QueryData)]
 #[query_data(mutable)]
 pub struct SvData {
-    pos: &'static RootSpacePosition,
-    vel: &'static RootSpaceLinearVelocity,
+    pos: &'static mut RootSpacePosition,
+    vel: &'static mut RootSpaceLinearVelocity,
 }
 
 #[derive(QueryData)]
@@ -149,7 +149,9 @@ fn convert_rail_to_relative_sv(rail: RailMode, time: Duration) -> RelativeStateV
         }
         RailMode::Surface(a) => {
             // TODO: Consider celestial rotation
-            let position = DVec2::from_angle(a.angle) * a.radius;
+            // DEBUG
+            dbg!(a.angle);
+            let position = dbg!(DVec2::from_angle(a.angle)) * a.radius;
             RelativeStateVectors {
                 position,
                 velocity: DVec2::ZERO,
@@ -173,11 +175,25 @@ fn write_rail_to_sv_inner(
     mut off_rails_query: Query<SvData, (With<CelestialParent>, FilterLoadedVessels)>,
     time: Time,
 ) {
+    // DEBUG
+    eprintln!("Rail: Processing {node:?}");
+
     let Ok(mut node) = on_rails_query.get_mut(node) else {
+        eprintln!("      couldn't find in on-rails query");
+
+        let Ok(mut sv) = off_rails_query.get_mut(node) else {
+            eprintln!("      ...couldn't find in off-rails query either");
+            return;
+        };
+
+        sv.pos.0 += accum_shift.0.0;
+        sv.vel.0 += accum_shift.1.0;
+
         return;
     };
 
     if node.rail_mode.is_none() {
+        eprintln!("      ...has no rails");
         return;
     };
 
@@ -189,10 +205,14 @@ fn write_rail_to_sv_inner(
 
     let diff_rel_sv = new_rel_sv - old_rel_sv;
 
+    eprintln!("      pos: {} -> {new_root_pos}", *node.pos);
+    eprintln!("      vel: {} -> {new_root_vel}", *node.vel);
+
     *node.pos = new_root_pos;
     *node.vel = new_root_vel;
 
     let Some(children) = node.children else {
+        eprintln!("      ...no children found");
         return;
     };
 
