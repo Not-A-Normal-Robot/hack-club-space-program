@@ -1,4 +1,5 @@
 use core::f64::consts::PI;
+use std::sync::LazyLock;
 
 use bevy::math::DVec2;
 use bevy::prelude::*;
@@ -13,7 +14,9 @@ use hack_club_space_program::{
     consts::GRAVITATIONAL_CONSTANT,
     resources::ActiveVessel,
 };
-use keplerian_sim::{CompactOrbit2D, StateVectors2D};
+use keplerian_sim::{CompactOrbit2D, Orbit2D, OrbitTrait2D, StateVectors2D};
+
+use crate::common::assert_sv;
 
 mod common;
 
@@ -162,24 +165,90 @@ fn test_writing_to_surface_rails() {
     );
 }
 
-/*
+/// Environment:
+/// - Alpha (1e6 radius)
+///     - Alpharove (π radians, 1e6 alt) => (-1e6 0) (0 0)
+///     - Alphasat (circular 2e6 peri, π mean) => (derive sv from orbit)
+///     - Beta (1e5 radius) (circular 1e7 peri, 0 mean) => (derive sv from orbit)
+///         - Betarove (3/2π radians, 1e5 alt) => (0 -1e5) (0 0)
+///         - LOADED Betabase (beta pos + beta radius) (alpha vel + beta vel)
 #[test]
-fn test_body_orbit() {
+fn test_rail_to_sv() {
     let mut app = common::setup(true);
 
-    let alpha_mass = 10.0f32;
-    let beta_mass = 4.0f32;
+    const ALPHA_RADIUS: f64 = 1e6;
+    const ALPHA_MASS: f64 = 1e20;
+
+    const ALPHAROVE_ATTACHMENT: SurfaceAttachment = SurfaceAttachment {
+        angle: PI,
+        radius: ALPHA_RADIUS,
+    };
+    static ALPHASAT_ORBIT: LazyLock<Orbit2D> =
+        LazyLock::new(|| Orbit2D::new_circular(2e6, PI, ALPHA_MASS * GRAVITATIONAL_CONSTANT));
+
+    const BETA_RADIUS: f64 = 1e5;
+    const BETA_MASS: f64 = 1e18;
+    static BETA_ORBIT: LazyLock<Orbit2D> =
+        LazyLock::new(|| Orbit2D::new_circular(2e5, 0.0, ALPHA_MASS * GRAVITATIONAL_CONSTANT));
+
+    const BETAROVE_ATTACHMENT: SurfaceAttachment = SurfaceAttachment {
+        angle: 0.0,
+        radius: BETA_RADIUS,
+    };
+
+    static BETABASE_POS: LazyLock<RootSpacePosition> = LazyLock::new(|| {
+        RootSpacePosition(DVec2::new(BETA_ORBIT.get_periapsis() + BETA_RADIUS, 0.0))
+    });
+    static BETABASE_VEL: LazyLock<RootSpaceLinearVelocity> =
+        LazyLock::new(|| RootSpaceLinearVelocity(BETA_ORBIT.get_velocity_at_time(0.0)));
 
     let alpha = app
         .world_mut()
         .spawn(
             CelestialBodyBuilder {
-                mass: AdditionalMassProperties::Mass(alpha_mass),
-                radius: 10.0,
-                heightmap: Heightmap(Box::from([])),
+                name: Name::new("Alpha"),
+                radius: ALPHA_RADIUS as f32,
+                heightmap: Heightmap::empty(),
+                mass: AdditionalMassProperties::Mass(ALPHA_MASS as f32),
                 angle: 0.0,
             }
             .build(),
+        )
+        .id();
+
+    let alpharove = app
+        .world_mut()
+        .spawn(
+            VesselBuilder {
+                name: Name::new("AlphaRove"),
+                collider: Collider::ball(0.01),
+                mass: AdditionalMassProperties::Mass(0.1),
+                parent: CelestialParent { entity: alpha },
+                rail_mode: RailMode::Surface(ALPHAROVE_ATTACHMENT),
+                position: RootSpacePosition(DVec2::NAN),
+                linvel: RootSpaceLinearVelocity(DVec2::NAN),
+                angvel: 0.0,
+                angle: 0.0,
+            }
+            .build_on_rails(),
+        )
+        .id();
+
+    let alphasat = app
+        .world_mut()
+        .spawn(
+            VesselBuilder {
+                name: Name::new("AlphaSat"),
+                collider: Collider::ball(0.01),
+                mass: AdditionalMassProperties::Mass(0.1),
+                parent: CelestialParent { entity: alpha },
+                rail_mode: RailMode::Orbit(*ALPHASAT_ORBIT),
+                position: RootSpacePosition(DVec2::NAN),
+                linvel: RootSpaceLinearVelocity(DVec2::NAN),
+                angvel: 0.0,
+                angle: 0.0,
+            }
+            .build_on_rails(),
         )
         .id();
 
@@ -187,54 +256,147 @@ fn test_body_orbit() {
         .world_mut()
         .spawn(
             CelestialBodyBuilder {
-                mass: AdditionalMassProperties::Mass(beta_mass),
-                radius: 2.0,
-                heightmap: Heightmap(Box::from([])),
+                name: Name::new("Beta"),
+                radius: BETA_RADIUS as f32,
+                heightmap: Heightmap::empty(),
+                mass: AdditionalMassProperties::Mass(BETA_MASS as f32),
                 angle: 0.0,
             }
             .build(),
         )
         .insert((
             CelestialParent { entity: alpha },
-            RailMode::Orbit(Orbit2D::new(
-                0.0,
-                15.0,
-                0.0,
-                0.0,
-                alpha_mass as f64 * GRAVITATIONAL_CONSTANT,
-            )),
-        ));
+            RailMode::Orbit(*BETA_ORBIT),
+        ))
+        .id();
 
-    let vessel_pos = RootSpacePosition(DVec2::new(0.0, 11.0));
-    let vessel_vel = RootSpaceLinearVelocity(DVec2::new(0.0, 0.0));
-
-    let vessel = app
+    let betarove = app
         .world_mut()
         .spawn(
             VesselBuilder {
-                angle: 0.0,
+                name: Name::new("BetaRove"),
+                collider: Collider::ball(0.01),
+                mass: AdditionalMassProperties::Mass(0.1),
+                parent: CelestialParent { entity: beta },
+                rail_mode: RailMode::Surface(BETAROVE_ATTACHMENT),
+                position: RootSpacePosition(DVec2::NAN),
+                linvel: RootSpaceLinearVelocity(DVec2::NAN),
                 angvel: 0.0,
-                collider: Collider::ball(1.0),
-                linvel: vessel_vel,
-                mass: AdditionalMassProperties::Mass(1.0),
-                parent: CelestialParent { entity: alpha },
-                position: vessel_pos,
+                angle: 0.0,
+            }
+            .build_on_rails(),
+        )
+        .id();
+
+    let betabase = app
+        .world_mut()
+        .spawn(
+            VesselBuilder {
+                name: Name::new("BetaBase"),
+                collider: Collider::ball(0.0),
+                mass: AdditionalMassProperties::Mass(0.1),
+                parent: CelestialParent { entity: beta },
                 rail_mode: RailMode::None,
+                position: *BETABASE_POS,
+                linvel: *BETABASE_VEL,
+                angvel: 0.0,
+                angle: 0.0,
             }
             .build_rigid(),
         )
         .id();
 
-    app.insert_resource(ActiveVessel {
-        entity: vessel,
-        prev_tick_parent: alpha,
-        prev_tick_position: vessel_pos,
-        prev_tick_velocity: vessel_vel,
+    app.world_mut().insert_resource(ActiveVessel {
+        entity: betabase,
+        prev_tick_parent: beta,
+        prev_tick_position: *BETABASE_POS,
+        prev_tick_velocity: *BETABASE_VEL,
     });
 
     app.update();
+    let time = app.world().resource::<Time<Fixed>>();
 
-    todo!();
+    let alpharove_ref = app
+        .world()
+        .get_entity(alpharove)
+        .expect("alpharove should exist");
+    let alpharove_attachment = alpharove_ref
+        .get::<RailMode>()
+        .copied()
+        .expect("alpharove should have rail mode")
+        .as_attachment()
+        .expect("alpharove rail mode should be attachment");
+    assert_eq!(
+        alpharove_attachment, ALPHAROVE_ATTACHMENT,
+        "alpharove attachment should not change"
+    );
+    assert_sv(
+        alpharove_ref,
+        RootSpacePosition(DVec2::new(-ALPHA_RADIUS, 0.0)),
+        RootSpaceLinearVelocity(DVec2::ZERO),
+    );
+
+    let alphasat_ref = app
+        .world()
+        .get_entity(alphasat)
+        .expect("alphasat should exist");
+    let alphasat_orbit = alphasat_ref
+        .get::<RailMode>()
+        .copied()
+        .expect("alphasat should have rail mode")
+        .as_orbit()
+        .expect("alphasat rail mode should be orbit");
+    assert_eq!(
+        alphasat_orbit, *ALPHASAT_ORBIT,
+        "alphasat orbit should not change"
+    );
+    let alphasat_expected_sv = alphasat_orbit.get_state_vectors_at_time(time.elapsed_secs_f64());
+    assert_sv(
+        alphasat_ref,
+        RootSpacePosition(alphasat_expected_sv.position),
+        RootSpaceLinearVelocity(alphasat_expected_sv.velocity),
+    );
+
+    let beta_ref = app.world().get_entity(beta).expect("beta should exist");
+    let beta_orbit = beta_ref
+        .get::<RailMode>()
+        .copied()
+        .expect("beta should have rail mode")
+        .as_orbit()
+        .expect("beta rail mode should be orbit");
+    assert_eq!(beta_orbit, *BETA_ORBIT, "beta orbit should not change");
+    let beta_expected_sv = beta_orbit.get_state_vectors_at_time(time.elapsed_secs_f64());
+    assert_sv(
+        beta_ref,
+        RootSpacePosition(beta_expected_sv.position),
+        RootSpaceLinearVelocity(beta_expected_sv.velocity),
+    );
+
+    let betarove_ref = app
+        .world()
+        .get_entity(betarove)
+        .expect("betarove should exist");
+    let betarove_attachment = betarove_ref
+        .get::<RailMode>()
+        .copied()
+        .expect("betarove should have rail mode")
+        .as_attachment()
+        .expect("betarove rail mode should be attachment");
+    assert_eq!(
+        betarove_attachment, BETAROVE_ATTACHMENT,
+        "betarove attachment should not change"
+    );
+    let betarove_expected_pos =
+        RootSpacePosition(beta_expected_sv.position + DVec2::new(0.0, -BETA_RADIUS));
+    let betarove_expected_vel = RootSpaceLinearVelocity(beta_expected_sv.velocity);
+    assert_sv(betarove_ref, betarove_expected_pos, betarove_expected_vel);
+
+    let betabase_ref = app
+        .world()
+        .get_entity(betabase)
+        .expect("betabase should exist");
+    let betabase_expected_pos =
+        RootSpacePosition(beta_expected_sv.position + DVec2::new(BETA_RADIUS, 0.0));
+    let betabase_expected_vel = RootSpaceLinearVelocity(beta_expected_sv.velocity);
+    assert_sv(betabase_ref, betabase_expected_pos, betabase_expected_vel);
 }
-
-*/

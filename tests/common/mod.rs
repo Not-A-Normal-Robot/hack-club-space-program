@@ -3,7 +3,10 @@
 use core::time::Duration;
 
 use bevy::{prelude::*, time::TimeUpdateStrategy};
-use hack_club_space_program::plugins::game::GameLogicPlugin;
+use hack_club_space_program::{
+    components::frames::{RootSpaceLinearVelocity, RootSpacePosition},
+    plugins::game::GameLogicPlugin,
+};
 
 fn setup_time(
     mut commands: Commands,
@@ -39,6 +42,23 @@ pub fn setup(forward_time_on_update: bool) -> App {
     }
     app.update();
     app
+}
+
+pub fn assert_sv(entity: EntityRef, pos: RootSpacePosition, vel: RootSpaceLinearVelocity) {
+    let name = entity
+        .get::<Name>()
+        .map(|name| name.into())
+        .unwrap_or(entity.id().to_string());
+    assert_eq!(
+        entity.get::<RootSpacePosition>().copied(),
+        Some(pos),
+        "assertion failed: position mismatch for {name}"
+    );
+    assert_eq!(
+        entity.get::<RootSpaceLinearVelocity>().copied(),
+        Some(vel),
+        "assertion failed: velocity mismatch for {name}"
+    );
 }
 
 /// Trait for collection of assertions.
