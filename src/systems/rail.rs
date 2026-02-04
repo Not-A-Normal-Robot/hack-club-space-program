@@ -1,5 +1,3 @@
-use core::{ops::Sub, time::Duration};
-
 use crate::{
     components::{
         celestial::CelestialBody,
@@ -14,6 +12,7 @@ use bevy_rapier2d::{
     plugin::{RapierContext, ReadRapierContext},
     prelude::*,
 };
+use core::{fmt::Debug, ops::Sub, time::Duration};
 use keplerian_sim::{OrbitTrait2D, StateVectors2D};
 
 type FilterUnloadedVesselOrCelestialBody = Or<(FilterUnloadedVessels, With<CelestialBody>)>;
@@ -120,7 +119,7 @@ pub fn write_sv_to_rail(
     });
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 struct RelativeStateVectors {
     position: DVec2,
     velocity: DVec2,
@@ -137,6 +136,16 @@ impl Sub for RelativeStateVectors {
     }
 }
 
+impl Debug for RelativeStateVectors {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "[{:.7e}m, {:.7e}m] [{:.7e}m/s {:.7e} m/s]@rel",
+            self.position.x, self.position.y, self.velocity.x, self.velocity.y,
+        )
+    }
+}
+
 fn convert_rail_to_relative_sv(rail: RailMode, time: Duration) -> RelativeStateVectors {
     match rail {
         RailMode::None => unreachable!("RailMode::None should have been skipped"),
@@ -149,9 +158,7 @@ fn convert_rail_to_relative_sv(rail: RailMode, time: Duration) -> RelativeStateV
         }
         RailMode::Surface(a) => {
             // TODO: Consider celestial rotation
-            // DEBUG
-            dbg!(a.angle);
-            let position = dbg!(DVec2::from_angle(a.angle)) * a.radius;
+            let position = DVec2::from_angle(a.angle) * a.radius;
             RelativeStateVectors {
                 position,
                 velocity: DVec2::ZERO,
@@ -170,13 +177,15 @@ fn convert_rail_to_relative_sv(rail: RailMode, time: Duration) -> RelativeStateV
 fn write_rail_to_sv_inner(
     node: Entity,
     parent_sv: (RootSpacePosition, RootSpaceLinearVelocity),
-    accum_shift: (RootSpacePosition, RootSpaceLinearVelocity),
+    accum_shift: RootSpaceLinearVelocity,
     mut on_rails_query: Query<NodeData, FilterUnloadedVesselOrCelestialBody>,
     mut off_rails_query: Query<SvData, (With<CelestialParent>, FilterLoadedVessels)>,
     time: Time,
 ) {
     // DEBUG
     eprintln!("Rail: Processing {node:?}");
+    eprintln!("  parent_sv {} {}", parent_sv.0, parent_sv.1);
+    eprintln!("  accum_shift {} {}", accum_shift.0, accum_shift);
 
     let Ok(mut node) = on_rails_query.get_mut(node) else {
         eprintln!("      couldn't find in on-rails query");
@@ -186,8 +195,9 @@ fn write_rail_to_sv_inner(
             return;
         };
 
-        sv.pos.0 += accum_shift.0.0;
-        sv.vel.0 += accum_shift.1.0;
+        eprintln!("      vel: {} += {}", *sv.vel, accum_shift);
+
+        sv.vel.0 += accum_shift.0;
 
         return;
     };
@@ -200,10 +210,11 @@ fn write_rail_to_sv_inner(
     let old_rel_sv = convert_rail_to_relative_sv(*node.rail_mode, time.elapsed() - time.delta());
     let new_rel_sv = convert_rail_to_relative_sv(*node.rail_mode, time.elapsed());
 
+    eprintln!("      rel old: {old_rel_sv:?}");
+    eprintln!("      rel new: {new_rel_sv:?}");
+
     let new_root_pos = RootSpacePosition(parent_sv.0.0 + new_rel_sv.position);
     let new_root_vel = RootSpaceLinearVelocity(parent_sv.1.0 + new_rel_sv.velocity);
-
-    let diff_rel_sv = new_rel_sv - old_rel_sv;
 
     eprintln!("      pos: {} -> {new_root_pos}", *node.pos);
     eprintln!("      vel: {} -> {new_root_vel}", *node.vel);
@@ -222,10 +233,7 @@ fn write_rail_to_sv_inner(
         write_rail_to_sv_inner(
             child,
             (new_root_pos, new_root_vel),
-            (
-                RootSpacePosition(accum_shift.0.0 + diff_rel_sv.position),
-                RootSpaceLinearVelocity(accum_shift.1.0 + diff_rel_sv.velocity),
-            ),
+            RootSpaceLinearVelocity(accum_shift.0 + (new_rel_sv.velocity - old_rel_sv.velocity)),
             on_rails_query.reborrow(),
             off_rails_query.reborrow(),
             time,
@@ -244,7 +252,7 @@ pub fn write_rail_to_sv(
             write_rail_to_sv_inner(
                 node,
                 ZERO_SV,
-                ZERO_SV,
+                RootSpaceLinearVelocity(DVec2::ZERO),
                 on_rails_query.reborrow(),
                 off_rails_query.reborrow(),
                 *time,

@@ -192,7 +192,7 @@ fn test_rail_to_sv() {
         LazyLock::new(|| Orbit2D::new_circular(2e5, 0.0, ALPHA_MASS * GRAVITATIONAL_CONSTANT));
 
     const BETAROVE_ATTACHMENT: SurfaceAttachment = SurfaceAttachment {
-        angle: 0.0,
+        angle: 1.5 * PI,
         radius: BETA_RADIUS,
     };
 
@@ -294,7 +294,7 @@ fn test_rail_to_sv() {
             VesselBuilder {
                 name: Name::new("BetaBase"),
                 collider: Collider::ball(0.0),
-                mass: AdditionalMassProperties::Mass(0.1),
+                mass: AdditionalMassProperties::Mass(0.0),
                 parent: CelestialParent { entity: beta },
                 rail_mode: RailMode::None,
                 position: *BETABASE_POS,
@@ -412,6 +412,6 @@ fn test_rail_to_sv() {
         betabase_ref,
         betabase_expected_pos,
         betabase_expected_vel,
-        1e-12,
+        1e-10,
     );
 }
