@@ -414,4 +414,30 @@ fn test_rail_to_sv() {
         betabase_expected_vel,
         1e-10,
     );
+
+    // Long term testing
+    (0..1000).for_each(|_| app.update());
+
+    let beta_ref = app.world().get_entity(beta).expect("beta should exist");
+    let beta_pos = beta_ref
+        .get::<RootSpacePosition>()
+        .copied()
+        .expect("beta should have pos");
+    let beta_vel = beta_ref
+        .get::<RootSpaceLinearVelocity>()
+        .copied()
+        .expect("beta should have vel");
+
+    let betabase_ref = app
+        .world()
+        .get_entity(betabase)
+        .expect("betabase should exist");
+    let betabase_expected_pos = RootSpacePosition(beta_pos.0 + DVec2::new(BETA_RADIUS, 0.0));
+    let betabase_expected_vel = beta_vel;
+    assert_sv_close(
+        betabase_ref,
+        betabase_expected_pos,
+        betabase_expected_vel,
+        1e-7,
+    );
 }
