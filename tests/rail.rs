@@ -16,7 +16,7 @@ use hack_club_space_program::{
 };
 use keplerian_sim::{CompactOrbit2D, Orbit2D, OrbitTrait2D, StateVectors2D};
 
-use crate::common::{assert_sv, assert_sv_close};
+use crate::common::assert_sv_close;
 
 mod common;
 

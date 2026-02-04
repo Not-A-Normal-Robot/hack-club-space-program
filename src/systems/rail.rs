@@ -183,7 +183,6 @@ fn write_rail_to_sv_inner(
     mut off_rails_query: Query<SvData, (With<CelestialParent>, FilterLoadedVessels)>,
     time: Time,
 ) {
-    // DEBUG
     trace!("Rail: Processing {node:?}");
     trace!("  parent_sv {} {}", parent_sv.0, parent_sv.1);
     trace!("  accum_shift {} {}", accum_shift.0, accum_shift);
