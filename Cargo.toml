@@ -3,6 +3,9 @@ name = "hack-club-space-program"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+trace = []
+
 [dependencies]
 bevy = "0.17"
 bevy_rapier2d = "0.32.0"

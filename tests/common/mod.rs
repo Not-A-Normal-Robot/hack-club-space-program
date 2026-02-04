@@ -2,7 +2,7 @@
 
 use core::time::Duration;
 
-use bevy::{prelude::*, time::TimeUpdateStrategy};
+use bevy::{log::LogPlugin, prelude::*, time::TimeUpdateStrategy};
 use hack_club_space_program::{
     components::frames::{RootSpaceLinearVelocity, RootSpacePosition},
     plugins::game::GameLogicPlugin,
@@ -35,7 +35,17 @@ pub fn setup(forward_time_on_update: bool) -> App {
     enable_backtrace();
 
     let mut app = App::new();
-    app.add_plugins((MinimalPlugins, GameLogicPlugin));
+    app.add_plugins((
+        MinimalPlugins,
+        LogPlugin {
+            #[cfg(not(feature = "trace"))]
+            level: bevy::log::Level::DEBUG,
+            #[cfg(feature = "trace")]
+            level: bevy::log::Level::TRACE,
+            ..Default::default()
+        },
+        GameLogicPlugin,
+    ));
     app.insert_resource(TimeUpdateStrategy::ManualDuration(Duration::ZERO));
     if forward_time_on_update {
         app.add_systems(Startup, setup_time);

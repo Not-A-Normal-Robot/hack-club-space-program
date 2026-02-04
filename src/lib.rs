@@ -5,3 +5,14 @@ pub mod consts;
 pub mod plugins;
 pub mod resources;
 pub mod systems;
+
+/// A wrapper around [`bevy::log::trace!`] that only
+/// gets considered when the `trace` feature is enabled.
+macro_rules! trace {
+    ($( $inner:tt )*) => {
+        #[cfg(feature = "trace")]
+        ::bevy::log::trace!($( $inner )*);
+    };
+}
+
+pub(crate) use trace;

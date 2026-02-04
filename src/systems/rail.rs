@@ -6,6 +6,7 @@ use crate::{
         vessel::Vessel,
     },
     consts::{FilterLoadedVessels, FilterUnloadedVessels, GRAVITATIONAL_CONSTANT},
+    trace,
 };
 use bevy::{ecs::query::QueryData, math::DVec2, prelude::*};
 use bevy_rapier2d::{
@@ -183,19 +184,19 @@ fn write_rail_to_sv_inner(
     time: Time,
 ) {
     // DEBUG
-    eprintln!("Rail: Processing {node:?}");
-    eprintln!("  parent_sv {} {}", parent_sv.0, parent_sv.1);
-    eprintln!("  accum_shift {} {}", accum_shift.0, accum_shift);
+    trace!("Rail: Processing {node:?}");
+    trace!("  parent_sv {} {}", parent_sv.0, parent_sv.1);
+    trace!("  accum_shift {} {}", accum_shift.0, accum_shift);
 
     let Ok(mut node) = on_rails_query.get_mut(node) else {
-        eprintln!("      couldn't find in on-rails query");
+        trace!("      couldn't find in on-rails query");
 
         let Ok(mut sv) = off_rails_query.get_mut(node) else {
-            eprintln!("      ...couldn't find in off-rails query either");
+            trace!("      ...couldn't find in off-rails query either");
             return;
         };
 
-        eprintln!("      vel: {} += {}", *sv.vel, accum_shift);
+        trace!("      vel: {} += {}", *sv.vel, accum_shift);
 
         sv.vel.0 += accum_shift.0;
 
@@ -203,27 +204,27 @@ fn write_rail_to_sv_inner(
     };
 
     if node.rail_mode.is_none() {
-        eprintln!("      ...has no rails");
+        trace!("      ...has no rails");
         return;
     };
 
     let old_rel_sv = convert_rail_to_relative_sv(*node.rail_mode, time.elapsed() - time.delta());
     let new_rel_sv = convert_rail_to_relative_sv(*node.rail_mode, time.elapsed());
 
-    eprintln!("      rel old: {old_rel_sv:?}");
-    eprintln!("      rel new: {new_rel_sv:?}");
+    trace!("      rel old: {old_rel_sv:?}");
+    trace!("      rel new: {new_rel_sv:?}");
 
     let new_root_pos = RootSpacePosition(parent_sv.0.0 + new_rel_sv.position);
     let new_root_vel = RootSpaceLinearVelocity(parent_sv.1.0 + new_rel_sv.velocity);
 
-    eprintln!("      pos: {} -> {new_root_pos}", *node.pos);
-    eprintln!("      vel: {} -> {new_root_vel}", *node.vel);
+    trace!("      pos: {} -> {new_root_pos}", *node.pos);
+    trace!("      vel: {} -> {new_root_vel}", *node.vel);
 
     *node.pos = new_root_pos;
     *node.vel = new_root_vel;
 
     let Some(children) = node.children else {
-        eprintln!("      ...no children found");
+        trace!("      ...no children found");
         return;
     };
 
