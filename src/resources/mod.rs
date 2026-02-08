@@ -1,6 +1,6 @@
-use bevy::prelude::*;
-
 use crate::components::frames::{RootSpaceLinearVelocity, RootSpacePosition};
+use bevy::prelude::*;
+use derive_more::with_trait::IsVariant;
 
 #[derive(Resource)]
 pub struct ActiveVessel {
@@ -13,7 +13,7 @@ pub struct ActiveVessel {
 /// An enum determining how to interpret inputs, akin to Vim's different modes.
 ///
 /// Only affects in-game.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, States)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, States, IsVariant)]
 pub enum GameControlMode {
     /// The "hub" control mode that allows switching to other control modes.
     ///
