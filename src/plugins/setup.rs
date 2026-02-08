@@ -86,6 +86,6 @@ impl Plugin for GameSetupPlugin {
                 ..Default::default()
             },
         });
-        app.add_plugins((GameDebugPlugin, GameLogicPlugin, GameControlPlugin));
+        app.add_plugins((GameLogicPlugin, GameControlPlugin));
     }
 }

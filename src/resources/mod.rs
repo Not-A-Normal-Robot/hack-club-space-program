@@ -13,7 +13,7 @@ pub struct ActiveVessel {
 /// An enum determining how to interpret inputs, akin to Vim's different modes.
 ///
 /// Only affects in-game.
-#[derive(Clone, Copy, Debug, Default, Resource)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, States)]
 pub enum GameControlMode {
     /// The "hub" control mode that allows switching to other control modes.
     ///
@@ -26,4 +26,15 @@ pub enum GameControlMode {
     VesselControl,
     /// The mode that allows controlling the camera.
     CameraControl,
+}
+
+impl GameControlMode {
+    pub const fn to_str(self) -> &'static str {
+        match self {
+            Self::Main => "main mode",
+            Self::Menu => "menu mode",
+            Self::VesselControl => "vessel control mode",
+            Self::CameraControl => "camera control mode",
+        }
+    }
 }
