@@ -1,3 +1,5 @@
+pub mod controls;
 pub mod debug;
-pub mod game;
-pub mod physics;
+pub mod logic;
+mod physics;
+pub mod setup;

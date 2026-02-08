@@ -5,7 +5,7 @@ use core::time::Duration;
 use bevy::{log::LogPlugin, prelude::*, time::TimeUpdateStrategy};
 use hack_club_space_program::{
     components::frames::{RootSpaceLinearVelocity, RootSpacePosition},
-    plugins::game::logic::GameLogicPlugin,
+    plugins::logic::GameLogicPlugin,
 };
 
 fn setup_time(

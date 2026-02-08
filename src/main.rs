@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use hack_club_space_program::plugins::game::setup::GameSetupPlugin;
+use hack_club_space_program::plugins::setup::GameSetupPlugin;
 
 fn enable_backtrace() {
     const BACKTRACE_KEY: &str = "RUST_BACKTRACE";

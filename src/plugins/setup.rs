@@ -6,10 +6,7 @@ use crate::{
         frames::{RootSpaceLinearVelocity, RootSpacePosition},
         relations::{CelestialParent, RailMode},
     },
-    plugins::{
-        debug::GameDebugPlugin,
-        game::{controls::GameControlPlugin, logic::GameLogicPlugin},
-    },
+    plugins::{controls::GameControlPlugin, debug::GameDebugPlugin, logic::GameLogicPlugin},
     resources::ActiveVessel,
 };
 use bevy::math::DVec2;
