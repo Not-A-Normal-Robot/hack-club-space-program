@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use hack_club_space_program::plugins::game::{GameLogicPlugin, GameSetupPlugin};
+use hack_club_space_program::plugins::game::setup::GameSetupPlugin;
 
 fn enable_backtrace() {
     const BACKTRACE_KEY: &str = "RUST_BACKTRACE";
@@ -14,6 +14,6 @@ fn main() {
     enable_backtrace();
 
     App::new()
-        .add_plugins((DefaultPlugins, GameLogicPlugin, GameSetupPlugin))
+        .add_plugins((DefaultPlugins, GameSetupPlugin))
         .run();
 }

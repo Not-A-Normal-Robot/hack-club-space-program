@@ -9,9 +9,9 @@ use crate::systems::{
     rail::{write_rail_to_sv, write_sv_to_rail},
 };
 
-pub struct HcspPhysicsPlugin;
+pub struct GamePhysicsPlugin;
 
-impl Plugin for HcspPhysicsPlugin {
+impl Plugin for GamePhysicsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             FixedPreUpdate,

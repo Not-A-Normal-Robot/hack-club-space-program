@@ -1,6 +1,3 @@
-use bevy::{math::DVec2, prelude::*};
-use bevy_rapier2d::{prelude::*, rapier::prelude::IntegrationParameters};
-
 use crate::{
     builders::{celestial::CelestialBodyBuilder, vessel::VesselBuilder},
     components::{
@@ -9,14 +6,19 @@ use crate::{
         frames::{RootSpaceLinearVelocity, RootSpacePosition},
         relations::{CelestialParent, RailMode},
     },
-    plugins::{debug::HcspDebugPlugin, physics::HcspPhysicsPlugin},
+    plugins::{
+        debug::GameDebugPlugin,
+        game::{controls::GameControlPlugin, logic::GameLogicPlugin},
+    },
     resources::ActiveVessel,
 };
+use bevy::math::DVec2;
+use bevy::prelude::*;
+use bevy_rapier2d::prelude::*;
 
 const DEMO_HEIGHTMAP: [f32; 10] = [10.0, 10.0, 10.0, 10.0, 10.0, 0.0, 0.0, 0.0, 0.0, 0.0];
 const CELESTIAL_RADIUS: f32 = 6378137.0;
 const ALTITUDE: f32 = CELESTIAL_RADIUS + 100.0;
-
 fn demo_startup(mut commands: Commands) {
     commands.spawn((
         Camera {
@@ -67,30 +69,9 @@ fn demo_startup(mut commands: Commands) {
     });
 }
 
-pub struct GameLogicPlugin;
-
-pub const RAPIER_CONFIGURATION: RapierConfiguration = RapierConfiguration {
-    gravity: Vec2::ZERO,
-    physics_pipeline_active: true,
-    scaled_shape_subdivision: 10,
-    force_update_from_transform_changes: false,
-};
-
-impl Plugin for GameLogicPlugin {
-    fn build(&self, app: &mut App) {
-        let physics = RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(10.0)
-            .in_fixed_schedule()
-            .with_custom_initialization(
-                RapierContextInitialization::InitializeDefaultRapierContext {
-                    integration_parameters: IntegrationParameters::default(),
-                    rapier_configuration: RAPIER_CONFIGURATION,
-                },
-            );
-
-        app.add_plugins((physics, HcspPhysicsPlugin));
-    }
-}
-
+/// The entry point for the full game as a plugin.
+///
+/// Automatically initializes all other plugins for the game.
 pub struct GameSetupPlugin;
 
 impl Plugin for GameSetupPlugin {
@@ -108,6 +89,6 @@ impl Plugin for GameSetupPlugin {
                 ..Default::default()
             },
         });
-        app.add_plugins(HcspDebugPlugin);
+        app.add_plugins((GameDebugPlugin, GameLogicPlugin, GameControlPlugin));
     }
 }
