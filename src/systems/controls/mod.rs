@@ -12,7 +12,7 @@ use bevy::prelude::*;
 macro_rules! mode_switches {
     ($keyboard:expr, $next_mode:expr, []) => {};
     ($keyboard:expr, $next_mode:expr, [$keycode:expr => $mode:expr $(, $( $rest:tt )* )? ]) => {
-        if $keyboard.just_pressed($keycode) {
+        if $keyboard.any_just_pressed($keycode) {
             $next_mode.set($mode);
         }
 
@@ -27,7 +27,7 @@ pub fn control_switching(
 ) {
     let is_main = *mode.get() == GameControlMode::Main;
 
-    if keyboard.just_pressed(KB_MODE_SWITCH_TO_MAIN_MODE) && !is_main {
+    if keyboard.any_just_pressed(KB_MODE_SWITCH_TO_MAIN_MODE) && !is_main {
         next_mode.set(GameControlMode::Main);
     }
 

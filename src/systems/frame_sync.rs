@@ -143,6 +143,7 @@ fn pre_rapier_frame_switch_inner(
         .to_rigid_space_position(active_vessel.prev_tick_position)
         .0
         .extend(0.0);
+    transform.scale = Vec3::ONE;
     rigid_vel.linvel = *root_vel.to_rigid_space_linear_velocity(active_vessel.prev_tick_velocity);
 }
 
