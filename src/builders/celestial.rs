@@ -1,24 +1,25 @@
 use crate::components::{
-    celestial::{CelestialBody, Heightmap},
+    celestial::{CelestialBody, Heightmap, Terrain},
     frames::{RigidSpaceVelocity, RootSpaceLinearVelocity, RootSpacePosition},
 };
-use bevy::{math::DVec2, prelude::*};
+use bevy::{math::DVec2, prelude::*, sprite_render::Material2d};
 use bevy_rapier2d::prelude::*;
 
 /// Recommended additional components:
 /// - [`CelestialParent`][crate::components::relations::CelestialParent]
 /// - [`RailMode`][crate::components::relations::RailMode]
 #[derive(Clone, Debug)]
-pub struct CelestialBodyBuilder {
+pub struct CelestialBodyBuilder<M: Material2d> {
     pub name: Name,
     pub radius: f32,
-    pub heightmap: Heightmap,
     pub mass: AdditionalMassProperties,
     pub angle: f32,
-    pub mesh: Handle<Mesh>,
+    pub mesh: Mesh2d,
+    pub material: MeshMaterial2d<M>,
+    pub terrain: Terrain,
 }
 
-impl CelestialBodyBuilder {
+impl<M: Material2d> CelestialBodyBuilder<M> {
     pub const fn base_bundle() -> impl Bundle {
         (
             RigidBody::KinematicVelocityBased,
@@ -30,13 +31,15 @@ impl CelestialBodyBuilder {
 
     pub fn build(self) -> impl Bundle {
         (
+            self.name,
             CelestialBody {
-                radius: self.radius,
+                base_radius: self.radius,
             },
             Collider::ball(self.radius),
-            self.heightmap,
             self.mass,
-            self.name,
+            self.terrain,
+            self.mesh,
+            self.material,
             Self::base_bundle(),
             RigidSpaceVelocity {
                 // TODO: Celestial rotation

@@ -238,7 +238,9 @@ fn reference_frames() {
     let body = app
         .world_mut()
         .spawn((
-            CelestialBody { radius: 1.0 / 4.0 },
+            CelestialBody {
+                base_radius: 1.0 / 4.0,
+            },
             AdditionalMassProperties::Mass(0.0),
             RigidBody::KinematicVelocityBased,
             Collider::ball(1.0 / 4.0),

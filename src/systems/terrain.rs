@@ -1,6 +1,10 @@
+use crate::components::{
+    camera::{SimCameraOffset, SimCameraZoom},
+    celestial::{CelestialBody, Terrain},
+    frames::RootSpacePosition,
+};
+use bevy::{ecs::query::QueryData, prelude::*};
 use fastnoise_lite::{FastNoiseLite, FractalType};
-
-use crate::components::celestial::Terrain;
 
 fn create_noisegen(terrain: Terrain) -> FastNoiseLite {
     let mut noisegen = FastNoiseLite::with_seed(terrain.seed);
@@ -18,6 +22,24 @@ fn get_terrain_height(offset: f64, multi: f64, noisegen: FastNoiseLite, theta: f
     let noise = noisegen.get_noise_2d(x, y) as f64;
 
     noise.mul_add(multi, offset)
+}
+
+#[derive(Clone, Copy, QueryData)]
+#[query_data(mutable)]
+struct EntityComponents {
+    terrain: &'static Terrain,
+    body: &'static CelestialBody,
+    pos: &'static RootSpacePosition,
+}
+
+#[derive(Clone, Copy)]
+struct GlobalData {
+    zoom: SimCameraZoom,
+    offset: SimCameraOffset,
+}
+
+fn update_mesh(mesh: &mut Mesh, entity: EntityComponents, data: GlobalData) {
+    // TODO
 }
 
 #[cfg(test)]

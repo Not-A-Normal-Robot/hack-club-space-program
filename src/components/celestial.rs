@@ -42,5 +42,11 @@ impl Heightmap {
 #[require(Heightmap)]
 #[require(RigidBody::KinematicVelocityBased)]
 pub struct CelestialBody {
-    pub radius: f32,
+    /// The "base radius" of a celestial body.
+    ///
+    /// This is the "sea level" in most cases.
+    ///
+    /// To calculate the minimum or maximum radius,
+    /// use this alongside the terrain multiplier.
+    pub base_radius: f32,
 }
