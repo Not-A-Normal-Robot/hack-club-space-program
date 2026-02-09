@@ -1,6 +1,18 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::RigidBody;
 
+/// The terrain parameters of a celestial body.
+#[derive(Clone, Copy, Component, Debug, Default)]
+pub struct Terrain {
+    pub seed: i32,
+    pub octaves: i32,
+    pub frequency: f32,
+    pub gain: f32,
+    pub lacunarity: f32,
+    pub offset: f64,
+    pub multiplier: f64,
+}
+
 /// The heightmap of a celestial body.
 ///
 /// The heightmap is used for determining the terrain

@@ -15,6 +15,7 @@ pub struct CelestialBodyBuilder {
     pub heightmap: Heightmap,
     pub mass: AdditionalMassProperties,
     pub angle: f32,
+    pub mesh: Handle<Mesh>,
 }
 
 impl CelestialBodyBuilder {
