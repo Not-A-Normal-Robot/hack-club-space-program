@@ -11,6 +11,7 @@ trace = []
 bevy = "0.17"
 bevy_rapier2d = "0.32.0"
 derive_more = { version = "2.1.1", features = ["is_variant"] }
+fastnoise-lite = { version = "1.1.1", features = ["std", "f64"] }
 keplerian_sim = "0.7.3"
 
 [profile.dev]

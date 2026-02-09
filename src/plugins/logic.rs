@@ -1,9 +1,6 @@
 use crate::plugins::physics::GamePhysicsPlugin;
 use bevy::prelude::*;
-use bevy_rapier2d::{
-    prelude::*,
-    rapier::prelude::{IntegrationParameters, SpringCoefficients},
-};
+use bevy_rapier2d::{prelude::*, rapier::prelude::IntegrationParameters};
 
 /// The plugin for the game's inner logic, including
 /// physics.
