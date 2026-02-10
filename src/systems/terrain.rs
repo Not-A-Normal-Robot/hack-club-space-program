@@ -8,7 +8,7 @@ use core::{f64::consts::TAU, num::NonZeroU8};
 use fastnoise_lite::{FastNoiseLite, FractalType};
 
 // Math based off a sketch:
-// https://www.desmos.com/calculator/5vxao6sxgq
+// https://www.desmos.com/calculator/vgdk9qd2ux
 
 /// How many vertices for each LoD level.
 pub const LOD_VERTS: usize = 128;
@@ -101,8 +101,18 @@ impl TerrainGen {
     }
 
     /// Gets the LoD vector array at a certain LoD level.
-    fn gen_lod(&self, lod_level: f64) -> [RelativeVector; LOD_VERTS] {
-        todo!();
+    fn gen_lod(&self, lod_level: u8, focus: f64) -> [RelativeVector; LOD_VERTS] {
+        // https://www.desmos.com/calculator/vgdk9qd2ux
+        // point((tau / verts) (i ⋅ iter_scale + start))
+
+        let start = lod_level_start(lod_level, focus);
+        let iter_scale = (LOD_DIVISIONS as f64).powi(-(lod_level as i32));
+
+        core::array::from_fn(|i| {
+            self.get_terrain_vector(
+                const { TAU / LOD_VERTS as f64 } * (i as f64 * iter_scale + start),
+            )
+        })
     }
 }
 
@@ -123,21 +133,24 @@ struct GlobalData {
 }
 
 /// Gets the starting theta for a given LoD level and focus theta.
-const fn lod_level_start(lod_level: u8, focus: f64) -> f64 {
-    // https://www.desmos.com/calculator/xmmdndxdwj
-    // start = 2pi ⋅ divisions^(1 - level) ⋅
+///
+/// This is in revolutions. To get the theta in radians, multiply this by tau.
+fn lod_level_start(lod_level: u8, focus: f64) -> f64 {
+    // https://www.desmos.com/calculator/vgdk9qd2ux
+    // start = divisions^(1 - level) ⋅
     //  round( (verts ⋅ divisions^(level - 1) ⋅ focus) / 2pi - verts/(2 ⋅ divisions))
     //
-    // → coeff = 2pi ⋅ divisions^(1 - level)
+    // → coeff = divisions^(1 - level)
     // frac = (verts / 2pi) ⋅ divisions^(level - 1) ⋅ focus
     // frac_offset = -verts / (2 ⋅ divisions)
     // start = coeff round(frac + frac_offset)
 
     const FRAC_OFFSET: f64 = LOD_VERTS as f64 / (-2.0 * LOD_DIVISIONS as f64);
 
-    let coeff = TAU * LOD_DIVISIONS.pow(1 - lod_level as u32) as f64;
-    let frac =
-        const { LOD_VERTS as f64 / TAU } * LOD_DIVISIONS.pow(lod_level as u32 - 1) as f64 * focus;
+    let coeff = (LOD_DIVISIONS as f64).powi(1 - lod_level as i32);
+    let frac = const { LOD_VERTS as f64 / TAU }
+        * (LOD_DIVISIONS as f64).powi(lod_level as i32 - 1)
+        * focus;
 
     coeff * (frac + FRAC_OFFSET).round()
 }
@@ -148,7 +161,7 @@ mod tests {
 
     use crate::{
         components::celestial::Terrain,
-        systems::terrain::TerrainGen,
+        systems::terrain::{LOD_DIVISIONS, LOD_VERTS, RelativeVector, TerrainGen},
         // systems::terrain::{create_terrain_gen, get_terrain_height},
     };
 
@@ -187,5 +200,35 @@ mod tests {
         let tau = terrain_gen.get_terrain_vector(TAU);
 
         assert_eq!(zero, tau);
+    }
+
+    #[test]
+    fn lod_ranges() {
+        fn get_range(vecs: impl IntoIterator<Item = RelativeVector>) -> f64 {
+            let (min, max) = vecs
+                .into_iter()
+                .map(|v| v.0.to_angle())
+                .fold(None::<(f64, f64)>, |acc, x| {
+                    Some(match acc {
+                        None => (x, x),
+                        Some((min, max)) => (min.min(x), max.max(x)),
+                    })
+                })
+                .unwrap();
+            max - min
+        }
+
+        let terrain_gen = TerrainGen::new(TEST_TERRAIN);
+        const FULL_RANGE: f64 = TAU * ((LOD_VERTS as f64 - 1.0) / LOD_VERTS as f64);
+        const TOLERANCE: f64 = 1e-6;
+
+        for level in 0..8 {
+            let range = get_range(terrain_gen.gen_lod(level as u8, 0.0));
+            let expected_range = FULL_RANGE * (LOD_DIVISIONS as f64).powi(-level);
+            assert!(
+                (range - expected_range).abs() < TOLERANCE,
+                "Expected range of {expected_range}, got {range}"
+            );
+        }
     }
 }
