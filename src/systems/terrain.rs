@@ -8,53 +8,100 @@ use crate::components::{
 use bevy::{ecs::query::QueryData, math::DVec2, prelude::*};
 use fastnoise_lite::{FastNoiseLite, FractalType};
 
+/// How many vertices for each LoD level.
 pub const LOD_VERTS: usize = 128;
+
+/// How much smaller the next LoD level is compared to the previous one.
+/// (Level 0 = full revolution)
 pub const LOD_DIVISIONS: usize = 8;
 
 /// A vector relative to this object's center.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 struct RelativeVector(DVec2);
 
 /// A list of LoD offsets.
-#[derive(Clone, Component, Debug)]
+#[derive(Clone, Component, Debug, PartialEq)]
 struct LodVectors(Vec<[RelativeVector; LOD_VERTS]>);
+
+impl LodVectors {
+    /// Updates the LoD vectors starting from a given
+    /// level up to (and including) a final level.
+    fn update_lods(
+        &mut self,
+        terrain_gen: TerrainGen,
+        starting_level: NonZeroU8,
+        ending_level: u8,
+    ) {
+        let starting_level = starting_level.get();
+
+        todo!();
+    }
+}
 
 /// The previous target angle.
 #[derive(Clone, Copy, Component)]
 struct PrevTarget(f64);
 
-/// Returns the LoD level that should be updated.
-///
-/// For example, large target changes may require an LoD update for
-/// levels 1 and above, therefore this function would return
-/// `Some(NonZeroU8(1))`.
-///
-/// If the required LoD update level is higher than the amount of
-/// subdivs, then nothing shall need to be updated.\
-/// For example, if this function returns `Some(NonZeroU8(8))` even
-/// though the subdiv amount is 4, nothing needs to be updated.
-///
-/// If this function returns `None`, nothing needs to be updated.
-fn lod_regen_level(_prev_target: f64, _cur_target: f64, _lod_level: f64) -> Option<NonZeroU8> {
-    todo!();
+impl PrevTarget {
+    /// Updates this struct's value.
+    ///
+    /// Returns the LoD level meshes that should be updated.
+    ///
+    /// For example, large target changes may require an LoD update for
+    /// levels 1 and above, therefore this function would return
+    /// `Some(NonZeroU8(1))`.
+    ///
+    /// If the required LoD update level is higher than the amount of
+    /// subdivs, then nothing shall need to be updated.\
+    /// For example, if this function returns `Some(NonZeroU8(8))` even
+    /// though the subdiv amount is 4, nothing needs to be updated.
+    ///
+    /// If this function returns `None`, nothing needs to be updated.
+    fn update(&mut self, cur_target: f64, _lod_level: f64) -> Option<NonZeroU8> {
+        let _prev_target = self.0;
+        self.0 = cur_target;
+        todo!();
+    }
 }
 
-fn create_noisegen(terrain: Terrain) -> FastNoiseLite {
-    let mut noisegen = FastNoiseLite::with_seed(terrain.seed);
-    noisegen.fractal_type = FractalType::FBm;
-    noisegen.octaves = terrain.octaves;
-    noisegen.frequency = terrain.frequency;
-    noisegen.gain = terrain.gain;
-    noisegen.lacunarity = terrain.lacunarity;
-    noisegen
+/// A terrain generator wrapper around Terrain and FastNoiseLite.
+struct TerrainGen {
+    multiplier: f64,
+    offset: f64,
+    noisegen: FastNoiseLite,
 }
 
-fn get_terrain_height(offset: f64, multi: f64, noisegen: &FastNoiseLite, theta: f64) -> f64 {
-    let (x, y) = theta.sin_cos();
+impl TerrainGen {
+    fn new(terrain: Terrain) -> Self {
+        let mut noisegen = FastNoiseLite::with_seed(terrain.seed);
+        noisegen.fractal_type = FractalType::FBm;
+        noisegen.octaves = terrain.octaves;
+        noisegen.frequency = terrain.frequency;
+        noisegen.gain = terrain.gain;
+        noisegen.lacunarity = terrain.lacunarity;
 
-    let noise = noisegen.get_noise_2d(x, y) as f64;
+        Self {
+            multiplier: terrain.multiplier,
+            offset: terrain.offset,
+            noisegen,
+        }
+    }
 
-    noise.mul_add(multi, offset)
+    /// Gets the vector pointing to a piece of ground at the
+    /// given theta.
+    fn get_terrain_vector(&self, theta: f64) -> RelativeVector {
+        let (sin, cos) = theta.sin_cos();
+
+        let noise = self.noisegen.get_noise_2d(sin, cos) as f64;
+        let noise = noise.mul_add(self.multiplier, self.offset);
+
+        RelativeVector(DVec2::new(noise * cos, noise * sin))
+    }
+
+    /// Gets the LoD vector array at a certain LoD level.
+    fn gen_lod(&self, lod_level: f64) -> [RelativeVector; LOD_VERTS] {
+        todo!();
+    }
 }
 
 #[derive(QueryData)]
@@ -79,7 +126,8 @@ mod tests {
 
     use crate::{
         components::celestial::Terrain,
-        systems::terrain::{create_noisegen, get_terrain_height},
+        systems::terrain::TerrainGen,
+        // systems::terrain::{create_terrain_gen, get_terrain_height},
     };
 
     const TEST_TERRAIN: Terrain = Terrain {
@@ -95,30 +143,16 @@ mod tests {
 
     #[test]
     fn determinism() {
-        let noisegen = create_noisegen(TEST_TERRAIN);
+        let terrain_gen = TerrainGen::new(TEST_TERRAIN);
 
         let first: Box<[_]> = (0..1024)
-            .map(|i| {
-                get_terrain_height(
-                    TEST_TERRAIN.offset,
-                    TEST_TERRAIN.multiplier,
-                    &noisegen,
-                    i as f64 * 1.0 / 1024.0,
-                )
-            })
+            .map(|i| terrain_gen.get_terrain_vector(i as f64 * 1.0 / 1024.0))
             .collect();
 
-        let noisegen = create_noisegen(TEST_TERRAIN);
+        let terrain_gen = TerrainGen::new(TEST_TERRAIN);
 
         let second: Box<_> = (0..1024)
-            .map(|i| {
-                get_terrain_height(
-                    TEST_TERRAIN.offset,
-                    TEST_TERRAIN.multiplier,
-                    &noisegen,
-                    i as f64 * 1.0 / 1024.0,
-                )
-            })
+            .map(|i| terrain_gen.get_terrain_vector(i as f64 * 1.0 / 1024.0))
             .collect();
 
         assert_eq!(first, second);
@@ -126,9 +160,9 @@ mod tests {
 
     #[test]
     fn circular() {
-        let noisegen = create_noisegen(TEST_TERRAIN);
-        let zero = get_terrain_height(TEST_TERRAIN.offset, TEST_TERRAIN.multiplier, &noisegen, 0.0);
-        let tau = get_terrain_height(TEST_TERRAIN.offset, TEST_TERRAIN.multiplier, &noisegen, TAU);
+        let terrain_gen = TerrainGen::new(TEST_TERRAIN);
+        let zero = terrain_gen.get_terrain_vector(0.0);
+        let tau = terrain_gen.get_terrain_vector(TAU);
 
         assert_eq!(zero, tau);
     }
