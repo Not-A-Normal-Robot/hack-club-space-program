@@ -1,12 +1,14 @@
-use core::num::NonZeroU8;
-
 use crate::components::{
     camera::{SimCameraOffset, SimCameraZoom},
     celestial::{CelestialBody, Terrain},
     frames::RootSpacePosition,
 };
 use bevy::{ecs::query::QueryData, math::DVec2, prelude::*};
+use core::{f64::consts::TAU, num::NonZeroU8};
 use fastnoise_lite::{FastNoiseLite, FractalType};
+
+// Math based off a sketch:
+// https://www.desmos.com/calculator/5vxao6sxgq
 
 /// How many vertices for each LoD level.
 pub const LOD_VERTS: usize = 128;
@@ -38,16 +40,16 @@ impl LodVectors {
     }
 }
 
-/// The previous target angle.
+/// The previous focus angle.
 #[derive(Clone, Copy, Component)]
-struct PrevTarget(f64);
+struct PrevFocus(f64);
 
-impl PrevTarget {
+impl PrevFocus {
     /// Updates this struct's value.
     ///
     /// Returns the LoD level meshes that should be updated.
     ///
-    /// For example, large target changes may require an LoD update for
+    /// For example, large focus changes may require an LoD update for
     /// levels 1 and above, therefore this function would return
     /// `Some(NonZeroU8(1))`.
     ///
@@ -57,9 +59,9 @@ impl PrevTarget {
     /// though the subdiv amount is 4, nothing needs to be updated.
     ///
     /// If this function returns `None`, nothing needs to be updated.
-    fn update(&mut self, cur_target: f64, _lod_level: f64) -> Option<NonZeroU8> {
-        let _prev_target = self.0;
-        self.0 = cur_target;
+    fn update(&mut self, cur_focus: f64, _lod_level: f64) -> Option<NonZeroU8> {
+        let _prev_focus = self.0;
+        self.0 = cur_focus;
         todo!();
     }
 }
@@ -87,7 +89,7 @@ impl TerrainGen {
         }
     }
 
-    /// Gets the vector pointing to a piece of ground at the
+    /// Gets the vector pointing to the surface at the
     /// given theta.
     fn get_terrain_vector(&self, theta: f64) -> RelativeVector {
         let (sin, cos) = theta.sin_cos();
@@ -111,13 +113,33 @@ struct EntityComponents {
     body: &'static CelestialBody,
     pos: &'static RootSpacePosition,
     offsets: Option<&'static mut LodVectors>,
-    prev_target: Option<&'static mut PrevTarget>,
+    prev_focus: Option<&'static mut PrevFocus>,
 }
 
 #[derive(Clone, Copy)]
 struct GlobalData {
     zoom: SimCameraZoom,
     offset: SimCameraOffset,
+}
+
+/// Gets the starting theta for a given LoD level and focus theta.
+const fn lod_level_start(lod_level: u8, focus: f64) -> f64 {
+    // https://www.desmos.com/calculator/xmmdndxdwj
+    // start = 2pi ⋅ divisions^(1 - level) ⋅
+    //  round( (verts ⋅ divisions^(level - 1) ⋅ focus) / 2pi - verts/(2 ⋅ divisions))
+    //
+    // → coeff = 2pi ⋅ divisions^(1 - level)
+    // frac = (verts / 2pi) ⋅ divisions^(level - 1) ⋅ focus
+    // frac_offset = -verts / (2 ⋅ divisions)
+    // start = coeff round(frac + frac_offset)
+
+    const FRAC_OFFSET: f64 = LOD_VERTS as f64 / (-2.0 * LOD_DIVISIONS as f64);
+
+    let coeff = TAU * LOD_DIVISIONS.pow(1 - lod_level as u32) as f64;
+    let frac =
+        const { LOD_VERTS as f64 / TAU } * LOD_DIVISIONS.pow(lod_level as u32 - 1) as f64 * focus;
+
+    coeff * (frac + FRAC_OFFSET).round()
 }
 
 #[cfg(test)]
