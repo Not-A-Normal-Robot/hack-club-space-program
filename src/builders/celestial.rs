@@ -16,7 +16,6 @@ pub struct CelestialBodyBuilder<M: Material2d> {
     pub angle: f32,
     pub mesh: Mesh2d,
     pub material: MeshMaterial2d<M>,
-    pub terrain: Terrain,
 }
 
 impl<M: Material2d> CelestialBodyBuilder<M> {
@@ -29,7 +28,7 @@ impl<M: Material2d> CelestialBodyBuilder<M> {
         )
     }
 
-    pub fn build(self) -> impl Bundle {
+    pub fn build_without_terrain(self) -> impl Bundle {
         (
             self.name,
             CelestialBody {
@@ -37,7 +36,6 @@ impl<M: Material2d> CelestialBodyBuilder<M> {
             },
             Collider::ball(self.radius),
             self.mass,
-            self.terrain,
             self.mesh,
             self.material,
             Self::base_bundle(),
@@ -49,4 +47,6 @@ impl<M: Material2d> CelestialBodyBuilder<M> {
             Transform::from_rotation(Quat::from_rotation_z(self.angle)),
         )
     }
+
+    pub fn build_with_terrain(self, terrain: Terrain) -> impl Bundle {}
 }

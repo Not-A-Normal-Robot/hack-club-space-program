@@ -2,7 +2,14 @@
 
 use core::time::Duration;
 
-use bevy::{log::LogPlugin, prelude::*, time::TimeUpdateStrategy};
+use bevy::{
+    asset::{RenderAssetUsages, io::embedded::GetAssetServer},
+    log::LogPlugin,
+    mesh::PrimitiveTopology,
+    prelude::*,
+    sprite_render::Material2d,
+    time::TimeUpdateStrategy,
+};
 use hack_club_space_program::{
     components::frames::{RootSpaceLinearVelocity, RootSpacePosition},
     plugins::logic::GameLogicPlugin,
@@ -52,6 +59,15 @@ pub fn setup(forward_time_on_update: bool) -> App {
     }
     app.update();
     app
+}
+
+pub fn empty_mesh_material(app: &mut App) -> (Mesh2d, MeshMaterial2d<ColorMaterial>) {
+    let mesh = Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::all());
+    let mesh = app.get_asset_server().add(mesh);
+    let material = ColorMaterial::from_color(Color::WHITE);
+    let material = app.get_asset_server().add(material);
+    (Mesh2d(mesh), MeshMaterial2d(material))
+    // (mesh, material)
 }
 
 pub fn assert_sv(entity: EntityRef, pos: RootSpacePosition, vel: RootSpaceLinearVelocity) {

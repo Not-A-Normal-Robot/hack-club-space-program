@@ -345,17 +345,20 @@ fn reference_frame_fixed_cam() {
 
     let mut app = common::setup(true);
 
+    let (mesh, material) = common::empty_mesh_material(&mut app);
+
     let body = app
         .world_mut()
         .spawn(
             CelestialBodyBuilder {
                 name: Name::new("Body"),
                 radius: 1.0 / 4.0,
-                heightmap: Heightmap(Box::from([])),
                 mass: AdditionalMassProperties::Mass(0.0),
                 angle: 0.0,
+                mesh,
+                material,
             }
-            .build(),
+            .build_without_terrain(),
         )
         .id();
 
