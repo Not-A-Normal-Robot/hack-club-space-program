@@ -32,9 +32,9 @@ impl LodVectors {
     }
 
     /// Generate a fully-realized LoD vector list.
-    fn new_full(terrain_gen: &TerrainGen, ending_level: u8, focus: f64) -> Self {
+    fn new_full(terrain_gen: &TerrainGen, ending_level: NonZeroU8, focus: f64) -> Self {
         let mut this = Self::new(terrain_gen);
-        this.update_lods(terrain_gen, NonZeroU8::MIN, ending_level, focus);
+        this.update_lods(terrain_gen, ending_level, f64::NAN, focus);
         this
     }
 
@@ -43,17 +43,27 @@ impl LodVectors {
     fn update_lods(
         &mut self,
         terrain_gen: &TerrainGen,
-        starting_level: NonZeroU8,
-        ending_level: u8,
-        focus: f64,
+        ending_level: NonZeroU8,
+        prev_focus: f64,
+        new_focus: f64,
     ) {
-        let starting_level = starting_level.get();
+        debug_assert!(self.0.is_empty());
 
-        self.0.truncate(starting_level as usize);
+        (0..=ending_level.get()).for_each(|level| {
+            let level_not_loaded = self.0.len() >= level as usize;
+            let lod_needs_updating =
+                lod_level_start(level, prev_focus) != lod_level_start(level, new_focus);
 
-        (starting_level..=ending_level).for_each(|level| {
-            self.0.push(terrain_gen.gen_lod(level, focus));
-        });
+            if level_not_loaded || lod_needs_updating {
+                let vecs = terrain_gen.gen_lod(level, new_focus);
+
+                if level_not_loaded {
+                    self.0.push(vecs);
+                } else {
+                    *self.0.get_mut(level as usize).unwrap() = vecs;
+                }
+            }
+        })
     }
 
     /// Stitches together this LoD vectors into a mesh.
@@ -65,40 +75,6 @@ impl LodVectors {
 /// The previous focus angle.
 #[derive(Clone, Copy, Component)]
 struct PrevFocus(f64);
-
-impl PrevFocus {
-    /// Updates this struct's value.
-    ///
-    /// Returns the first LoD level whose meshes need updating.
-    ///
-    /// For example, large focus changes may require an LoD update for
-    /// levels 1 and above, therefore this function would return
-    /// `Some(NonZeroU8(1))`.
-    ///
-    /// Smaller focus changes may require an LoD update only for levels 3 and above,
-    /// therefore this function would return `Some(NonZeroU8(3))`.
-    ///
-    /// If this function returns `None`, no meshes need updating.
-    fn update(&mut self, new_focus: f64, max_lod_level: u8) -> Option<NonZeroU8> {
-        let prev_focus = self.0;
-        if prev_focus == new_focus {
-            return None;
-        }
-
-        self.0 = new_focus;
-
-        for level in 1..=max_lod_level {
-            let old_start = lod_level_start(level, prev_focus);
-            let new_start = lod_level_start(level, new_focus);
-
-            if old_start != new_start {
-                return NonZeroU8::new(level);
-            }
-        }
-
-        None
-    }
-}
 
 /// A terrain generator wrapper around Terrain and FastNoiseLite.
 struct TerrainGen {
