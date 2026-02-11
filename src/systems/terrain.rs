@@ -26,11 +26,23 @@ struct RelativeVector(DVec2);
 struct LodVectors(Vec<[RelativeVector; LOD_VERTS]>);
 
 impl LodVectors {
+    /// Generate a lowest-quality LoD vector list.
+    fn new(terrain_gen: &TerrainGen) -> Self {
+        Self(vec![terrain_gen.gen_lod(0, 0.0)])
+    }
+
+    /// Generate a fully-realized LoD vector list.
+    fn new_full(terrain_gen: &TerrainGen, ending_level: u8, focus: f64) -> Self {
+        let mut this = Self::new(terrain_gen);
+        this.update_lods(terrain_gen, NonZeroU8::MIN, ending_level, focus);
+        this
+    }
+
     /// Updates the LoD vectors starting from a given
     /// level up to (and including) a final level.
     fn update_lods(
         &mut self,
-        terrain_gen: TerrainGen,
+        terrain_gen: &TerrainGen,
         starting_level: NonZeroU8,
         ending_level: u8,
         focus: f64,
@@ -39,9 +51,14 @@ impl LodVectors {
 
         self.0.truncate(starting_level as usize);
 
-        for level in starting_level..=ending_level {
+        (starting_level..=ending_level).for_each(|level| {
             self.0.push(terrain_gen.gen_lod(level, focus));
-        }
+        });
+    }
+
+    /// Stitches together this LoD vectors into a mesh.
+    fn create_mesh(&self) -> Mesh {
+        todo!()
     }
 }
 
@@ -174,12 +191,13 @@ fn lod_level_start(lod_level: u8, focus: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
-    use core::f64::consts::TAU;
+    use core::{f64::consts::TAU, num::NonZeroU8};
 
     use crate::{
         components::celestial::Terrain,
-        systems::terrain::{LOD_DIVISIONS, LOD_VERTS, RelativeVector, TerrainGen},
-        // systems::terrain::{create_terrain_gen, get_terrain_height},
+        systems::terrain::{
+            LOD_DIVISIONS, LOD_VERTS, LodVectors, PrevFocus, RelativeVector, TerrainGen,
+        },
     };
 
     const TEST_TERRAIN: Terrain = Terrain {
@@ -190,7 +208,7 @@ mod tests {
         lacunarity: 2.0,
         offset: 20000000.0,
         multiplier: 10.0,
-        subdivs: 2,
+        subdivs: 8,
     };
 
     #[test]
@@ -239,9 +257,9 @@ mod tests {
         const FULL_RANGE: f64 = TAU * ((LOD_VERTS as f64 - 1.0) / LOD_VERTS as f64);
         const TOLERANCE: f64 = 1e-6;
 
-        for level in 0..8 {
+        for level in 0..=TEST_TERRAIN.subdivs {
             let range = get_range(terrain_gen.gen_lod(level as u8, 0.0));
-            let expected_range = FULL_RANGE * (LOD_DIVISIONS as f64).powi(-level);
+            let expected_range = FULL_RANGE * (LOD_DIVISIONS as f64).powi(-(level as i32));
             assert!(
                 (range - expected_range).abs() < TOLERANCE,
                 "Expected range of {expected_range}, got {range}"
