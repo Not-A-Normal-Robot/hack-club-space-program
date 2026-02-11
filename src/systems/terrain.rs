@@ -291,7 +291,7 @@ mod tests {
             })
             .collect::<Box<_>>();
 
-        assert_eq!(indices, Box::from([12, 59, 56, 54, 59, 56, 58, 54]));
+        assert_eq!(&*indices, [12, 59, 56, 54, 59, 56, 58, 54].as_slice());
     }
 
     #[test]
