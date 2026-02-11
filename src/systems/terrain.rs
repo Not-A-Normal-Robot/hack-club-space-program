@@ -33,10 +33,15 @@ impl LodVectors {
         terrain_gen: TerrainGen,
         starting_level: NonZeroU8,
         ending_level: u8,
+        focus: f64,
     ) {
         let starting_level = starting_level.get();
 
-        todo!();
+        self.0.truncate(starting_level as usize);
+
+        for level in starting_level..=ending_level {
+            self.0.push(terrain_gen.gen_lod(level, focus));
+        }
     }
 }
 
@@ -47,22 +52,34 @@ struct PrevFocus(f64);
 impl PrevFocus {
     /// Updates this struct's value.
     ///
-    /// Returns the LoD level meshes that should be updated.
+    /// Returns the first LoD level whose meshes need updating.
     ///
     /// For example, large focus changes may require an LoD update for
     /// levels 1 and above, therefore this function would return
     /// `Some(NonZeroU8(1))`.
     ///
-    /// If the required LoD update level is higher than the amount of
-    /// subdivs, then nothing shall need to be updated.\
-    /// For example, if this function returns `Some(NonZeroU8(8))` even
-    /// though the subdiv amount is 4, nothing needs to be updated.
+    /// Smaller focus changes may require an LoD update only for levels 3 and above,
+    /// therefore this function would return `Some(NonZeroU8(3))`.
     ///
-    /// If this function returns `None`, nothing needs to be updated.
-    fn update(&mut self, cur_focus: f64, _lod_level: f64) -> Option<NonZeroU8> {
-        let _prev_focus = self.0;
-        self.0 = cur_focus;
-        todo!();
+    /// If this function returns `None`, no meshes need updating.
+    fn update(&mut self, new_focus: f64, max_lod_level: u8) -> Option<NonZeroU8> {
+        let prev_focus = self.0;
+        if prev_focus == new_focus {
+            return None;
+        }
+
+        self.0 = new_focus;
+
+        for level in 1..=max_lod_level {
+            let old_start = lod_level_start(level, prev_focus);
+            let new_start = lod_level_start(level, new_focus);
+
+            if old_start != new_start {
+                return NonZeroU8::new(level);
+            }
+        }
+
+        None
     }
 }
 
@@ -138,7 +155,7 @@ struct GlobalData {
 fn lod_level_start(lod_level: u8, focus: f64) -> f64 {
     // https://www.desmos.com/calculator/vgdk9qd2ux
     // start = divisions^(1 - level) ⋅
-    //  round( (verts ⋅ divisions^(level - 1) ⋅ focus) / 2pi - verts/(2 ⋅ divisions))
+    //  round( (verts / 2pi) ⋅ divisions^(level - 1) ⋅ focus - verts/(2 ⋅ divisions))
     //
     // → coeff = divisions^(1 - level)
     // frac = (verts / 2pi) ⋅ divisions^(level - 1) ⋅ focus
