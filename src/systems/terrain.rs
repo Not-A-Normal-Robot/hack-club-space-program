@@ -4,7 +4,7 @@ use crate::components::{
     frames::RootSpacePosition,
 };
 use bevy::{ecs::query::QueryData, math::DVec2, mesh::Indices, prelude::*};
-use core::{f64::consts::TAU, num::NonZeroU8};
+use core::{f64::consts::TAU, mem::MaybeUninit, num::NonZeroU8};
 use fastnoise_lite::{FastNoiseLite, FractalType};
 
 // Math based off a sketch:
@@ -218,7 +218,6 @@ impl LodVectors {
         // +1 vert in the center of the body
         let vertex_count = LOD_VERTS * max_level as u32 + 1;
         let mut vertices: Vec<RelativeVector> = Vec::with_capacity(vertex_count as usize);
-        let mut indices: Vec<u32> = Vec::with_capacity(3 * (vertex_count as usize - 1));
 
         vertices.push(RelativeVector(DVec2::ZERO));
 
@@ -260,14 +259,84 @@ impl LodVectors {
         vertices.into()
     }
 
+    /// `len` is the length of the vertex buffer and must be >= 3
+    fn create_index_buffer_inner_16(len: u16) -> Indices {
+        let mut buf = Box::new_uninit_slice((len as usize - 1) * 3);
+
+        for i in 1..len - 1 {
+            let offset = 3 * (i - 1) as usize;
+
+            unsafe {
+                buf.get_unchecked_mut(offset).write(0);
+                buf.get_unchecked_mut(offset + 1).write(i);
+                buf.get_unchecked_mut(offset + 2).write(i + 1);
+            }
+        }
+
+        let last = 3 * (len - 2) as usize;
+
+        unsafe {
+            buf.get_unchecked_mut(last).write(0);
+            buf.get_unchecked_mut(last + 1).write(len - 1);
+            buf.get_unchecked_mut(last + 2).write(1);
+        }
+
+        let buf = unsafe { buf.assume_init() };
+
+        let len = buf.len();
+        let ptr = Box::into_raw(buf) as *mut u16;
+
+        let vec = unsafe { Vec::from_raw_parts(ptr, len, len) };
+
+        Indices::U16(vec)
+    }
+
+    /// `len` is the length of the vertex buffer and must be >= 3
+    #[cold]
+    fn create_index_buffer_inner_32(len: u32) -> Indices {
+        let mut buf = Box::new_uninit_slice((len as usize - 1) * 3);
+
+        for i in 1..len - 1 {
+            let offset = 3 * (i - 1) as usize;
+
+            unsafe {
+                buf.get_unchecked_mut(offset).write(0);
+                buf.get_unchecked_mut(offset + 1).write(i);
+                buf.get_unchecked_mut(offset + 2).write(i + 1);
+            }
+        }
+
+        let last = 3 * (len - 2) as usize;
+
+        unsafe {
+            buf.get_unchecked_mut(last).write(0);
+            buf.get_unchecked_mut(last + 1).write(len - 1);
+            buf.get_unchecked_mut(last + 2).write(1);
+        }
+
+        let buf = unsafe { buf.assume_init() };
+
+        let len = buf.len();
+        let ptr = Box::into_raw(buf) as *mut u32;
+
+        let vec = unsafe { Vec::from_raw_parts(ptr, len, len) };
+
+        Indices::U32(vec)
+    }
+
     /// Create an index buffer from the given vertex buffer.
     ///
     /// # Unchecked Operation
     /// This function assumes you got the `vertex_buffer` argument from
     /// [`Self::create_vertex_buffer`]. If you get it from somewhere else,
     /// you may get an invalid index buffer.
-    fn create_index_buffer(_vertex_buffer: &[RelativeVector]) -> Indices {
-        todo!("Index buffer");
+    fn create_index_buffer(vertex_buffer: &[RelativeVector]) -> Indices {
+        let len = vertex_buffer.len();
+        if let Ok(len) = len.try_into() {
+            Self::create_index_buffer_inner_16(len)
+        } else {
+            Self::create_index_buffer_inner_32(len as u32)
+        }
     }
 
     /// Create a vertex and index buffer from the vectors.
@@ -416,6 +485,8 @@ fn lod_level_index(lod_level: NonZeroU8, focus: f64) -> usize {
 mod tests {
     use core::{f64::consts::TAU, num::NonZeroU8};
 
+    use bevy::mesh::Indices;
+
     use crate::{
         components::celestial::Terrain,
         systems::terrain::{
@@ -506,7 +577,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
+    #[ignore = "mostly for debugging"]
     fn print_results() {
         const FOCUS: f64 = 1.0;
 
@@ -573,6 +644,56 @@ mod tests {
                     slow_buf, fast_buf,
                     "buffer inequality at start={start}, amount={amount}, size={ARRAY_SIZE}"
                 );
+            }
+        }
+    }
+
+    #[test]
+    #[ignore = "takes a few dozen secs"]
+    fn test_index_buffer() {
+        let buf = LodVectors::create_index_buffer_inner_16(7);
+        assert_eq!(
+            buf,
+            Indices::U16(vec![0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5, 0, 5, 6, 0, 6, 1])
+        );
+
+        for i in 3..u16::MAX {
+            let buf = LodVectors::create_index_buffer_inner_16(i);
+            let Indices::U16(buf) = buf else {
+                panic!("buf isn't u16")
+            };
+
+            for (tri, slice) in buf.chunks(3).enumerate() {
+                let tri = tri as u16;
+                let [zero, cur, next] = [slice[0], slice[1], slice[2]];
+                assert_eq!(zero, 0);
+                assert_eq!(cur, tri + 1);
+
+                if tri + 2 == i {
+                    assert_eq!(next, 1);
+                } else {
+                    assert_eq!(next, tri + 2);
+                }
+            }
+        }
+
+        for i in (u16::MAX as u32)..70000 {
+            let buf = LodVectors::create_index_buffer_inner_32(i);
+            let Indices::U32(buf) = buf else {
+                panic!("buf isn't u32")
+            };
+
+            for (tri, slice) in buf.chunks(3).enumerate() {
+                let tri = tri as u32;
+                let [zero, cur, next] = [slice[0], slice[1], slice[2]];
+                assert_eq!(zero, 0);
+                assert_eq!(cur, tri + 1);
+
+                if tri + 2 == i {
+                    assert_eq!(next, 1);
+                } else {
+                    assert_eq!(next, tri + 2);
+                }
             }
         }
     }
