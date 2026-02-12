@@ -3,27 +3,65 @@ use crate::components::{
     celestial::{CelestialBody, Terrain},
     frames::RootSpacePosition,
 };
-use bevy::{ecs::query::QueryData, math::DVec2, prelude::*};
+use bevy::{ecs::query::QueryData, math::DVec2, mesh::Indices, prelude::*};
 use core::{f64::consts::TAU, num::NonZeroU8};
 use fastnoise_lite::{FastNoiseLite, FractalType};
 
 // Math based off a sketch:
 // https://www.desmos.com/calculator/sgyaomwmk6
 
+/// The amount of vertices to use for the extremely-zoomed-out mesh.
+///
+/// Is at most [`LOD_VERTS`].
+pub const MIN_LOD_VERTS: u32 = 8;
+
 /// How many vertices for each LoD level.
-pub const LOD_VERTS: usize = 128;
+///
+/// Is a multiple of [`LOD_DIVISIONS`] as well as [`MIN_LOD_VERTS`].
+pub const LOD_VERTS: u32 = 128;
 
 /// How much smaller the next LoD level is compared to the previous one.
 /// (Level 0 = full revolution)
-pub const LOD_DIVISIONS: usize = 8;
+pub const LOD_DIVISIONS: u32 = 8;
+
+/// The length that a finer division covers in terms of the
+/// coarser division's verts.
+pub const LOD_VERTS_PER_DIVISION: u32 = LOD_VERTS / LOD_DIVISIONS;
+
+const LOD_ASSERTIONS: () = {
+    assert!(MIN_LOD_VERTS <= LOD_VERTS);
+    assert!(LOD_VERTS % LOD_DIVISIONS == 0);
+    assert!(LOD_VERTS % MIN_LOD_VERTS == 0);
+};
 
 /// A vector relative to this object's center.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct RelativeVector(DVec2);
 
+/// Vertex and index buffers for terrain.
+///
+/// Note: This assumes the [`PrimitiveTopology`][bevy::mesh::PrimitiveTopology]
+/// is [`TriangleList`][bevy::mesh::PrimitiveTopology::TriangleList]
+pub struct Buffers {
+    pub vertex_buffer: Box<[RelativeVector]>,
+    pub indices: Indices,
+}
+
+impl Buffers {
+    fn empty() -> Self {
+        Self {
+            vertex_buffer: Box::from([]),
+            indices: Indices::U16(vec![]),
+        }
+    }
+}
+
 /// A list of LoD offsets.
 #[derive(Clone, Component, Debug, PartialEq)]
-struct LodVectors(Vec<[RelativeVector; LOD_VERTS]>);
+struct LodVectors(
+    /// Invariant: this vector must always have a length of at least 1
+    Vec<[RelativeVector; LOD_VERTS as usize]>,
+);
 
 impl LodVectors {
     /// Generate a lowest-quality LoD vector list.
@@ -83,9 +121,59 @@ impl LodVectors {
         }
     }
 
-    /// Stitches together this LoD vectors into a mesh.
-    fn create_mesh(&self) -> Mesh {
-        todo!()
+    const fn create_min_index_buffer() -> [u16; MIN_LOD_VERTS as usize * 3] {
+        let mut arr = [0u16; _];
+
+        let mut index = 1usize;
+
+        while index < MIN_LOD_VERTS as usize {
+            arr[3 * index - 2] = index as u16;
+            arr[3 * index - 1] = match index + 1 {
+                val if val == MIN_LOD_VERTS as usize => 1,
+                val => val as u16,
+            };
+
+            index += 1;
+        }
+
+        arr
+    }
+
+    /// Creates a very minimal vertex and index buffer
+    /// for extremely-zoomed-out scenarios.
+    fn create_min_buffer(&self) -> Buffers {
+        let Some(vecs) = self.0.first() else {
+            return Buffers::empty();
+        };
+
+        let verts: Box<[_]> = (0..MIN_LOD_VERTS)
+            .map(|i| vecs[(i * (LOD_VERTS / MIN_LOD_VERTS)) as usize])
+            .collect();
+
+        Buffers {
+            vertex_buffer: verts,
+            indices: Indices::U16(Vec::from(const { Self::create_min_index_buffer() })),
+        }
+    }
+
+    /// Creates a vertex and index buffer from the vectors.
+    ///
+    /// # Unchecked Operation
+    /// This function assumes you have updated the LoD vectors.
+    fn create_buffers(&self, focus: f64, max_levels: u8) -> Buffers {
+        if max_levels == 0 {
+            return self.create_min_buffer();
+        }
+
+        // +1 vert in the center of the body
+        let vertex_count = LOD_VERTS * (self.0.len() as u32).min(max_levels as u32) + 1;
+        let mut vertices: Vec<RelativeVector> = Vec::with_capacity(vertex_count as usize);
+        let mut indices: Vec<usize> = Vec::with_capacity(max_levels as usize);
+
+        vertices.push(RelativeVector(DVec2::ZERO));
+
+        // Zeroeth LoD needs special care
+        todo!();
     }
 }
 
@@ -128,7 +216,7 @@ impl TerrainGen {
     }
 
     /// Gets the LoD vector array at a certain LoD level.
-    fn gen_lod(&self, lod_level: u8, focus: f64) -> [RelativeVector; LOD_VERTS] {
+    fn gen_lod(&self, lod_level: u8, focus: f64) -> [RelativeVector; LOD_VERTS as usize] {
         // From Desmos graph:
         // point((tau / verts) (i ⋅ iter_scale + start))
 
