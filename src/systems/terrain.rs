@@ -43,14 +43,14 @@ struct RelativeVector(DVec2);
 /// Note: This assumes the [`PrimitiveTopology`][bevy::mesh::PrimitiveTopology]
 /// is [`TriangleList`][bevy::mesh::PrimitiveTopology::TriangleList]
 struct Buffers {
-    pub vertex_buffer: Box<[RelativeVector]>,
+    pub vertices: Box<[RelativeVector]>,
     pub indices: Indices,
 }
 
 impl Buffers {
     fn empty() -> Self {
         Self {
-            vertex_buffer: Box::from([]),
+            vertices: Box::from([]),
             indices: Indices::U16(vec![]),
         }
     }
@@ -189,7 +189,7 @@ impl LodVectors {
             .collect();
 
         Buffers {
-            vertex_buffer: verts,
+            vertices: verts,
             indices: Indices::U16(Vec::from(const { Self::create_min_index_buffer() })),
         }
     }
@@ -203,19 +203,17 @@ impl LodVectors {
         };
 
         Buffers {
-            vertex_buffer: Box::from(*vecs),
+            vertices: Box::from(*vecs),
             indices: Indices::U16(Vec::from(const { Self::create_min_index_buffer() })),
         }
     }
 
-    /// Creates a vertex and index buffer from the vectors.
+    /// Creates a vertex buffer from the vectors.
     ///
     /// # Unchecked Operation
     /// This function assumes you have updated the LoD vectors.
-    fn create_full_buffer(&self, focus: f64, max_level: NonZeroU8) -> Buffers {
-        let max_level = max_level
-            .get()
-            .min(self.0.len().min(u8::MAX as usize) as u8);
+    fn create_vertex_buffer(&self, focus: f64, max_level: NonZeroU8) -> Box<[RelativeVector]> {
+        let max_level = max_level.get().min((self.0.len() - 1) as u8);
 
         // +1 vert in the center of the body
         let vertex_count = LOD_VERTS * max_level as u32 + 1;
@@ -234,7 +232,53 @@ impl LodVectors {
         let lod_0_verts = unsafe { self.0.first().unwrap_unchecked() };
         const LOD_0_USED_VERTS_COUNT: u32 = LOD_VERTS * (LOD_DIVISIONS - 1) / LOD_DIVISIONS - 1;
         let lod_1_start_idx = lod_level_index(NonZeroU8::MIN, focus);
-        todo!("Do partial wrapping copy");
+
+        partial_wrapping_copy(
+            lod_0_verts,
+            &mut vertices,
+            lod_1_start_idx + 1,
+            LOD_0_USED_VERTS_COUNT as usize,
+        );
+
+        for level in 1..max_level {
+            // SAFETY: We already clamped the max_level at the beginning
+            // of the function.
+            let verts = unsafe { self.0.get_unchecked(level as usize) };
+
+            const SKIP_VERTS_AMOUNT: usize = (LOD_VERTS / LOD_DIVISIONS + 1) as usize;
+
+            let next_start = lod_level_index(NonZeroU8::new(level + 1).unwrap(), focus);
+
+            vertices.extend_from_slice(&verts[0..next_start]);
+            vertices.extend_from_slice(&verts[next_start + SKIP_VERTS_AMOUNT..verts.len()]);
+        }
+
+        // SAFETY: We already clamped the max_level at the beginning
+        // of the function.
+        vertices.extend_from_slice(unsafe { self.0.get_unchecked(max_level as usize) });
+
+        vertices.into()
+    }
+
+    /// Create an index buffer from the given vertex buffer.
+    ///
+    /// # Unchecked Operation
+    /// This function assumes you got the `vertex_buffer` argument from
+    /// [`Self::create_vertex_buffer`]. If you get it from somewhere else,
+    /// you may get an invalid index buffer.
+    fn create_index_buffer(_vertex_buffer: &[RelativeVector]) -> Indices {
+        todo!("Index buffer");
+    }
+
+    /// Create a vertex and index buffer from the vectors.
+    ///
+    /// # Unchecked Operation
+    /// This function assumes you have updated the LoD vectors.
+    fn create_full_buffer(&self, focus: f64, max_level: NonZeroU8) -> Buffers {
+        let vertices = self.create_vertex_buffer(focus, max_level);
+        let indices = Self::create_index_buffer(&vertices);
+
+        Buffers { vertices, indices }
     }
 
     /// Creates a vertex and index buffer from the vectors.
@@ -504,7 +548,7 @@ mod tests {
             }
         }
 
-        const ARRAY_SIZE: usize = 128;
+        const ARRAY_SIZE: usize = 512;
         let src = {
             let mut array = [0usize; ARRAY_SIZE];
             array
