@@ -30,8 +30,8 @@ pub const LOD_VERTS_PER_DIVISION: u32 = LOD_VERTS / LOD_DIVISIONS;
 
 const LOD_ASSERTIONS: () = {
     assert!(MIN_LOD_VERTS <= LOD_VERTS);
-    assert!(LOD_VERTS % LOD_DIVISIONS == 0);
-    assert!(LOD_VERTS % MIN_LOD_VERTS == 0);
+    assert!(LOD_VERTS.is_multiple_of(LOD_DIVISIONS));
+    assert!(LOD_VERTS.is_multiple_of(MIN_LOD_VERTS));
 };
 
 /// A vector relative to this object's center.
@@ -42,7 +42,7 @@ struct RelativeVector(DVec2);
 ///
 /// Note: This assumes the [`PrimitiveTopology`][bevy::mesh::PrimitiveTopology]
 /// is [`TriangleList`][bevy::mesh::PrimitiveTopology::TriangleList]
-pub struct Buffers {
+struct Buffers {
     pub vertex_buffer: Box<[RelativeVector]>,
     pub indices: Indices,
 }
@@ -53,6 +53,25 @@ impl Buffers {
             vertex_buffer: Box::from([]),
             indices: Indices::U16(vec![]),
         }
+    }
+}
+
+/// Do a fast, contiguous partial wrapping copy from a source array.
+///
+/// Amount must be less than M.
+fn partial_wrapping_copy<T: Clone, const M: usize>(
+    src: &[T; M],
+    dest: &mut Vec<T>,
+    start: usize,
+    amount: usize,
+) {
+    debug_assert!(amount < M);
+
+    if start + amount >= src.len() {
+        dest.extend_from_slice(&src[start..src.len()]);
+        dest.extend_from_slice(&src[0..start + amount - src.len()]);
+    } else {
+        dest.extend_from_slice(&src[start..start + amount]);
     }
 }
 
@@ -121,7 +140,8 @@ impl LodVectors {
         }
     }
 
-    const fn create_min_index_buffer() -> [u16; MIN_LOD_VERTS as usize * 3] {
+    /// The index buffer for
+    const fn create_min_index_buffer() -> [u16; (MIN_LOD_VERTS as usize - 1) * 3] {
         let mut arr = [0u16; _];
 
         let mut index = 1usize;
@@ -139,12 +159,30 @@ impl LodVectors {
         arr
     }
 
+    const fn create_zeroth_index_buffer() -> [u16; (LOD_VERTS as usize - 1) * 3] {
+        let mut arr = [0u16; _];
+
+        let mut index = 1usize;
+
+        while index < LOD_VERTS as usize {
+            arr[3 * index - 2] = index as u16;
+            arr[3 * index - 1] = match index + 1 {
+                val if val == LOD_VERTS as usize => 1,
+                val => val as u16,
+            };
+
+            index += 1;
+        }
+
+        arr
+    }
+
     /// Creates a very minimal vertex and index buffer
     /// for extremely-zoomed-out scenarios.
     fn create_min_buffer(&self) -> Buffers {
-        let Some(vecs) = self.0.first() else {
-            return Buffers::empty();
-        };
+        // SAFETY: LoD 0 is always loaded, never mutated, and always created when
+        // using the constructors.
+        let vecs = unsafe { self.0.first().unwrap_unchecked() };
 
         let verts: Box<[_]> = (0..MIN_LOD_VERTS)
             .map(|i| vecs[(i * (LOD_VERTS / MIN_LOD_VERTS)) as usize])
@@ -156,24 +194,64 @@ impl LodVectors {
         }
     }
 
+    /// Creates a vertex and index buffer from the vectors for just the zeroth LoD.
+    ///
+    /// This doesn't need updating the LoD vectors as the zeroth LoD never changes.
+    fn create_zeroth_buffer(&self) -> Buffers {
+        let Some(vecs) = self.0.first() else {
+            return Buffers::empty();
+        };
+
+        Buffers {
+            vertex_buffer: Box::from(*vecs),
+            indices: Indices::U16(Vec::from(const { Self::create_min_index_buffer() })),
+        }
+    }
+
     /// Creates a vertex and index buffer from the vectors.
     ///
     /// # Unchecked Operation
     /// This function assumes you have updated the LoD vectors.
-    fn create_buffers(&self, focus: f64, max_levels: u8) -> Buffers {
-        if max_levels == 0 {
-            return self.create_min_buffer();
-        }
+    fn create_full_buffer(&self, focus: f64, max_level: NonZeroU8) -> Buffers {
+        let max_level = max_level
+            .get()
+            .min(self.0.len().min(u8::MAX as usize) as u8);
 
         // +1 vert in the center of the body
-        let vertex_count = LOD_VERTS * (self.0.len() as u32).min(max_levels as u32) + 1;
+        let vertex_count = LOD_VERTS * max_level as u32 + 1;
         let mut vertices: Vec<RelativeVector> = Vec::with_capacity(vertex_count as usize);
-        let mut indices: Vec<usize> = Vec::with_capacity(max_levels as usize);
+        let mut indices: Vec<u32> = Vec::with_capacity(3 * (vertex_count as usize - 1));
 
         vertices.push(RelativeVector(DVec2::ZERO));
 
-        // Zeroeth LoD needs special care
-        todo!();
+        // Zeroeth LoD cutoffs need special care since it may pass through index 0
+        // (+x axis)
+        // I figured I could just shove all the LoD_0 verts into the beginning of the buffer
+        // e.g. verts: 8, subdivs: 1, divs: 4, start idx: 3
+        // => L0.4 L0.5 L0.6 L0.7 L0.0 L1.*
+        // => L0[(start_idx + 1) mod VERTS], repeated USED_VERTS = VERTS*(DIVS-1)/DIVS-1 times
+
+        let lod_0_verts = unsafe { self.0.first().unwrap_unchecked() };
+        const LOD_0_USED_VERTS_COUNT: u32 = LOD_VERTS * (LOD_DIVISIONS - 1) / LOD_DIVISIONS - 1;
+        let lod_1_start_idx = lod_level_index(NonZeroU8::MIN, focus);
+        todo!("Do partial wrapping copy");
+    }
+
+    /// Creates a vertex and index buffer from the vectors.
+    ///
+    /// A `max_level` value of `None` indicates a very minimal representation,
+    /// even more so than a value of `Some(0)`.\
+    /// This is reserved for when the camera is zoomed very far out or is very
+    /// far away.
+    ///
+    /// # Unchecked Operation
+    /// This function assumes you have updated the LoD vectors.
+    fn create_buffers(&self, focus: f64, max_level: Option<u8>) -> Buffers {
+        match max_level {
+            None => self.create_min_buffer(),
+            Some(0) => self.create_zeroth_buffer(),
+            Some(max_level) => self.create_full_buffer(focus, NonZeroU8::new(max_level).unwrap()),
+        }
     }
 }
 
@@ -298,6 +376,7 @@ mod tests {
         components::celestial::Terrain,
         systems::terrain::{
             LOD_DIVISIONS, LOD_VERTS, LodVectors, RelativeVector, TerrainGen, lod_level_index,
+            partial_wrapping_copy,
         },
     };
 
@@ -408,6 +487,49 @@ mod tests {
             let index = lod_level_index(level, FOCUS);
 
             println!("{level},{index}");
+        }
+    }
+
+    #[test]
+    fn test_partial_wrapping_copy() {
+        fn slow_pwc<T: Clone, const M: usize>(
+            src: &[T; M],
+            dest: &mut Vec<T>,
+            start: usize,
+            amount: usize,
+        ) {
+            for i in 0..amount {
+                let idx = (start + i) % M;
+                dest.push(src[idx].clone());
+            }
+        }
+
+        const ARRAY_SIZE: usize = 128;
+        let src = {
+            let mut array = [0usize; ARRAY_SIZE];
+            array
+                .iter_mut()
+                .enumerate()
+                .for_each(|(idx, entry)| *entry = idx);
+            array
+        };
+
+        let mut slow_buf = Vec::new();
+        let mut fast_buf = Vec::new();
+
+        for start in 0..ARRAY_SIZE {
+            for amount in 0..ARRAY_SIZE {
+                slow_buf.clear();
+                fast_buf.clear();
+
+                partial_wrapping_copy(&src, &mut fast_buf, start, amount);
+                slow_pwc(&src, &mut slow_buf, start, amount);
+
+                assert_eq!(
+                    slow_buf, fast_buf,
+                    "buffer inequality at start={start}, amount={amount}, size={ARRAY_SIZE}"
+                );
+            }
         }
     }
 }
