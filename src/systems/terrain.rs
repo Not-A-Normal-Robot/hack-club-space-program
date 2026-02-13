@@ -4,7 +4,7 @@ use crate::components::{
     frames::RootSpacePosition,
 };
 use bevy::{ecs::query::QueryData, math::DVec2, mesh::Indices, prelude::*};
-use core::{f64::consts::TAU, mem::MaybeUninit, num::NonZeroU8};
+use core::{f64::consts::TAU, num::NonZeroU8};
 use fastnoise_lite::{FastNoiseLite, FractalType};
 
 // Math based off a sketch:
@@ -28,7 +28,7 @@ pub const LOD_DIVISIONS: u32 = 8;
 /// coarser division's verts.
 pub const LOD_VERTS_PER_DIVISION: u32 = LOD_VERTS / LOD_DIVISIONS;
 
-const LOD_ASSERTIONS: () = {
+const _LOD_ASSERTIONS: () = {
     assert!(MIN_LOD_VERTS <= LOD_VERTS);
     assert!(LOD_VERTS.is_multiple_of(LOD_DIVISIONS));
     assert!(LOD_VERTS.is_multiple_of(MIN_LOD_VERTS));

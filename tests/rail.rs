@@ -1,8 +1,8 @@
 use core::f64::consts::PI;
 use std::sync::LazyLock;
 
+use bevy::math::DVec2;
 use bevy::prelude::*;
-use bevy::{log::Level, math::DVec2};
 use bevy_rapier2d::prelude::*;
 use hack_club_space_program::{
     builders::{celestial::CelestialBodyBuilder, vessel::VesselBuilder},
@@ -15,7 +15,7 @@ use hack_club_space_program::{
 };
 use keplerian_sim::{CompactOrbit2D, Orbit2D, OrbitTrait2D, StateVectors2D};
 
-use crate::common::{TestAppConfig, assert_sv_close};
+use crate::common::assert_sv_close;
 
 mod common;
 

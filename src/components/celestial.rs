@@ -1,4 +1,3 @@
-use core::num::{NonZeroU8, NonZeroU16};
 
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::RigidBody;

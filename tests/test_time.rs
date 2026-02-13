@@ -2,9 +2,7 @@
 
 use core::sync::atomic::{AtomicU8, Ordering};
 
-use bevy::{log::Level, prelude::*};
-
-use crate::common::TestAppConfig;
+use bevy::prelude::*;
 
 mod common;
 

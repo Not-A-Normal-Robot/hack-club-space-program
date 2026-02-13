@@ -2,7 +2,6 @@ use crate::{
     builders::{celestial::CelestialBodyBuilder, vessel::VesselBuilder},
     components::{
         camera::{SimCamera, SimCameraOffset, SimCameraZoom},
-        celestial::Heightmap,
         frames::{RootSpaceLinearVelocity, RootSpacePosition},
         relations::{CelestialParent, RailMode},
     },
@@ -13,7 +12,6 @@ use bevy::prelude::*;
 use bevy::{asset::RenderAssetUsages, math::DVec2, mesh::PrimitiveTopology};
 use bevy_rapier2d::prelude::*;
 
-const DEMO_HEIGHTMAP: [f32; 10] = [10.0, 10.0, 10.0, 10.0, 10.0, 0.0, 0.0, 0.0, 0.0, 0.0];
 const CELESTIAL_RADIUS: f32 = 6378137.0;
 const ALTITUDE: f32 = CELESTIAL_RADIUS + 100.0;
 fn demo_startup(mut commands: Commands, asset_server: Res<AssetServer>) {
