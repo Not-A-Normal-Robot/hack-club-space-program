@@ -1,5 +1,5 @@
 use crate::components::{
-    celestial::{CelestialBody, Heightmap, Terrain},
+    celestial::{CelestialBody, Terrain},
     frames::{RigidSpaceVelocity, RootSpaceLinearVelocity, RootSpacePosition},
 };
 use bevy::{math::DVec2, prelude::*, sprite_render::Material2d};
@@ -48,5 +48,7 @@ impl<M: Material2d> CelestialBodyBuilder<M> {
         )
     }
 
-    pub fn build_with_terrain(self, terrain: Terrain) -> impl Bundle {}
+    pub fn build_with_terrain(self, terrain: Terrain) -> impl Bundle {
+        todo!() as ()
+    }
 }

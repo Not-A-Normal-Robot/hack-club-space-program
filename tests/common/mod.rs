@@ -3,14 +3,10 @@
 use core::time::Duration;
 
 use bevy::{
-    asset::{
-        RenderAssetUsages,
-        io::{AssetSources, embedded::GetAssetServer},
-    },
+    asset::{RenderAssetUsages, io::embedded::GetAssetServer},
     log::LogPlugin,
     mesh::PrimitiveTopology,
     prelude::*,
-    sprite_render::Material2d,
     time::TimeUpdateStrategy,
 };
 use hack_club_space_program::{
@@ -36,28 +32,51 @@ pub fn enable_backtrace() {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct TestAppConfig {
+    /// Whether or not the app's itme should increase
+    /// every time `app.update()` is called.
+    pub forward_time_on_update: bool,
+    /// The log level for bevy::log
+    pub log_level: Option<bevy::log::Level>,
+}
+
+impl TestAppConfig {
+    pub const DEFAULT: Self = Self {
+        forward_time_on_update: true,
+        log_level: None,
+    };
+}
+
+impl Default for TestAppConfig {
+    fn default() -> Self {
+        Self::DEFAULT
+    }
+}
+
+pub fn setup_default() -> App {
+    setup(TestAppConfig::DEFAULT)
+}
+
 /// `forward_time_on_update`: Whether or not the app's time should
 /// increase every time update() is called.
 ///
 /// The amount of time the time is increased is by the fixed timestep
 /// interval (default 64 Hz).
-pub fn setup(forward_time_on_update: bool) -> App {
+pub fn setup(config: TestAppConfig) -> App {
     enable_backtrace();
 
     let mut app = App::new();
-    app.add_plugins((
-        MinimalPlugins,
-        LogPlugin {
-            #[cfg(not(feature = "trace"))]
-            level: bevy::log::Level::DEBUG,
-            #[cfg(feature = "trace")]
-            level: bevy::log::Level::TRACE,
+    app.add_plugins((MinimalPlugins, GameLogicPlugin));
+    if let Some(level) = config.log_level {
+        app.add_plugins(LogPlugin {
+            level,
             ..Default::default()
-        },
-        GameLogicPlugin,
-    ));
+        });
+    }
+
     app.insert_resource(TimeUpdateStrategy::ManualDuration(Duration::ZERO));
-    if forward_time_on_update {
+    if config.forward_time_on_update {
         app.add_systems(Startup, setup_time);
     }
     app.update();

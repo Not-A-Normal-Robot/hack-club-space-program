@@ -233,7 +233,7 @@ fn reference_frames() {
         }])
     });
 
-    let mut app = common::setup(true);
+    let mut app = common::setup_default();
 
     let body = app
         .world_mut()
@@ -343,7 +343,7 @@ fn reference_frame_fixed_cam() {
         }])
     });
 
-    let mut app = common::setup(true);
+    let mut app = common::setup_default();
 
     let (mesh, material) = common::empty_mesh_material(&mut app);
 
