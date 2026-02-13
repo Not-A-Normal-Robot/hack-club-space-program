@@ -3,7 +3,10 @@
 use core::time::Duration;
 
 use bevy::{
-    asset::{RenderAssetUsages, io::embedded::GetAssetServer},
+    asset::{
+        RenderAssetUsages,
+        io::{AssetSources, embedded::GetAssetServer},
+    },
     log::LogPlugin,
     mesh::PrimitiveTopology,
     prelude::*,
@@ -62,12 +65,18 @@ pub fn setup(forward_time_on_update: bool) -> App {
 }
 
 pub fn empty_mesh_material(app: &mut App) -> (Mesh2d, MeshMaterial2d<ColorMaterial>) {
+    if !app.is_plugin_added::<AssetPlugin>() {
+        app.add_plugins(AssetPlugin::default());
+    }
+
+    app.init_asset::<Mesh>();
+    app.init_asset::<ColorMaterial>();
+
     let mesh = Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::all());
     let mesh = app.get_asset_server().add(mesh);
     let material = ColorMaterial::from_color(Color::WHITE);
     let material = app.get_asset_server().add(material);
     (Mesh2d(mesh), MeshMaterial2d(material))
-    // (mesh, material)
 }
 
 pub fn assert_sv(entity: EntityRef, pos: RootSpacePosition, vel: RootSpaceLinearVelocity) {

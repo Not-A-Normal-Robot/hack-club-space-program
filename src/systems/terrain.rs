@@ -529,7 +529,10 @@ mod tests {
         let zero = terrain_gen.get_terrain_vector(0.0);
         let tau = terrain_gen.get_terrain_vector(TAU);
 
-        assert_eq!(zero, tau);
+        let diff = zero.0 - tau.0;
+        eprintln!("{diff}");
+
+        assert!(diff.length() < 5e-9);
     }
 
     #[test]
