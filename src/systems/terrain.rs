@@ -51,10 +51,10 @@ struct GlobalData {
 }
 
 fn update_mesh(
-    mut celestial: CelestialEntityItem,
-    global: GlobalData,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    commands: &mut Commands,
+    _celestial: CelestialEntityItem,
+    _global: GlobalData,
+    _meshes: &mut ResMut<Assets<Mesh>>,
+    _commands: &mut Commands,
 ) {
     todo!();
 }

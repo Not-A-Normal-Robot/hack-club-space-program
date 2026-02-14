@@ -14,11 +14,11 @@ pub enum SimCameraOffset {
 }
 
 impl SimCameraOffset {
-    pub fn immutably(&self) -> SimCameraOffsetReference {
+    pub fn immutably(&self) -> SimCameraOffsetReference<'_> {
         SimCameraOffsetReference::Immutable(self)
     }
 
-    pub fn mutably(&mut self) -> SimCameraOffsetReference {
+    pub fn mutably(&mut self) -> SimCameraOffsetReference<'_> {
         SimCameraOffsetReference::Mutable(self)
     }
 }
