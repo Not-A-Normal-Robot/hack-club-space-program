@@ -134,7 +134,9 @@ fn get_camera_offset(app: &App, entity_refs: &TestEntityRefs) -> RootSpacePositi
             .unwrap_or(RootSpacePosition(DVec2::ZERO)),
         SimCameraOffset::Detached(pos) => pos,
     };
-    camera_offset.get_root_position_with_attached_pos(attached_pos)
+    camera_offset
+        .mutably()
+        .get_root_position_with_attached_pos(attached_pos)
 }
 
 impl Assertions for PostTickAssertions {

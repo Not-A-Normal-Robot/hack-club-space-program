@@ -181,7 +181,7 @@ pub fn post_rapier_frame_switch(
         return;
     };
 
-    let cam_offset = cam_offset.get_root_position(camera_offset_query);
+    let cam_offset = cam_offset.mutably().get_root_position(camera_offset_query);
 
     query.into_iter().for_each(|(mut transform, &root_pos)| {
         let rotation = transform.rotation;
