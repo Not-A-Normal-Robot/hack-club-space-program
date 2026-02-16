@@ -139,7 +139,7 @@ impl LodVectors {
 
         Buffers {
             vertices: vecs.iter().map(|v| v.shift_downcast(shift)).collect(),
-            indices: Indices::U16(Vec::from(const { Self::create_min_index_buffer() })),
+            indices: Indices::U16(Vec::from(const { Self::create_zeroth_index_buffer() })),
         }
     }
 
@@ -197,15 +197,6 @@ impl LodVectors {
         vertices.extend_from_slice(unsafe { self.0.get_unchecked(max_level as usize) });
 
         vertices.into()
-    }
-
-    /// Shifts and downcasts an unshifted vertex buffer.
-    #[must_use]
-    fn shift_downcast_vertex_buffer(&self, unshifted: &[TerrainPoint], shift: DVec2) -> Vec<Vec3> {
-        unshifted
-            .iter()
-            .map(|point| point.shift_downcast(shift))
-            .collect()
     }
 
     /// `len` is the length of the vertex buffer and must be >= 3
@@ -311,7 +302,7 @@ impl LodVectors {
     ///
     /// # Unchecked Operation
     /// This function assumes you have updated the LoD vectors.
-    fn create_buffers(&self, focus: f64, max_level: Option<u8>, shift: DVec2) -> Buffers {
+    pub fn create_buffers(&self, focus: f64, max_level: Option<u8>, shift: DVec2) -> Buffers {
         match max_level {
             None => self.create_min_buffer(shift),
             Some(0) => self.create_zeroth_buffer(shift),

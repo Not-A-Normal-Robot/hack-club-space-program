@@ -5,7 +5,10 @@ use crate::{
         frames::{RootSpaceLinearVelocity, RootSpacePosition},
         relations::{CelestialParent, RailMode},
     },
-    plugins::{controls::GameControlPlugin, debug::GameDebugPlugin, logic::GameLogicPlugin},
+    plugins::{
+        controls::GameControlPlugin, debug::GameDebugPlugin, logic::GameLogicPlugin,
+        render::GameRenderPlugin,
+    },
     resources::ActiveVessel,
 };
 use bevy::prelude::*;
@@ -94,6 +97,11 @@ impl Plugin for GameSetupPlugin {
                 ..Default::default()
             },
         });
-        app.add_plugins((GameLogicPlugin, GameDebugPlugin, GameControlPlugin));
+        app.add_plugins((
+            GameLogicPlugin,
+            GameDebugPlugin,
+            GameControlPlugin,
+            GameRenderPlugin,
+        ));
     }
 }

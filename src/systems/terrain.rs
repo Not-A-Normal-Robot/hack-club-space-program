@@ -10,7 +10,7 @@ use crate::{
         render::{get_focus, get_lod_level_cap},
     },
 };
-use bevy::{ecs::query::QueryData, prelude::*};
+use bevy::{ecs::query::QueryData, mesh::Indices, prelude::*};
 use core::{
     num::NonZeroU8,
     ops::{Deref, DerefMut},
@@ -75,6 +75,25 @@ impl<'a, T> DerefMut for CowMut<'a, T> {
     }
 }
 
+fn swap_indices(src: &Indices, dest: &mut Indices) {
+    match dest {
+        Indices::U16(dest_vec) => {
+            if let Indices::U16(src) = src {
+                dest_vec.clone_from(src);
+                return;
+            }
+            dest.clone_from(src);
+        }
+        Indices::U32(dest_vec) => {
+            if let Indices::U32(src) = src {
+                dest_vec.clone_from(src);
+                return;
+            }
+            dest.clone_from(src);
+        }
+    }
+}
+
 fn update_mesh(
     celestial: CelestialEntityItem,
     global: GlobalData,
@@ -97,6 +116,8 @@ fn update_mesh(
         }
     };
 
+    let camera_space_pos = celestial.pos.0 - global.cam_pos.0;
+
     let terrain_gen = TerrainGen::new(*celestial.terrain);
 
     let distance_sq = global.cam_pos.0.distance_squared(celestial.pos.0);
@@ -118,10 +139,32 @@ fn update_mesh(
         lod_vectors.update_lods(&terrain_gen, ending_level, prev_focus, new_focus);
     }
 
-    todo!("Generate mesh");
+    let buffers = lod_vectors.create_buffers(new_focus, ending_level, camera_space_pos);
+
+    if let CowMut::Owned(vecs) = lod_vectors {
+        commands.entity(celestial.entity).insert(vecs);
+    }
+
+    let Some(mesh) = meshes.get_mut(celestial.mesh) else {
+        error!(
+            "celestial body {} has dangling reference to mesh",
+            celestial.entity
+        );
+        return;
+    };
+
+    mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, buffers.vertices);
+    match mesh.indices_mut() {
+        Some(indices) => {
+            swap_indices(&buffers.indices, indices);
+        }
+        None => {
+            mesh.insert_indices(buffers.indices);
+        }
+    }
 }
 
-pub fn update_meshes(
+pub fn update_terrain_meshes(
     mut queries: ParamSet<Queries>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut commands: Commands,
