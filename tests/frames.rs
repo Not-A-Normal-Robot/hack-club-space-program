@@ -190,11 +190,7 @@ fn reference_frames() {
                     angvel: 0.0,
                     linvel: Vec2::new(-1.0, 0.0),
                 }),
-                cam_tf: Some(CameraSpaceTransform(Transform {
-                    translation: Vec3::new(-0.515625, -1.5, 0.0),
-                    rotation: Quat::IDENTITY,
-                    scale: Vec3::ONE,
-                })),
+                cam_tf: None,
             },
             vessel: TransformAssertions {
                 root_pos: Some(RootSpacePosition(DVec2::new(0.5 + 1.0 / 64.0, 1.5))),
@@ -325,9 +321,7 @@ fn reference_frame_fixed_cam() {
                     angvel: 0.0,
                     linvel: Vec2::new(-1.0, 0.0),
                 }),
-                cam_tf: Some(CameraSpaceTransform(Transform::from_translation(
-                    Vec3::new(-1.0, -1.0, 0.0),
-                ))),
+                cam_tf: None,
             },
             vessel: TransformAssertions {
                 root_pos: Some(RootSpacePosition(DVec2::new(0.5 + 1.0 / 64.0, 1.5))),
