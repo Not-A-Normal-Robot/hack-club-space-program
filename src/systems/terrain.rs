@@ -85,7 +85,7 @@ fn update_mesh(
     let new_focus = get_focus(*celestial.pos, 0.0, global.cam_pos);
     let prev_focus = match celestial.prev_focus {
         Some(mut f) => {
-            let old = f.clone();
+            let old = *f;
             f.0 = new_focus;
             old.0
         }
@@ -97,7 +97,7 @@ fn update_mesh(
         }
     };
 
-    let terrain_gen = TerrainGen::new(celestial.terrain.clone());
+    let terrain_gen = TerrainGen::new(*celestial.terrain);
 
     let distance_sq = global.cam_pos.0.distance_squared(celestial.pos.0);
 

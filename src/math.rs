@@ -17,7 +17,7 @@ mod tests {
         const ITERS: usize = 1024;
 
         for i in 0..ITERS {
-            let angle = 2.0 * TAU / ITERS as f64;
+            let angle = 2.0 * TAU * i as f64 / ITERS as f64;
 
             let quat = Quat::from_axis_angle(Vec3::Z, angle as f32);
 

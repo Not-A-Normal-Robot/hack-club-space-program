@@ -75,7 +75,7 @@ impl LodVectors {
         }
     }
 
-    /// The index buffer for
+    /// The index buffer for minimal quality rendering (far away)
     const fn create_min_index_buffer() -> [u16; (MIN_LOD_VERTS as usize - 1) * 3] {
         let mut arr = [0u16; _];
 
@@ -138,7 +138,7 @@ impl LodVectors {
         };
 
         Buffers {
-            vertices: vecs.into_iter().map(|v| v.shift_downcast(shift)).collect(),
+            vertices: vecs.iter().map(|v| v.shift_downcast(shift)).collect(),
             indices: Indices::U16(Vec::from(const { Self::create_min_index_buffer() })),
         }
     }
@@ -203,7 +203,7 @@ impl LodVectors {
     #[must_use]
     fn shift_downcast_vertex_buffer(&self, unshifted: &[TerrainPoint], shift: DVec2) -> Vec<Vec3> {
         unshifted
-            .into_iter()
+            .iter()
             .map(|point| point.shift_downcast(shift))
             .collect()
     }

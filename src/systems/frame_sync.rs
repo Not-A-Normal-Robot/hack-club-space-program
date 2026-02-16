@@ -173,7 +173,7 @@ pub fn pre_rapier_frame_switch(
 /// Sets transform into the camera transform so Bevy can render it
 pub fn post_rapier_frame_switch(
     query: Query<(&mut Transform, &RootSpacePosition), Without<CelestialBody>>,
-    celestials: Query<(&mut Transform), With<CelestialBody>>,
+    celestials: Query<&mut Transform, With<CelestialBody>>,
     sim_camera: Query<(&mut SimCameraOffset, &SimCameraZoom, &Camera), With<SimCamera>>,
     camera_offset_query: Query<&RootSpacePosition>,
 ) {
