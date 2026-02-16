@@ -23,14 +23,15 @@ impl LodVectors {
     }
 
     /// Generate a fully-realized LoD vector list.
-    pub fn new_full(terrain_gen: &TerrainGen, ending_level: NonZeroU8, focus: f64) -> Self {
+    pub fn new_full(terrain_gen: &TerrainGen, ending_level: u8, focus: f64) -> Self {
         let mut this = Self::new(terrain_gen);
-        this.update_lods(terrain_gen, ending_level, f64::NAN, focus);
+        if let Some(ending_level) = NonZeroU8::new(ending_level) {
+            this.update_lods(terrain_gen, ending_level, f64::NAN, focus);
+        }
         this
     }
 
-    /// Updates the LoD vectors starting from a given
-    /// level up to (and including) a final level.
+    /// Updates the LoD vectors.
     pub fn update_lods(
         &mut self,
         terrain_gen: &TerrainGen,
@@ -113,17 +114,17 @@ impl LodVectors {
 
     /// Creates a very minimal vertex and index buffer
     /// for extremely-zoomed-out scenarios.
-    fn create_min_buffer(&self) -> Buffers {
+    fn create_min_buffer(&self, shift: DVec2) -> Buffers {
         // SAFETY: LoD 0 is always loaded, never mutated, and always created when
         // using the constructors.
         let vecs = unsafe { self.0.first().unwrap_unchecked() };
 
-        let verts: Box<[_]> = (0..MIN_LOD_VERTS)
-            .map(|i| vecs[(i * (LOD_VERTS / MIN_LOD_VERTS)) as usize])
+        let vertices = (0..MIN_LOD_VERTS)
+            .map(|i| vecs[(i * (LOD_VERTS / MIN_LOD_VERTS)) as usize].shift_downcast(shift))
             .collect();
 
         Buffers {
-            vertices: verts,
+            vertices,
             indices: Indices::U16(Vec::from(const { Self::create_min_index_buffer() })),
         }
     }
@@ -131,13 +132,13 @@ impl LodVectors {
     /// Creates a vertex and index buffer from the vectors for just the zeroth LoD.
     ///
     /// This doesn't need updating the LoD vectors as the zeroth LoD never changes.
-    fn create_zeroth_buffer(&self) -> Buffers {
+    fn create_zeroth_buffer(&self, shift: DVec2) -> Buffers {
         let Some(vecs) = self.0.first() else {
             return Buffers::empty();
         };
 
         Buffers {
-            vertices: Box::from(*vecs),
+            vertices: vecs.into_iter().map(|v| v.shift_downcast(shift)).collect(),
             indices: Indices::U16(Vec::from(const { Self::create_min_index_buffer() })),
         }
     }
@@ -146,7 +147,12 @@ impl LodVectors {
     ///
     /// # Unchecked Operation
     /// This function assumes you have updated the LoD vectors.
-    fn create_vertex_buffer(&self, focus: f64, max_level: NonZeroU8) -> Box<[TerrainPoint]> {
+    #[must_use]
+    fn create_unshifted_vertex_buffer(
+        &self,
+        focus: f64,
+        max_level: NonZeroU8,
+    ) -> Box<[TerrainPoint]> {
         let max_level = max_level.get().min((self.0.len() - 1) as u8);
 
         // +1 vert in the center of the body
@@ -191,6 +197,15 @@ impl LodVectors {
         vertices.extend_from_slice(unsafe { self.0.get_unchecked(max_level as usize) });
 
         vertices.into()
+    }
+
+    /// Shifts and downcasts an unshifted vertex buffer.
+    #[must_use]
+    fn shift_downcast_vertex_buffer(&self, unshifted: &[TerrainPoint], shift: DVec2) -> Vec<Vec3> {
+        unshifted
+            .into_iter()
+            .map(|point| point.shift_downcast(shift))
+            .collect()
     }
 
     /// `len` is the length of the vertex buffer and must be >= 3
@@ -264,12 +279,11 @@ impl LodVectors {
     /// This function assumes you got the `vertex_buffer` argument from
     /// [`Self::create_vertex_buffer`]. If you get it from somewhere else,
     /// you may get an invalid index buffer.
-    fn create_index_buffer(vertex_buffer: &[TerrainPoint]) -> Indices {
-        let len = vertex_buffer.len();
-        if let Ok(len) = len.try_into() {
+    fn create_index_buffer(vertices: usize) -> Indices {
+        if let Ok(len) = vertices.try_into() {
             Self::create_index_buffer_inner_16(len)
         } else {
-            Self::create_index_buffer_inner_32(len as u32)
+            Self::create_index_buffer_inner_32(vertices as u32)
         }
     }
 
@@ -277,9 +291,13 @@ impl LodVectors {
     ///
     /// # Unchecked Operation
     /// This function assumes you have updated the LoD vectors.
-    fn create_full_buffer(&self, focus: f64, max_level: NonZeroU8) -> Buffers {
-        let vertices = self.create_vertex_buffer(focus, max_level);
-        let indices = Self::create_index_buffer(&vertices);
+    fn create_buffers_inner(&self, focus: f64, max_level: NonZeroU8, shift: DVec2) -> Buffers {
+        let vertices: Vec<Vec3> = self
+            .create_unshifted_vertex_buffer(focus, max_level)
+            .into_iter()
+            .map(|point| point.shift_downcast(shift))
+            .collect();
+        let indices = Self::create_index_buffer(vertices.len());
 
         Buffers { vertices, indices }
     }
@@ -293,11 +311,13 @@ impl LodVectors {
     ///
     /// # Unchecked Operation
     /// This function assumes you have updated the LoD vectors.
-    fn create_buffers(&self, focus: f64, max_level: Option<u8>) -> Buffers {
+    fn create_buffers(&self, focus: f64, max_level: Option<u8>, shift: DVec2) -> Buffers {
         match max_level {
-            None => self.create_min_buffer(),
-            Some(0) => self.create_zeroth_buffer(),
-            Some(max_level) => self.create_full_buffer(focus, NonZeroU8::new(max_level).unwrap()),
+            None => self.create_min_buffer(shift),
+            Some(0) => self.create_zeroth_buffer(shift),
+            Some(max_level) => {
+                self.create_buffers_inner(focus, NonZeroU8::new(max_level).unwrap(), shift)
+            }
         }
     }
 }

@@ -1,5 +1,5 @@
 use crate::components::celestial::Terrain;
-use bevy::math::DVec2;
+use bevy::math::{DVec2, Vec3};
 use fastnoise_lite::{FastNoiseLite, FractalType};
 
 pub mod render;
@@ -9,6 +9,14 @@ pub mod render;
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct TerrainPoint(pub DVec2);
 
+impl TerrainPoint {
+    /// Shifts this vector, then downcast it to 32-bit mesh-ready vectors.
+    #[must_use]
+    pub fn shift_downcast(self, shift: DVec2) -> Vec3 {
+        (self.0 + shift).as_vec2().extend(0.0)
+    }
+}
+
 /// A terrain generator wrapper around Terrain and FastNoiseLite.
 pub struct TerrainGen {
     multiplier: f64,
@@ -17,7 +25,7 @@ pub struct TerrainGen {
 }
 
 impl TerrainGen {
-    fn new(terrain: Terrain) -> Self {
+    pub fn new(terrain: Terrain) -> Self {
         let mut noisegen = FastNoiseLite::with_seed(terrain.seed);
         noisegen.fractal_type = FractalType::FBm;
         noisegen.octaves = terrain.octaves;

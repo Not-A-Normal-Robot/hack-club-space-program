@@ -4,6 +4,7 @@ use bevy_rapier2d::prelude::RigidBody;
 use crate::{
     components::{
         camera::{SimCamera, SimCameraOffset, SimCameraZoom},
+        celestial::CelestialBody,
         frames::{
             RigidSpaceTransform, RigidSpaceVelocity, RigidSpaceVelocityImpl,
             RootSpaceLinearVelocity, RootSpacePosition,
@@ -171,7 +172,8 @@ pub fn pre_rapier_frame_switch(
 
 /// Sets transform into the camera transform so Bevy can render it
 pub fn post_rapier_frame_switch(
-    query: Query<(&mut Transform, &RootSpacePosition)>,
+    query: Query<(&mut Transform, &RootSpacePosition), Without<CelestialBody>>,
+    celestials: Query<(&mut Transform), With<CelestialBody>>,
     sim_camera: Query<(&mut SimCameraOffset, &SimCameraZoom, &Camera), With<SimCamera>>,
     camera_offset_query: Query<&RootSpacePosition>,
 ) {
@@ -189,4 +191,9 @@ pub fn post_rapier_frame_switch(
             .to_camera_space_transform(rotation, cam_offset, cam_zoom)
             .0;
     });
+
+    celestials.into_iter().for_each(|mut transform| {
+        // Offsetting is handled at the mesh layer
+        transform.translation = Vec3::ZERO;
+    })
 }

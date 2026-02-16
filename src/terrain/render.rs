@@ -1,4 +1,7 @@
-use crate::terrain::{TerrainGen, TerrainPoint};
+use crate::{
+    components::{camera::SimCameraZoom, frames::RootSpacePosition},
+    terrain::{TerrainGen, TerrainPoint},
+};
 use bevy::{mesh::Indices, prelude::*};
 use core::{f64::consts::TAU, num::NonZeroU8};
 
@@ -34,18 +37,19 @@ const _LOD_ASSERTIONS: () = {
 /// Note: This assumes the [`PrimitiveTopology`][bevy::mesh::PrimitiveTopology]
 /// is [`TriangleList`][bevy::mesh::PrimitiveTopology::TriangleList]
 pub struct Buffers {
-    pub vertices: Box<[TerrainPoint]>,
+    pub vertices: Vec<Vec3>,
     pub indices: Indices,
 }
 
 impl Buffers {
     pub fn empty() -> Self {
         Self {
-            vertices: Box::from([]),
+            vertices: Vec::new(),
             indices: Indices::U16(vec![]),
         }
     }
 }
+
 impl TerrainGen {
     /// Gets the LoD vector array at a certain LoD level.
     pub fn gen_lod(&self, lod_level: u8, focus: f64) -> [TerrainPoint; LOD_VERTS as usize] {
@@ -103,6 +107,26 @@ pub fn lod_level_index(lod_level: NonZeroU8, focus: f64) -> usize {
         .unwrap_or_default();
 
     ((cur_start - prev_start) / prev_iter_scale).rem_euclid(LOD_VERTS as f64) as usize
+}
+
+/// Finds a maximum reasonable LoD level based on certain parameters.
+pub fn get_lod_level_cap(_cel_radius: f64, _zoom: SimCameraZoom, _distance_sq: f64) -> Option<u8> {
+    // TODO: lod level cap would be a small opt, low prio
+    Some(u8::MAX)
+}
+
+/// Gets the angle of focus on the celestial body given the camera's position.
+///
+/// Assumes the cel_rotation is a pure rotation around the Z-axis.
+pub fn get_focus(
+    cel_position: RootSpacePosition,
+    cel_rotation: f64,
+    cam_pos: RootSpacePosition,
+) -> f64 {
+    let rel_pos = cam_pos.0 - cel_position.0;
+    let rel_angle = rel_pos.to_angle();
+    let angle = rel_angle - cel_rotation;
+    angle.rem_euclid(TAU)
 }
 
 #[cfg(test)]
@@ -204,11 +228,7 @@ mod tests {
         println!("=== Vertices ===");
         println!("lod,x,y");
         let terrain_gen = TerrainGen::new(TEST_TERRAIN);
-        let vecs = LodVectors::new_full(
-            &terrain_gen,
-            NonZeroU8::new(TEST_TERRAIN.subdivs).unwrap(),
-            FOCUS,
-        );
+        let vecs = LodVectors::new_full(&terrain_gen, TEST_TERRAIN.subdivs, FOCUS);
         vecs.iter().enumerate().for_each(|(lod_level, vecs)| {
             vecs.iter().for_each(|vec| {
                 println!("{lod_level},{},{}", vec.0.x, vec.0.y);
