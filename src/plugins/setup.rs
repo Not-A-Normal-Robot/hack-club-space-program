@@ -20,8 +20,8 @@ use bevy_rapier2d::prelude::*;
 
 // const CELESTIAL_RADIUS: f32 = 6378137.0;
 // const CELESTIAL_MASS: f32 = 5.972e24;
-const CELESTIAL_RADIUS: f32 = 10000.0;
-const CELESTIAL_MASS: f32 = 4e18;
+const CELESTIAL_RADIUS: f32 = 100.0;
+const CELESTIAL_MASS: f32 = 4e16;
 const ALTITUDE: f32 = CELESTIAL_RADIUS + 100.0;
 
 fn demo_startup(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -48,8 +48,8 @@ fn demo_startup(mut commands: Commands, asset_server: Res<AssetServer>) {
         frequency: 0.7,
         gain: 0.5,
         lacunarity: 0.5,
-        offset: 10000.0,
-        multiplier: 1000.0,
+        offset: 100.0,
+        multiplier: 100.0,
         subdivs: 6,
     });
     let body = commands.spawn(body).id();
