@@ -1,6 +1,9 @@
 use crate::terrain::{
     TerrainGen, TerrainPoint,
-    render::{Buffers, LOD_DIVISIONS, LOD_VERTS, MIN_LOD_VERTS, lod_level_index, lod_level_start},
+    render::{
+        Buffers, LOD_DIVISIONS, LOD_VERTS, LOD_VERTS_PER_DIVISION, MIN_LOD_VERTS, lod_level_index,
+        lod_level_start,
+    },
 };
 use bevy::{math::DVec2, mesh::Indices, prelude::*};
 use core::{num::NonZeroU8, ops::Deref};
@@ -175,7 +178,7 @@ impl LodVectors {
         partial_wrapping_copy(
             lod_0_verts,
             &mut vertices,
-            lod_1_start_idx + 1,
+            lod_1_start_idx + LOD_VERTS_PER_DIVISION as usize + 1,
             LOD_0_USED_VERTS_COUNT as usize,
         );
 
