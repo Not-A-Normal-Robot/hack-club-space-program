@@ -69,11 +69,11 @@ impl<'a> SimCameraOffsetReference<'a> {
     ) -> RootSpacePosition {
         let offset = match self {
             Self::Mutable(SimCameraOffset::Attached {
-                last_known_pos,
+                last_known_pos: last_known_obj_pos,
                 offset,
                 ..
             }) => {
-                last_known_pos.0 = attached_obj_pos.0 + *offset;
+                last_known_obj_pos.0 = attached_obj_pos.0;
                 *offset
             }
             Self::Immutable(SimCameraOffset::Attached { offset, .. }) => *offset,
