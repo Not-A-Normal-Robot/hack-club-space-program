@@ -14,7 +14,12 @@ use crate::{
 };
 #[cfg(feature = "trace")]
 use bevy::log::Level;
-use bevy::{asset::RenderAssetUsages, math::DVec2, mesh::PrimitiveTopology};
+use bevy::{
+    asset::RenderAssetUsages,
+    math::DVec2,
+    mesh::PrimitiveTopology,
+    sprite_render::{Wireframe2dConfig, Wireframe2dPlugin},
+};
 use bevy::{log::LogPlugin, prelude::*};
 use bevy_rapier2d::prelude::*;
 
@@ -127,6 +132,11 @@ impl Plugin for GameSetupPlugin {
             GameDebugPlugin,
             GameControlPlugin,
             GameRenderPlugin,
+            Wireframe2dPlugin::default(), // DEBUG
         ));
+        app.insert_resource(Wireframe2dConfig {
+            global: true,
+            default_color: Color::srgba(1.0, 0.0, 1.0, 1.0),
+        });
     }
 }

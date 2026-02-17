@@ -16,7 +16,7 @@ pub const MIN_LOD_VERTS: u32 = 8;
 /// How many vertices for each LoD level.
 ///
 /// Is a multiple of [`LOD_DIVISIONS`] as well as [`MIN_LOD_VERTS`].
-pub const LOD_VERTS: u32 = 8;
+pub const LOD_VERTS: u32 = 16;
 
 /// How much smaller the next LoD level is compared to the previous one.
 /// (Level 0 = full revolution)
@@ -36,6 +36,7 @@ const _LOD_ASSERTIONS: () = {
 ///
 /// Note: This assumes the [`PrimitiveTopology`][bevy::mesh::PrimitiveTopology]
 /// is [`TriangleList`][bevy::mesh::PrimitiveTopology::TriangleList]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Buffers {
     pub vertices: Vec<Vec3>,
     pub indices: Indices,

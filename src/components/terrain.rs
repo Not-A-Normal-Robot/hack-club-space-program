@@ -67,6 +67,8 @@ impl LodVectors {
             .map(|level| lod_level_start(level, prev_focus) != lod_level_start(level, new_focus))
             .unwrap_or(false);
 
+        dbg!(level, level_not_loaded, lod_needs_updating); // DEBUG
+
         if level_not_loaded || lod_needs_updating {
             let vecs = terrain_gen.gen_lod(level, new_focus);
 
@@ -347,8 +349,23 @@ fn partial_wrapping_copy<T: Clone, const M: usize>(
 
 #[cfg(test)]
 mod tests {
+    use core::f64::consts::TAU;
+
+    use crate::components::celestial::Terrain;
+
     use super::*;
     use bevy::mesh::Indices;
+
+    const TEST_TERRAIN: Terrain = Terrain {
+        seed: 0xabcba,
+        octaves: 8,
+        frequency: 1.0,
+        gain: 0.5,
+        lacunarity: 2.0,
+        offset: 20000000.0,
+        multiplier: 10.0,
+        subdivs: 8,
+    };
 
     #[test]
     #[ignore = "takes a few dozen secs"]
@@ -440,6 +457,40 @@ mod tests {
                     "buffer inequality at start={start}, amount={amount}, size={ARRAY_SIZE}"
                 );
             }
+        }
+    }
+
+    #[test]
+    fn test_updating() {
+        const ITERS: usize = 256;
+
+        let terrain = TerrainGen::new(TEST_TERRAIN);
+
+        let mut lazy_vectors = LodVectors::new(&terrain);
+
+        for i in 0..ITERS {
+            let focus = i as f64 * TAU / ITERS as f64;
+            let prev_focus = ((i as f64) - 1.0) * TAU / ITERS as f64;
+
+            let full_vectors = LodVectors::new_full(&terrain, TEST_TERRAIN.subdivs, focus);
+            lazy_vectors.update_lods(
+                &terrain,
+                NonZeroU8::new(TEST_TERRAIN.subdivs).unwrap(),
+                prev_focus,
+                focus,
+            );
+
+            let full_buffers =
+                full_vectors.create_buffers(focus, Some(TEST_TERRAIN.subdivs), DVec2::ZERO);
+            let lazy_buffers =
+                lazy_vectors.create_buffers(focus, Some(TEST_TERRAIN.subdivs), DVec2::ZERO);
+
+            assert_eq!(
+                full_buffers.vertices, lazy_buffers.vertices,
+                "Vertex mismatch between:\n{:#?}\nand:\n{:#?}",
+                full_buffers.vertices, lazy_buffers.vertices,
+            );
+            assert_eq!(full_buffers.indices, lazy_buffers.indices);
         }
     }
 }
