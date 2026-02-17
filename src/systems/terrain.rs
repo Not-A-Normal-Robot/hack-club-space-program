@@ -10,7 +10,12 @@ use crate::{
         render::{get_focus, get_lod_level_cap},
     },
 };
-use bevy::{ecs::query::QueryData, mesh::Indices, prelude::*};
+use bevy::{
+    camera::primitives::{Aabb, MeshAabb},
+    ecs::query::QueryData,
+    mesh::Indices,
+    prelude::*,
+};
 use core::{
     num::NonZeroU8,
     ops::{Deref, DerefMut},
@@ -41,6 +46,7 @@ pub struct CelestialEntity {
     body: &'static CelestialBody,
     pos: &'static RootSpacePosition,
     mesh: &'static Mesh2d,
+    aabb: Option<&'static mut Aabb>,
     lod_vectors: Option<&'static mut LodVectors>,
     prev_focus: Option<&'static mut PrevFocus>,
 }
@@ -156,6 +162,15 @@ fn update_mesh(
         }
         None => {
             mesh.insert_indices(buffers.indices);
+        }
+    }
+
+    if let Some(aabb) = mesh.compute_aabb() {
+        match celestial.aabb {
+            Some(mut cel_aabb) => *cel_aabb = aabb,
+            None => {
+                commands.entity(celestial.entity).insert(aabb);
+            }
         }
     }
 }

@@ -204,6 +204,8 @@ impl LodVectors {
 
     /// `len` is the length of the vertex buffer and must be >= 3
     fn create_index_buffer_inner_16(len: u16) -> Indices {
+        debug_assert!(len >= 3);
+
         let mut buf = Box::new_uninit_slice((len as usize - 1) * 3);
 
         for i in 1..len - 1 {

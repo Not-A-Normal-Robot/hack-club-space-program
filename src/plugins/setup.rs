@@ -31,7 +31,7 @@ fn demo_startup(mut commands: Commands, asset_server: Res<AssetServer>) {
     );
     let mesh = asset_server.add(mesh);
 
-    let material = ColorMaterial::from_color(Color::WHITE);
+    let material = ColorMaterial::from_color(Color::srgba(1.0, 1.0, 1.0, 0.2));
     let material = asset_server.add(material);
 
     let body = CelestialBodyBuilder {
@@ -49,7 +49,7 @@ fn demo_startup(mut commands: Commands, asset_server: Res<AssetServer>) {
         gain: 0.5,
         lacunarity: 0.5,
         offset: 100.0,
-        multiplier: 100.0,
+        multiplier: 0.0,
         subdivs: 6,
     });
     let body = commands.spawn(body).id();
