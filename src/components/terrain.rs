@@ -161,7 +161,7 @@ impl LodVectors {
 
         vertices.push(TerrainPoint(DVec2::ZERO));
 
-        // Zeroeth LoD cutoffs need special care since it may pass through index 0
+        // Zeroth LoD cutoffs need special care since it may pass through index 0
         // (+x axis)
         // I figured I could just shove all the LoD_0 verts into the beginning of the buffer
         // e.g. verts: 8, subdivs: 1, divs: 4, start idx: 3

@@ -68,6 +68,7 @@ impl TerrainGen {
         })
     }
 }
+
 /// Gets the starting theta for a given LoD level and focus theta.
 ///
 /// This is in revolutions. To get the theta in radians, multiply this by tau.
@@ -131,10 +132,15 @@ pub fn get_focus(
 
 #[cfg(test)]
 mod tests {
+    use bevy::math::DVec2;
+
     use crate::components::{celestial::Terrain, terrain::LodVectors};
 
     use super::*;
-    use core::{f64::consts::TAU, num::NonZeroU8};
+    use core::{
+        f64::consts::{PI, TAU},
+        num::NonZeroU8,
+    };
 
     const TEST_TERRAIN: Terrain = Terrain {
         seed: 0xabcba,
@@ -223,9 +229,9 @@ mod tests {
     #[test]
     #[ignore = "mostly for debugging"]
     fn print_results() {
-        const FOCUS: f64 = 1.0;
+        const FOCUS: f64 = PI;
 
-        println!("=== Vertices ===");
+        println!("=== LoD Vertices ===");
         println!("lod,x,y");
         let terrain_gen = TerrainGen::new(TEST_TERRAIN);
         let vecs = LodVectors::new_full(&terrain_gen, TEST_TERRAIN.subdivs, FOCUS);
@@ -242,6 +248,14 @@ mod tests {
             let index = lod_level_index(level, FOCUS);
 
             println!("{level},{index}");
+        }
+
+        println!("=== Vert Buffer ===");
+        println!("x,y,z");
+        let buffers = vecs.create_buffers(FOCUS, TEST_TERRAIN.subdivs.into(), DVec2::ZERO);
+
+        for Vec3 { x, y, z } in buffers.vertices.iter() {
+            println!("{x},{y},{z}");
         }
     }
 }

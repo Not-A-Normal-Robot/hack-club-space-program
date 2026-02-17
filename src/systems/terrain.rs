@@ -10,7 +10,7 @@ use crate::{
         render::{get_focus, get_lod_level_cap},
     },
 };
-use bevy::{ecs::query::QueryData, mesh::Indices, prelude::*};
+use bevy::{ecs::query::QueryData, mesh::Indices, pbr::wireframe::Wireframe, prelude::*};
 use core::{
     num::NonZeroU8,
     ops::{Deref, DerefMut},
@@ -122,6 +122,9 @@ fn update_mesh(
 
     let distance_sq = global.cam_pos.0.distance_squared(celestial.pos.0);
 
+    // DEBUG
+    commands.entity(celestial.entity).insert(Wireframe);
+
     let ending_level =
         get_lod_level_cap(celestial.body.base_radius as f64, global.zoom, distance_sq)
             .map(|cap| celestial.terrain.subdivs.min(cap));
@@ -153,6 +156,19 @@ fn update_mesh(
         return;
     };
 
+    // DEBUG
+    if true {
+        let mut str = String::new();
+
+        str.push_str("x,y,z\n");
+
+        for Vec3 { x, y, z } in buffers.vertices {
+            str.push_str(&format!("{x},{y},{z}\n"));
+        }
+
+        panic!("{str}");
+    }
+
     mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, buffers.vertices);
     match mesh.indices_mut() {
         Some(indices) => {
@@ -171,6 +187,8 @@ pub fn update_terrain_meshes(
 ) {
     let Some((&zoom, &offset, _)) = queries.p0().iter().find(|(_, _, camera)| camera.is_active)
     else {
+        #[cfg(feature = "trace")]
+        trace!("Could not find active sim camera for terrain mesh rebuilding");
         return;
     };
 

@@ -48,7 +48,7 @@ impl<M: Material2d> CelestialBodyBuilder<M> {
         )
     }
 
-    pub fn build_with_terrain(self, _terrain: Terrain) -> impl Bundle {
-        todo!() as ()
+    pub fn build_with_terrain(self, terrain: Terrain) -> impl Bundle {
+        (self.build_without_terrain(), terrain)
     }
 }
