@@ -10,7 +10,7 @@ use crate::{
         render::{get_focus, get_lod_level_cap},
     },
 };
-use bevy::{ecs::query::QueryData, mesh::Indices, pbr::wireframe::Wireframe, prelude::*};
+use bevy::{ecs::query::QueryData, mesh::Indices, prelude::*};
 use core::{
     num::NonZeroU8,
     ops::{Deref, DerefMut},
@@ -115,20 +115,13 @@ fn update_mesh(
             f64::NAN
         }
     };
-
     let camera_space_pos = celestial.pos.0 - global.cam_pos.0;
-
-    let terrain_gen = TerrainGen::new(*celestial.terrain);
-
     let distance_sq = global.cam_pos.0.distance_squared(celestial.pos.0);
 
-    // DEBUG
-    commands.entity(celestial.entity).insert(Wireframe);
-
+    let terrain_gen = TerrainGen::new(*celestial.terrain);
     let ending_level =
         get_lod_level_cap(celestial.body.base_radius as f64, global.zoom, distance_sq)
             .map(|cap| celestial.terrain.subdivs.min(cap));
-
     let mut lod_vectors = match celestial.lod_vectors {
         Some(v) => CowMut::Borrowed(v),
         // None => CowMut::Owned(LodVectors::new_full(celestial.terrain, ending_level, focus))
@@ -155,19 +148,6 @@ fn update_mesh(
         );
         return;
     };
-
-    // DEBUG
-    if true {
-        let mut str = String::new();
-
-        str.push_str("x,y,z\n");
-
-        for Vec3 { x, y, z } in buffers.vertices {
-            str.push_str(&format!("{x},{y},{z}\n"));
-        }
-
-        panic!("{str}");
-    }
 
     mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, buffers.vertices);
     match mesh.indices_mut() {

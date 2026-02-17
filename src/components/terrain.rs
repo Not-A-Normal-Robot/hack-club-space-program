@@ -178,7 +178,7 @@ impl LodVectors {
         partial_wrapping_copy(
             lod_0_verts,
             &mut vertices,
-            lod_1_start_idx + LOD_VERTS_PER_DIVISION as usize + 1,
+            (lod_1_start_idx + LOD_VERTS_PER_DIVISION as usize + 1) % LOD_VERTS as usize,
             LOD_0_USED_VERTS_COUNT as usize,
         );
 
