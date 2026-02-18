@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{pbr::wireframe::WireframeConfig, prelude::*};
 use hack_club_space_program::plugins::setup::GameSetupPlugin;
 
 fn enable_backtrace() {
@@ -14,6 +14,10 @@ fn main() {
     enable_backtrace();
 
     App::new()
-        .add_plugins((DefaultPlugins, GameSetupPlugin))
+        .add_plugins(GameSetupPlugin)
+        .insert_resource(WireframeConfig {
+            global: true,
+            default_color: Color::Srgba(Srgba::RED),
+        })
         .run();
 }

@@ -2,41 +2,56 @@ use crate::{
     builders::{celestial::CelestialBodyBuilder, vessel::VesselBuilder},
     components::{
         camera::{SimCamera, SimCameraOffset, SimCameraZoom},
-        celestial::Heightmap,
+        celestial::Terrain,
         frames::{RootSpaceLinearVelocity, RootSpacePosition},
         relations::{CelestialParent, RailMode},
     },
-    plugins::{controls::GameControlPlugin, debug::GameDebugPlugin, logic::GameLogicPlugin},
+    plugins::{
+        controls::GameControlPlugin, debug::GameDebugPlugin, logic::GameLogicPlugin,
+        render::GameRenderPlugin,
+    },
     resources::ActiveVessel,
 };
-use bevy::math::DVec2;
-use bevy::prelude::*;
+#[cfg(feature = "trace")]
+use bevy::log::Level;
+use bevy::{asset::RenderAssetUsages, math::DVec2, mesh::PrimitiveTopology};
+use bevy::{log::LogPlugin, prelude::*};
 use bevy_rapier2d::prelude::*;
 
-const DEMO_HEIGHTMAP: [f32; 10] = [10.0, 10.0, 10.0, 10.0, 10.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-const CELESTIAL_RADIUS: f32 = 6378137.0;
+// const CELESTIAL_RADIUS: f32 = 6378137.0;
+// const CELESTIAL_MASS: f32 = 5.972e24;
+const CELESTIAL_RADIUS: f32 = 100.0;
+const CELESTIAL_MASS: f32 = 4e16;
 const ALTITUDE: f32 = CELESTIAL_RADIUS + 100.0;
-fn demo_startup(mut commands: Commands) {
-    commands.spawn((
-        Camera {
-            is_active: true,
-            ..Default::default()
-        },
-        Camera2d,
-        SimCamera,
-        SimCameraOffset::Detached(RootSpacePosition(DVec2::ZERO)),
-        SimCameraZoom(1.0),
-        Transform::from_rotation(Quat::from_rotation_z(0.0)),
-    ));
+
+fn demo_startup(mut commands: Commands, asset_server: Res<AssetServer>) {
+    let mesh = Mesh::new(
+        PrimitiveTopology::TriangleList,
+        RenderAssetUsages::MAIN_WORLD | RenderAssetUsages::RENDER_WORLD,
+    );
+    let mesh = asset_server.add(mesh);
+
+    let material = ColorMaterial::from_color(Color::srgba(1.0, 1.0, 1.0, 0.2));
+    let material = asset_server.add(material);
 
     let body = CelestialBodyBuilder {
         name: Name::new("Body"),
         radius: CELESTIAL_RADIUS,
-        heightmap: Heightmap(Box::from(DEMO_HEIGHTMAP)),
-        mass: AdditionalMassProperties::Mass(5.972e24),
+        mass: AdditionalMassProperties::Mass(CELESTIAL_MASS),
         angle: 0.0,
+        mesh: Mesh2d(mesh),
+        material: MeshMaterial2d(material),
     }
-    .build();
+    .build_with_terrain(Terrain {
+        seed: 2401,
+        octaves: 8,
+        frequency: 2.0,
+        gain: 0.5,
+        lacunarity: 0.5,
+        offset: 100.0,
+        multiplier: 8.0,
+        subdivs: 2,
+    });
     let body = commands.spawn(body).id();
 
     let vessel_pos = RootSpacePosition(DVec2::new(0.0, ALTITUDE as f64));
@@ -58,6 +73,22 @@ fn demo_startup(mut commands: Commands) {
     let vessel = commands.spawn(vessel);
     let vessel_entity = vessel.id();
 
+    commands.spawn((
+        Camera {
+            is_active: true,
+            ..Default::default()
+        },
+        Camera2d,
+        SimCamera,
+        SimCameraOffset::Attached {
+            entity: vessel_entity,
+            last_known_pos: vessel_pos,
+            offset: DVec2::ZERO,
+        },
+        SimCameraZoom(1.0),
+        Transform::IDENTITY,
+    ));
+
     commands.insert_resource(ActiveVessel {
         entity: vessel_entity,
         prev_tick_parent: body,
@@ -73,6 +104,11 @@ pub struct GameSetupPlugin;
 
 impl Plugin for GameSetupPlugin {
     fn build(&self, app: &mut App) {
+        app.add_plugins(DefaultPlugins.set(LogPlugin {
+            #[cfg(feature = "trace")]
+            level: Level::TRACE,
+            ..Default::default()
+        }));
         app.add_systems(Startup, demo_startup);
         app.add_plugins(RapierDebugRenderPlugin {
             enabled: true,
@@ -86,6 +122,11 @@ impl Plugin for GameSetupPlugin {
                 ..Default::default()
             },
         });
-        app.add_plugins((GameLogicPlugin, GameDebugPlugin, GameControlPlugin));
+        app.add_plugins((
+            GameLogicPlugin,
+            GameDebugPlugin,
+            GameControlPlugin,
+            GameRenderPlugin,
+        ));
     }
 }

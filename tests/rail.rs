@@ -7,7 +7,6 @@ use bevy_rapier2d::prelude::*;
 use hack_club_space_program::{
     builders::{celestial::CelestialBodyBuilder, vessel::VesselBuilder},
     components::{
-        celestial::Heightmap,
         frames::{RootSpaceLinearVelocity, RootSpacePosition},
         relations::{CelestialParent, RailMode, SurfaceAttachment},
     },
@@ -22,7 +21,9 @@ mod common;
 
 #[test]
 fn test_writing_to_orbit_rails() {
-    let mut app = common::setup(true);
+    let mut app = common::setup_default();
+
+    let (mesh, material) = common::empty_mesh_material(&mut app);
 
     let body_mass = 10.0f32;
     let body_mu = body_mass as f64 * GRAVITATIONAL_CONSTANT;
@@ -34,10 +35,11 @@ fn test_writing_to_orbit_rails() {
                 name: Name::new("Body"),
                 mass: AdditionalMassProperties::Mass(body_mass),
                 radius: 10.0,
-                heightmap: Heightmap(Box::from([])),
+                mesh,
+                material,
                 angle: 0.0,
             }
-            .build(),
+            .build_without_terrain(),
         )
         .id();
 
@@ -100,7 +102,9 @@ fn test_writing_to_orbit_rails() {
 
 #[test]
 fn test_writing_to_surface_rails() {
-    let mut app = common::setup(true);
+    let mut app = common::setup_default();
+
+    let (mesh, material) = common::empty_mesh_material(&mut app);
 
     let body_mass = 10.0f32;
 
@@ -111,10 +115,11 @@ fn test_writing_to_surface_rails() {
                 name: Name::new("Body"),
                 mass: AdditionalMassProperties::Mass(body_mass),
                 radius: 10.0,
-                heightmap: Heightmap(Box::from([])),
                 angle: 0.0,
+                mesh,
+                material,
             }
-            .build(),
+            .build_without_terrain(),
         )
         .id();
 
@@ -174,7 +179,9 @@ fn test_writing_to_surface_rails() {
 ///         - LOADED Betabase (beta pos + beta radius) (alpha vel + beta vel)
 #[test]
 fn test_rail_to_sv() {
-    let mut app = common::setup(true);
+    let mut app = common::setup_default();
+
+    let (mesh, material) = common::empty_mesh_material(&mut app);
 
     const ALPHA_RADIUS: f64 = 1e6;
     const ALPHA_MASS: f64 = 1e20;
@@ -208,11 +215,12 @@ fn test_rail_to_sv() {
             CelestialBodyBuilder {
                 name: Name::new("Alpha"),
                 radius: ALPHA_RADIUS as f32,
-                heightmap: Heightmap::empty(),
                 mass: AdditionalMassProperties::Mass(ALPHA_MASS as f32),
                 angle: 0.0,
+                mesh: mesh.clone(),
+                material: material.clone(),
             }
-            .build(),
+            .build_without_terrain(),
         )
         .id();
 
@@ -258,11 +266,12 @@ fn test_rail_to_sv() {
             CelestialBodyBuilder {
                 name: Name::new("Beta"),
                 radius: BETA_RADIUS as f32,
-                heightmap: Heightmap::empty(),
                 mass: AdditionalMassProperties::Mass(BETA_MASS as f32),
                 angle: 0.0,
+                mesh: mesh.clone(),
+                material: material.clone(),
             }
-            .build(),
+            .build_without_terrain(),
         )
         .insert((
             CelestialParent { entity: alpha },

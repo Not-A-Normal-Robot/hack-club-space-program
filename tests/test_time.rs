@@ -19,7 +19,7 @@ fn test_time(time: Res<Time<Fixed>>) {
 
 #[test]
 fn time_works() {
-    let mut app = common::setup(true);
+    let mut app = common::setup_default();
 
     app.add_systems(FixedUpdate, test_time);
 

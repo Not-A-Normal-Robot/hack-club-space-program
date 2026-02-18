@@ -15,7 +15,7 @@ fastnoise-lite = { version = "1.1.1", features = ["std", "f64"] }
 keplerian_sim = "0.7.3"
 
 [profile.dev]
-opt-level = 1
+opt-level = 0
 
 [profile.dev.package."*"]
 opt-level = 3

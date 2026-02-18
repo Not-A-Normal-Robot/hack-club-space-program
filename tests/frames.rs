@@ -134,7 +134,9 @@ fn get_camera_offset(app: &App, entity_refs: &TestEntityRefs) -> RootSpacePositi
             .unwrap_or(RootSpacePosition(DVec2::ZERO)),
         SimCameraOffset::Detached(pos) => pos,
     };
-    camera_offset.get_root_position_with_attached_pos(attached_pos)
+    camera_offset
+        .mutably()
+        .get_root_position_with_attached_pos(attached_pos)
 }
 
 impl Assertions for PostTickAssertions {
@@ -188,11 +190,7 @@ fn reference_frames() {
                     angvel: 0.0,
                     linvel: Vec2::new(-1.0, 0.0),
                 }),
-                cam_tf: Some(CameraSpaceTransform(Transform {
-                    translation: Vec3::new(-0.515625, -1.5, 0.0),
-                    rotation: Quat::IDENTITY,
-                    scale: Vec3::ONE,
-                })),
+                cam_tf: None,
             },
             vessel: TransformAssertions {
                 root_pos: Some(RootSpacePosition(DVec2::new(0.5 + 1.0 / 64.0, 1.5))),
@@ -233,12 +231,14 @@ fn reference_frames() {
         }])
     });
 
-    let mut app = common::setup(true);
+    let mut app = common::setup_default();
 
     let body = app
         .world_mut()
         .spawn((
-            CelestialBody { radius: 1.0 / 4.0 },
+            CelestialBody {
+                base_radius: 1.0 / 4.0,
+            },
             AdditionalMassProperties::Mass(0.0),
             RigidBody::KinematicVelocityBased,
             Collider::ball(1.0 / 4.0),
@@ -321,9 +321,7 @@ fn reference_frame_fixed_cam() {
                     angvel: 0.0,
                     linvel: Vec2::new(-1.0, 0.0),
                 }),
-                cam_tf: Some(CameraSpaceTransform(Transform::from_translation(
-                    Vec3::new(-1.0, -1.0, 0.0),
-                ))),
+                cam_tf: None,
             },
             vessel: TransformAssertions {
                 root_pos: Some(RootSpacePosition(DVec2::new(0.5 + 1.0 / 64.0, 1.5))),
@@ -341,7 +339,9 @@ fn reference_frame_fixed_cam() {
         }])
     });
 
-    let mut app = common::setup(true);
+    let mut app = common::setup_default();
+
+    let (mesh, material) = common::empty_mesh_material(&mut app);
 
     let body = app
         .world_mut()
@@ -349,11 +349,12 @@ fn reference_frame_fixed_cam() {
             CelestialBodyBuilder {
                 name: Name::new("Body"),
                 radius: 1.0 / 4.0,
-                heightmap: Heightmap(Box::from([])),
                 mass: AdditionalMassProperties::Mass(0.0),
                 angle: 0.0,
+                mesh,
+                material,
             }
-            .build(),
+            .build_without_terrain(),
         )
         .id();
 

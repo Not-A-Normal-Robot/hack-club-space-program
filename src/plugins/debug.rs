@@ -10,11 +10,11 @@ pub struct GameDebugPlugin;
 
 impl Plugin for GameDebugPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(FixedPostUpdate, print_vessel_sv);
+        app.add_systems(FixedPostUpdate, _print_vessel_sv);
     }
 }
 
-fn print_vessel_sv(
+fn _print_vessel_sv(
     vessels: Query<
         (
             NameOrEntity,
