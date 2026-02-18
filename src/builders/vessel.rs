@@ -3,11 +3,11 @@ use crate::components::{
     relations::{CelestialParent, RailMode},
     vessel::Vessel,
 };
-use bevy::prelude::*;
+use bevy::{prelude::*, sprite_render::Material2d};
 use bevy_rapier2d::prelude::*;
 
 #[derive(Clone, Debug)]
-pub struct VesselBuilder {
+pub struct VesselBuilder<M: Material2d> {
     pub name: Name,
     pub collider: Collider,
     pub mass: AdditionalMassProperties,
@@ -15,11 +15,13 @@ pub struct VesselBuilder {
     pub rail_mode: RailMode,
     pub position: RootSpacePosition,
     pub linvel: RootSpaceLinearVelocity,
+    pub mesh: Mesh2d,
+    pub material: MeshMaterial2d<M>,
     pub angvel: f32,
     pub angle: f32,
 }
 
-impl VesselBuilder {
+impl<M: Material2d> VesselBuilder<M> {
     pub const fn base_bundle() -> impl Bundle {
         (
             Vessel,
@@ -51,6 +53,8 @@ impl VesselBuilder {
                 linvel: Vec2::NAN,
             },
             Transform::from_rotation(Quat::from_rotation_z(self.angle)),
+            self.mesh,
+            self.material,
             Self::base_bundle(),
         )
     }

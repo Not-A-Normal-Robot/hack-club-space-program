@@ -24,15 +24,19 @@ const CELESTIAL_RADIUS: f32 = 100.0;
 const CELESTIAL_MASS: f32 = 4e16;
 const ALTITUDE: f32 = CELESTIAL_RADIUS + 100.0;
 
-fn demo_startup(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn demo_startup(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
     let mesh = Mesh::new(
         PrimitiveTopology::TriangleList,
         RenderAssetUsages::MAIN_WORLD | RenderAssetUsages::RENDER_WORLD,
     );
-    let mesh = asset_server.add(mesh);
+    let mesh = meshes.add(mesh);
 
     let material = ColorMaterial::from_color(Color::srgba(1.0, 1.0, 1.0, 0.2));
-    let material = asset_server.add(material);
+    let material = materials.add(material);
 
     let body = CelestialBodyBuilder {
         name: Name::new("Body"),
@@ -40,7 +44,7 @@ fn demo_startup(mut commands: Commands, asset_server: Res<AssetServer>) {
         mass: AdditionalMassProperties::Mass(CELESTIAL_MASS),
         angle: 0.0,
         mesh: Mesh2d(mesh),
-        material: MeshMaterial2d(material),
+        material: MeshMaterial2d(material.clone()),
     }
     .build_with_terrain(Terrain {
         seed: 2401,
@@ -56,11 +60,14 @@ fn demo_startup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     let vessel_pos = RootSpacePosition(DVec2::new(0.0, ALTITUDE as f64));
     let vessel_vel = RootSpaceLinearVelocity(DVec2::new(100.0, 0.0));
+    let vessel_half_x = 10.0;
+    let vessel_half_y = 20.0;
+
+    let mesh = Mesh2d(meshes.add(Rectangle::new(vessel_half_x * 2.0, vessel_half_y * 2.0)));
 
     let vessel = VesselBuilder {
         name: Name::new("Vessel"),
-        // collider: Collider::ball(10.0),
-        collider: Collider::round_cuboid(10.0, 20.0, 8.0),
+        collider: Collider::cuboid(vessel_half_x, vessel_half_y),
         mass: AdditionalMassProperties::Mass(1e12),
         parent: CelestialParent { entity: body },
         rail_mode: RailMode::None,
@@ -68,6 +75,8 @@ fn demo_startup(mut commands: Commands, asset_server: Res<AssetServer>) {
         linvel: vessel_vel,
         angvel: 0.0,
         angle: 0.0,
+        mesh,
+        material: MeshMaterial2d(material),
     }
     .build_rigid();
     let vessel = commands.spawn(vessel);

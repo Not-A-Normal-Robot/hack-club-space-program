@@ -46,6 +46,8 @@ fn test_writing_to_orbit_rails() {
     let vessel_pos = RootSpacePosition(DVec2::new(0.0, 12.0));
     let vessel_vel = RootSpaceLinearVelocity(DVec2::new(1.0, 0.0));
 
+    let (mesh, material) = common::empty_mesh_material(&mut app);
+
     let vessel = app
         .world_mut()
         .spawn(
@@ -59,6 +61,8 @@ fn test_writing_to_orbit_rails() {
                 parent: CelestialParent { entity: body },
                 rail_mode: RailMode::None,
                 position: vessel_pos,
+                mesh,
+                material,
             }
             .build_rigid(),
         )
@@ -126,6 +130,8 @@ fn test_writing_to_surface_rails() {
     let vessel_pos = RootSpacePosition(DVec2::new(0.0, 11.0));
     let vessel_vel = RootSpaceLinearVelocity(DVec2::new(0.0, 0.0));
 
+    let (mesh, material) = common::empty_mesh_material(&mut app);
+
     let vessel = app
         .world_mut()
         .spawn(
@@ -139,6 +145,8 @@ fn test_writing_to_surface_rails() {
                 parent: CelestialParent { entity: body },
                 position: vessel_pos,
                 rail_mode: RailMode::None,
+                mesh,
+                material,
             }
             .build_rigid(),
         )
@@ -224,6 +232,8 @@ fn test_rail_to_sv() {
         )
         .id();
 
+    let (mesh, material) = common::empty_mesh_material(&mut app);
+
     let alpharove = app
         .world_mut()
         .spawn(
@@ -237,10 +247,14 @@ fn test_rail_to_sv() {
                 linvel: RootSpaceLinearVelocity(DVec2::NAN),
                 angvel: 0.0,
                 angle: 0.0,
+                mesh,
+                material,
             }
             .build_on_rails(),
         )
         .id();
+
+    let (mesh, material) = common::empty_mesh_material(&mut app);
 
     let alphasat = app
         .world_mut()
@@ -255,6 +269,8 @@ fn test_rail_to_sv() {
                 linvel: RootSpaceLinearVelocity(DVec2::NAN),
                 angvel: 0.0,
                 angle: 0.0,
+                mesh: mesh.clone(),
+                material: material.clone(),
             }
             .build_on_rails(),
         )
@@ -279,6 +295,8 @@ fn test_rail_to_sv() {
         ))
         .id();
 
+    let (mesh, material) = common::empty_mesh_material(&mut app);
+
     let betarove = app
         .world_mut()
         .spawn(
@@ -292,10 +310,14 @@ fn test_rail_to_sv() {
                 linvel: RootSpaceLinearVelocity(DVec2::NAN),
                 angvel: 0.0,
                 angle: 0.0,
+                mesh,
+                material,
             }
             .build_on_rails(),
         )
         .id();
+
+    let (mesh, material) = common::empty_mesh_material(&mut app);
 
     let betabase = app
         .world_mut()
@@ -310,6 +332,8 @@ fn test_rail_to_sv() {
                 linvel: *BETABASE_VEL,
                 angvel: 0.0,
                 angle: 0.0,
+                mesh,
+                material,
             }
             .build_rigid(),
         )

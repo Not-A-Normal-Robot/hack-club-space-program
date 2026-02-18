@@ -361,6 +361,8 @@ fn reference_frame_fixed_cam() {
     let vessel_pos = RootSpacePosition(DVec2::new(0.5, 1.5));
     let vessel_vel = RootSpaceLinearVelocity(DVec2::new(1.0, 0.0));
 
+    let (mesh, material) = common::empty_mesh_material(&mut app);
+
     let vessel = app
         .world_mut()
         .spawn(
@@ -374,6 +376,8 @@ fn reference_frame_fixed_cam() {
                 linvel: vessel_vel,
                 angvel: 0.0,
                 angle: 0.0,
+                mesh,
+                material,
             }
             .build_rigid(),
         )
