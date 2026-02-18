@@ -13,7 +13,7 @@ fn test_time(time: Res<Time<Fixed>>) {
     assert_eq!(time.delta(), time.timestep());
     assert_eq!(
         time.elapsed(),
-        time.timestep().saturating_mul(old_ticks as u32 + 1)
+        time.timestep().saturating_mul(u32::from(old_ticks) + 1)
     );
 }
 

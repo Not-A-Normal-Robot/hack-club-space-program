@@ -2,7 +2,7 @@ use bevy::math::Quat;
 
 /// Gets the rotation of the quaternion, assuming the
 /// quaternion stays in the 2D XY plane.
-#[must_use] 
+#[must_use]
 pub fn quat_to_rot(quat: Quat) -> f64 {
     2.0 * f64::from(quat.z).atan2(f64::from(quat.w))
 }
@@ -14,6 +14,8 @@ mod tests {
     use core::f64::consts::TAU;
 
     #[test]
+    #[allow(clippy::cast_precision_loss)]
+    #[allow(clippy::cast_possible_truncation)]
     fn test_quat_to_rot() {
         const ITERS: usize = 1024;
 
@@ -39,7 +41,7 @@ mod tests {
                 );
             }
             assert!(
-                ((real_angle as f64).rem_euclid(TAU) - angle.rem_euclid(TAU)).abs() < 1e-5,
+                (f64::from(real_angle).rem_euclid(TAU) - angle.rem_euclid(TAU)).abs() < 1e-5,
                 "{real_angle} isn't near {angle}"
             );
             assert!(

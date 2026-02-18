@@ -26,7 +26,7 @@ fn test_writing_to_orbit_rails() {
     let (mesh, material) = common::empty_mesh_material(&mut app);
 
     let body_mass = 10.0f32;
-    let body_mu = body_mass as f64 * GRAVITATIONAL_CONSTANT;
+    let body_mu = f64::from(body_mass) * GRAVITATIONAL_CONSTANT;
 
     let body = app
         .world_mut()
@@ -186,11 +186,9 @@ fn test_writing_to_surface_rails() {
 ///         - Betarove (3/2π radians, 1e5 alt) => (0 -1e5) (0 0)
 ///         - LOADED Betabase (beta pos + beta radius) (alpha vel + beta vel)
 #[test]
+#[allow(clippy::cast_possible_truncation)]
+#[allow(clippy::too_many_lines)]
 fn test_rail_to_sv() {
-    let mut app = common::setup_default();
-
-    let (mesh, material) = common::empty_mesh_material(&mut app);
-
     const ALPHA_RADIUS: f64 = 1e6;
     const ALPHA_MASS: f64 = 1e20;
 
@@ -216,6 +214,10 @@ fn test_rail_to_sv() {
     });
     static BETABASE_VEL: LazyLock<RootSpaceLinearVelocity> =
         LazyLock::new(|| RootSpaceLinearVelocity(BETA_ORBIT.get_velocity_at_time(0.0)));
+
+    let mut app = common::setup_default();
+
+    let (mesh, material) = common::empty_mesh_material(&mut app);
 
     let alpha = app
         .world_mut()

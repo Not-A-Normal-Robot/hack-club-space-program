@@ -54,7 +54,7 @@ fn apply_gravity_inner(
     let force = GRAVITATIONAL_CONSTANT * m1 * m2 / r_sq;
     let force = force * grav_direction;
 
-    vessel.force.force = Vec2::new(force.x as f32, force.y as f32);
+    vessel.force.force = force.as_vec2();
 }
 
 pub fn apply_gravity(

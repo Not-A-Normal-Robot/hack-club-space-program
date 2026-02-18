@@ -37,7 +37,7 @@ pub struct TestAppConfig {
     /// Whether or not the app's itme should increase
     /// every time `app.update()` is called.
     pub forward_time_on_update: bool,
-    /// The log level for bevy::log
+    /// The log level for `bevy::log`
     pub log_level: Option<bevy::log::Level>,
 }
 
@@ -59,7 +59,7 @@ pub fn setup_default() -> App {
 }
 
 /// `forward_time_on_update`: Whether or not the app's time should
-/// increase every time update() is called.
+/// increase every time `App::update()` is called.
 ///
 /// The amount of time the time is increased is by the fixed timestep
 /// interval (default 64 Hz).
@@ -101,7 +101,7 @@ pub fn empty_mesh_material(app: &mut App) -> (Mesh2d, MeshMaterial2d<ColorMateri
 pub fn assert_sv(entity: EntityRef, pos: RootSpacePosition, vel: RootSpaceLinearVelocity) {
     let name = entity
         .get::<Name>()
-        .map(|name| name.into())
+        .map(std::convert::Into::into)
         .unwrap_or(entity.id().to_string());
     assert_eq!(
         entity.get::<RootSpacePosition>().copied(),
@@ -173,30 +173,28 @@ pub fn assert_sv_close(
 
     let name = entity
         .get::<Name>()
-        .map(|name| name.into())
+        .map(std::convert::Into::into)
         .unwrap_or(entity.id().to_string());
 
-    if actual_pos != pos && rel_dpos > tolerance {
-        panic!(
-            "position mismatch for {name}:\n
-            relative position difference {rel_dpos} exceeds tolerance {tolerance}
-            
-            exp: {pos}
-            got: {actual_pos}
-            dif: {dpos}"
-        );
-    }
+    assert!(
+        !(actual_pos != pos && rel_dpos > tolerance),
+        "position mismatch for {name}:\n
+        relative position difference {rel_dpos} exceeds tolerance {tolerance}
+        
+        exp: {pos}
+        got: {actual_pos}
+        dif: {dpos}"
+    );
 
-    if actual_vel != vel && rel_dvel > tolerance {
-        panic!(
-            "velocity mismatch for {name}:\n
-            relative velocity difference {rel_dvel} exceeds tolerance {tolerance}
-            
-            exp: {vel}
-            got: {actual_vel}
-            dif: {dvel}"
-        );
-    }
+    assert!(
+        !(actual_vel != vel && rel_dvel > tolerance),
+        "velocity mismatch for {name}:\n
+        relative velocity difference {rel_dvel} exceeds tolerance {tolerance}
+        
+        exp: {vel}
+        got: {actual_vel}
+        dif: {dvel}"
+    );
 }
 
 /// Trait for collection of assertions.
@@ -213,9 +211,9 @@ where
     type ExtraData = T::ExtraData;
 
     fn check_assertions(&self, app: &App, extra: Self::ExtraData) {
-        self.iter().for_each(|assertions| {
+        for assertions in self {
             assertions.check_assertions(app, extra);
-        });
+        }
     }
 }
 

@@ -39,10 +39,11 @@ impl RootSpacePosition {
         active_vessel_pos: RootSpacePosition,
     ) -> RigidSpacePosition {
         let position = self.0 - active_vessel_pos.0;
-        RigidSpacePosition(Vec2::new(position.x as f32, position.y as f32))
+        RigidSpacePosition(position.as_vec2())
     }
 
     #[must_use]
+    #[allow(clippy::cast_possible_truncation)]
     pub fn to_camera_space_transform(
         self,
         rotation: Quat,
@@ -53,7 +54,7 @@ impl RootSpacePosition {
 
         CameraSpaceTransform(Transform {
             rotation,
-            translation: Vec3::new(offset.x as f32, offset.y as f32, 0.0),
+            translation: offset.as_vec2().extend(0.0),
             scale: Vec3::splat(camera_zoom.0 as f32),
         })
     }
@@ -78,7 +79,7 @@ impl RootSpaceLinearVelocity {
         active_vessel_vel: RootSpaceLinearVelocity,
     ) -> RigidSpaceLinearVelocity {
         let vel = self.0 - active_vessel_vel.0;
-        RigidSpaceLinearVelocity(Vec2::new(vel.x as f32, vel.y as f32))
+        RigidSpaceLinearVelocity(vel.as_vec2())
     }
 }
 
@@ -205,15 +206,17 @@ mod tests {
         const REFERENCE_POS: RootSpacePosition = RootSpacePosition(DVec2::new(5.0, 9.0));
         const ROOTSPACE_POS: RootSpacePosition = RootSpacePosition(DVec2::new(-4.0, -3.0));
 
-        let rigid = ROOTSPACE_POS.to_rigid_space_position(REFERENCE_POS);
-
-        assert_eq!(rigid.0, Vec2::new(-9.0, -12.0));
-        assert_eq!(rigid.to_root_space_position(REFERENCE_POS), ROOTSPACE_POS);
-
         const REFERENCE_VEL: RootSpaceLinearVelocity =
             RootSpaceLinearVelocity(DVec2::new(5.0, 9.0));
         const ROOTSPACE_VEL: RootSpaceLinearVelocity =
             RootSpaceLinearVelocity(DVec2::new(-4.0, -3.0));
+
+        const ANG_VEL: f32 = 0.0;
+
+        let rigid = ROOTSPACE_POS.to_rigid_space_position(REFERENCE_POS);
+
+        assert_eq!(rigid.0, Vec2::new(-9.0, -12.0));
+        assert_eq!(rigid.to_root_space_position(REFERENCE_POS), ROOTSPACE_POS);
 
         let rigid = ROOTSPACE_VEL.to_rigid_space_linear_velocity(REFERENCE_VEL);
 
@@ -223,7 +226,6 @@ mod tests {
             ROOTSPACE_VEL
         );
 
-        const ANG_VEL: f32 = 0.0;
         let rigid_full = rigid.to_rigid_space_velocity(ANG_VEL);
 
         assert_eq!(
@@ -236,6 +238,6 @@ mod tests {
         assert_eq!(
             rigid_full.to_root_space_linear_velocity(REFERENCE_VEL),
             ROOTSPACE_VEL
-        )
+        );
     }
 }

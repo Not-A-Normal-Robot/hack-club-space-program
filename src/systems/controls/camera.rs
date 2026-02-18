@@ -1,6 +1,10 @@
 use crate::{
     components::camera::{SimCamera, SimCameraOffset, SimCameraZoom},
-    consts::controls::{KB_CAM_SLOW_MOD, SLOW_SPEED_MODIFIER, KB_CAM_FAST_MOD, FAST_SPEED_MODIFIER, NORMAL_SPEED_MODIFIER, KB_CAM_ROT_LEFT, KB_CAM_ROT_RIGHT, KB_CAM_ROT_RESET, KB_CAM_ZOOM_OUT, ZOOM_SPEED, MIN_ZOOM, KB_CAM_ZOOM_IN, MAX_ZOOM, KB_CAM_ZOOM_RESET},
+    consts::controls::{
+        FAST_SPEED_MODIFIER, KB_CAM_FAST_MOD, KB_CAM_ROT_LEFT, KB_CAM_ROT_RESET, KB_CAM_ROT_RIGHT,
+        KB_CAM_SLOW_MOD, KB_CAM_ZOOM_IN, KB_CAM_ZOOM_OUT, KB_CAM_ZOOM_RESET, MAX_ZOOM, MIN_ZOOM,
+        NORMAL_SPEED_MODIFIER, SLOW_SPEED_MODIFIER, ZOOM_SPEED,
+    },
 };
 use bevy::{ecs::query::QueryData, prelude::*};
 use core::f64::consts::TAU;
@@ -15,6 +19,7 @@ pub struct SimCameraInfo {
 
 type FilterSimCamera = (With<Camera>, With<SimCamera>);
 
+#[allow(clippy::cast_possible_truncation)]
 pub fn control_camera(
     mut camera: Single<SimCameraInfo, FilterSimCamera>,
     key: Res<ButtonInput<KeyCode>>,

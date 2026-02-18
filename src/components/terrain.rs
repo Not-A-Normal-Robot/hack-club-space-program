@@ -68,6 +68,7 @@ impl LodVectors {
         new_focus: f64,
     ) {
         let level_not_loaded = self.0.len() <= level.get() as usize;
+        #[allow(clippy::float_cmp)]
         let lod_needs_updating =
             lod_level_start(level, prev_focus) != lod_level_start(level, new_focus);
 
@@ -83,6 +84,7 @@ impl LodVectors {
     }
 
     /// The index buffer for minimal quality rendering (far away)
+    #[allow(clippy::cast_possible_truncation)]
     const fn create_min_index_buffer() -> [u16; (MIN_LOD_VERTS as usize - 1) * 3] {
         let mut arr = [0u16; _];
 
@@ -101,6 +103,7 @@ impl LodVectors {
         arr
     }
 
+    #[allow(clippy::cast_possible_truncation)]
     const fn create_zeroth_index_buffer() -> [u16; (LOD_VERTS as usize - 1) * 3] {
         let mut arr = [0u16; _];
 
@@ -122,14 +125,15 @@ impl LodVectors {
     /// Creates a very minimal vertex and index buffer
     /// for extremely-zoomed-out scenarios.
     fn create_min_buffer(&self, shift: DVec2, zoom: SimCameraZoom) -> Buffers {
+        #[allow(clippy::cast_possible_truncation)]
+        const LOD_VERTS_PER_MIN: u16 = (LOD_VERTS / MIN_LOD_VERTS as u32) as u16;
+
         // SAFETY: LoD 0 is always loaded, never mutated, and always created when
         // using the constructors.
         let vecs = unsafe { self.0.first().unwrap_unchecked() };
 
         let vertices = (0..MIN_LOD_VERTS)
-            .map(|i| {
-                vecs[(i * (LOD_VERTS / MIN_LOD_VERTS)) as usize].transform_downcast(shift, zoom)
-            })
+            .map(|i| vecs[(i * LOD_VERTS_PER_MIN) as usize].transform_downcast(shift, zoom))
             .collect();
 
         Buffers {
@@ -165,7 +169,12 @@ impl LodVectors {
         focus: f64,
         max_level: NonZeroU8,
     ) -> Box<[TerrainPoint]> {
-        let max_level = max_level.get().min((self.0.len() - 1) as u8);
+        const LOD_0_USED_VERTS_COUNT: u32 = LOD_VERTS * (LOD_DIVISIONS - 1) / LOD_DIVISIONS - 1;
+        const SKIP_VERTS_AMOUNT: usize = (LOD_VERTS / LOD_DIVISIONS + 1) as usize;
+
+        let max_level = max_level
+            .get()
+            .min(u8::try_from(self.0.len() - 1).unwrap_or(u8::MAX));
 
         // +1 vert in the center of the body
         let vertex_count = LOD_VERTS * u32::from(max_level) + 1;
@@ -181,7 +190,6 @@ impl LodVectors {
         // => L0[(start_idx + 1) mod VERTS], repeated USED_VERTS = VERTS*(DIVS-1)/DIVS-1 times
 
         let lod_0_verts = unsafe { self.0.first().unwrap_unchecked() };
-        const LOD_0_USED_VERTS_COUNT: u32 = LOD_VERTS * (LOD_DIVISIONS - 1) / LOD_DIVISIONS - 1;
         let lod_1_start_idx = lod_level_index(NonZeroU8::MIN, focus);
 
         partial_wrapping_copy(
@@ -209,8 +217,6 @@ impl LodVectors {
             // SAFETY: We already clamped the max_level at the beginning
             // of the function.
             let verts = unsafe { self.0.get_unchecked(level as usize) };
-
-            const SKIP_VERTS_AMOUNT: usize = (LOD_VERTS / LOD_DIVISIONS + 1) as usize;
 
             let next_start = lod_level_index(NonZeroU8::new(level + 1).unwrap(), focus);
 
@@ -299,6 +305,7 @@ impl LodVectors {
         if let Ok(len) = vertices.try_into() {
             Self::create_index_buffer_inner_16(len)
         } else {
+            #[allow(clippy::cast_possible_truncation)]
             Self::create_index_buffer_inner_32(vertices as u32)
         }
     }
@@ -394,13 +401,14 @@ mod tests {
         frequency: 1.0,
         gain: 0.5,
         lacunarity: 2.0,
-        offset: 20000000.0,
+        offset: 20e6,
         multiplier: 10.0,
         subdivs: 8,
     };
 
     #[test]
     #[ignore = "takes a few dozen secs"]
+    #[allow(clippy::cast_possible_truncation)]
     fn test_index_buffer() {
         let buf = LodVectors::create_index_buffer_inner_16(7);
         assert_eq!(
@@ -428,7 +436,7 @@ mod tests {
             }
         }
 
-        for i in (u16::MAX as u32)..70000 {
+        for i in u32::from(u16::MAX)..70000 {
             let buf = LodVectors::create_index_buffer_inner_32(i);
             let Indices::U32(buf) = buf else {
                 panic!("buf isn't u32")
@@ -493,6 +501,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::cast_precision_loss)]
     fn test_update_noop() {
         const ITERS: usize = 256;
 
@@ -531,6 +540,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::cast_precision_loss)]
     fn test_updating() {
         const ITERS: usize = 256;
 
@@ -566,11 +576,11 @@ mod tests {
             if full_buffers.vertices != lazy_buffers.vertices {
                 eprintln!("type,x,y");
 
-                for Vec3 { x, y, z: _ } in full_buffers.vertices.iter() {
+                for Vec3 { x, y, z: _ } in &full_buffers.vertices {
                     eprintln!("full,{x},{y}");
                 }
 
-                for Vec3 { x, y, z: _ } in lazy_buffers.vertices.iter() {
+                for Vec3 { x, y, z: _ } in &lazy_buffers.vertices {
                     eprintln!("lazy,{x},{y}");
                 }
 

@@ -18,7 +18,7 @@ use bevy::{asset::RenderAssetUsages, math::DVec2, mesh::PrimitiveTopology};
 use bevy::{log::LogPlugin, prelude::*};
 use bevy_rapier2d::prelude::*;
 
-const CELESTIAL_RADIUS: f32 = 6378137.0;
+const CELESTIAL_RADIUS: f32 = 6_378_137.0;
 const CELESTIAL_MASS: f32 = 5.972e24;
 const ALTITUDE: f32 = CELESTIAL_RADIUS + 100.0;
 

@@ -50,7 +50,7 @@ impl TransformAssertions {
                 Some(expected_root_pos),
                 "root pos didn't match expected value for {object}"
             );
-        };
+        }
 
         if let Some(expected_root_vel) = self.root_vel {
             assert_eq!(
@@ -180,6 +180,7 @@ impl Assertions for PostTickAssertions {
 }
 
 #[test]
+#[allow(clippy::too_many_lines)]
 fn reference_frames() {
     static ASSERTION_COLLECTION: LazyLock<Box<[PostTickAssertions]>> = LazyLock::new(|| {
         Box::new([PostTickAssertions {
@@ -300,15 +301,16 @@ fn reference_frames() {
         &mut app,
         TestExtraData {
             entities: TestEntities {
+                vessel,
                 body,
                 camera,
-                vessel,
             },
         },
     );
 }
 
 #[test]
+#[allow(clippy::cast_possible_truncation)]
 fn reference_frame_fixed_cam() {
     const CAM_POSITION: RootSpacePosition = RootSpacePosition(DVec2::ONE);
 
@@ -411,9 +413,9 @@ fn reference_frame_fixed_cam() {
         &mut app,
         TestExtraData {
             entities: TestEntities {
+                vessel,
                 body,
                 camera,
-                vessel,
             },
         },
     );

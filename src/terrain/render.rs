@@ -11,7 +11,7 @@ use core::{f64::consts::TAU, num::NonZeroU8};
 /// The amount of vertices to use for the extremely-zoomed-out mesh.
 ///
 /// Is at most [`LOD_VERTS`].
-pub const MIN_LOD_VERTS: u32 = 8;
+pub const MIN_LOD_VERTS: u16 = 8;
 
 /// How many vertices for each LoD level.
 ///
@@ -27,9 +27,13 @@ pub const LOD_DIVISIONS: u32 = 4;
 pub const LOD_VERTS_PER_DIVISION: u32 = LOD_VERTS / LOD_DIVISIONS;
 
 const _LOD_ASSERTIONS: () = {
-    assert!(MIN_LOD_VERTS <= LOD_VERTS);
+    assert!(MIN_LOD_VERTS as u32 <= LOD_VERTS);
     assert!(LOD_VERTS.is_multiple_of(LOD_DIVISIONS));
-    assert!(LOD_VERTS.is_multiple_of(MIN_LOD_VERTS));
+    assert!(LOD_VERTS.is_multiple_of(MIN_LOD_VERTS as u32));
+    assert!((LOD_VERTS / MIN_LOD_VERTS as u32) < u16::MAX as u32);
+    assert!((LOD_VERTS as u128) < isize::MAX as u128);
+    assert!(LOD_VERTS < i32::MAX as u32);
+    assert!(LOD_VERTS < u16::MAX as u32);
 };
 
 /// Vertex and index buffers for terrain.
@@ -65,6 +69,7 @@ impl TerrainGen {
         let iter_scale = f64::from(LOD_DIVISIONS).powi(-i32::from(lod_level));
 
         core::array::from_fn(|i| {
+            #[allow(clippy::cast_precision_loss)]
             self.get_terrain_vector(
                 const { TAU / LOD_VERTS as f64 } * (i as f64).mul_add(iter_scale, start),
             )
@@ -101,6 +106,8 @@ pub fn lod_level_start(lod_level: NonZeroU8, focus: f64) -> f64 {
 /// This is for the part where the LoDs get stitched into a mesh.
 /// This helps figure out where the stitches should be.
 #[must_use]
+#[allow(clippy::cast_possible_truncation)]
+#[allow(clippy::cast_possible_wrap)]
 pub fn lod_level_index(lod_level: NonZeroU8, focus: f64) -> usize {
     // From Desmos graph:
     // indices = ((cur_start - prev_start) / prev_iter_scale).rem_euclid(verts)
@@ -155,7 +162,7 @@ mod tests {
         frequency: 1.0,
         gain: 0.5,
         lacunarity: 2.0,
-        offset: 20000000.0,
+        offset: 20e6,
         multiplier: 10.0,
         subdivs: 8,
     };
@@ -165,13 +172,13 @@ mod tests {
         let terrain_gen = TerrainGen::new(TEST_TERRAIN);
 
         let first: Box<[_]> = (0..1024)
-            .map(|i| terrain_gen.get_terrain_vector(i as f64 * 1.0 / 1024.0))
+            .map(|i| terrain_gen.get_terrain_vector(f64::from(i) * 1.0 / 1024.0))
             .collect();
 
         let terrain_gen = TerrainGen::new(TEST_TERRAIN);
 
         let second: Box<_> = (0..1024)
-            .map(|i| terrain_gen.get_terrain_vector(i as f64 * 1.0 / 1024.0))
+            .map(|i| terrain_gen.get_terrain_vector(f64::from(i) * 1.0 / 1024.0))
             .collect();
 
         assert_eq!(first, second);
@@ -191,6 +198,9 @@ mod tests {
 
     #[test]
     fn lod_ranges() {
+        const FULL_RANGE: f64 = TAU * ((LOD_VERTS as f64 - 1.0) / LOD_VERTS as f64);
+        const TOLERANCE: f64 = 1e-6;
+
         fn get_range(vecs: impl IntoIterator<Item = TerrainPoint>) -> f64 {
             let (min, max) = vecs
                 .into_iter()
@@ -206,12 +216,10 @@ mod tests {
         }
 
         let terrain_gen = TerrainGen::new(TEST_TERRAIN);
-        const FULL_RANGE: f64 = TAU * ((LOD_VERTS as f64 - 1.0) / LOD_VERTS as f64);
-        const TOLERANCE: f64 = 1e-6;
 
         for level in 0..=TEST_TERRAIN.subdivs {
             let range = get_range(terrain_gen.gen_lod(level, 0.0));
-            let expected_range = FULL_RANGE * (LOD_DIVISIONS as f64).powi(-(level as i32));
+            let expected_range = FULL_RANGE * f64::from(LOD_DIVISIONS).powi(-i32::from(level));
             assert!(
                 (range - expected_range).abs() < TOLERANCE,
                 "Expected range of {expected_range}, got {range}"
@@ -243,9 +251,9 @@ mod tests {
         let terrain_gen = TerrainGen::new(TEST_TERRAIN);
         let vecs = LodVectors::new_full(&terrain_gen, TEST_TERRAIN.subdivs, FOCUS);
         vecs.iter().enumerate().for_each(|(lod_level, vecs)| {
-            vecs.iter().for_each(|vec| {
+            for vec in vecs {
                 println!("{lod_level},{},{}", vec.0.x, vec.0.y);
-            })
+            }
         });
 
         println!("=== Indices ===");
@@ -266,7 +274,7 @@ mod tests {
             SimCameraZoom(1.0),
         );
 
-        for Vec3 { x, y, z } in buffers.vertices.iter() {
+        for Vec3 { x, y, z } in &buffers.vertices {
             println!("{x},{y},{z}");
         }
     }

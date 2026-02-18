@@ -103,6 +103,7 @@ fn write_sv_to_rail_inner(
     *vessel.rail_mode = RailMode::Orbit(orbit);
 }
 
+#[allow(clippy::missing_panics_doc)]
 pub fn write_sv_to_rail(
     rapier_context: ReadRapierContext,
     mut vessels: Query<ChildData, FilterLoadedVessels>,

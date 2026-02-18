@@ -6,6 +6,7 @@ publish = false
 
 [lints.clippy]
 pedantic = "warn"
+needless_pass_by_value = { level = "allow", priority = 1 }
 suboptimal_flops = "warn"
 imprecise_flops = "warn"
 
