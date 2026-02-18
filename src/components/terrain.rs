@@ -361,7 +361,7 @@ mod tests {
     use crate::components::celestial::Terrain;
 
     use super::*;
-    use bevy::{math::VectorSpace, mesh::Indices};
+    use bevy::mesh::Indices;
 
     const TEST_TERRAIN: Terrain = Terrain {
         seed: 0xabcba,
