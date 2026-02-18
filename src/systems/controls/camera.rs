@@ -1,9 +1,6 @@
 use crate::{
     components::camera::{SimCamera, SimCameraOffset, SimCameraZoom},
-    consts::keybinds::{
-        KB_CAM_FAST_MOD, KB_CAM_ROT_LEFT, KB_CAM_ROT_RESET, KB_CAM_ROT_RIGHT, KB_CAM_SLOW_MOD,
-        KB_CAM_ZOOM_IN, KB_CAM_ZOOM_OUT, KB_CAM_ZOOM_RESET,
-    },
+    consts::controls::*,
 };
 use bevy::{ecs::query::QueryData, prelude::*};
 use core::f64::consts::TAU;
@@ -17,10 +14,6 @@ pub struct SimCameraInfo {
 }
 
 type FilterSimCamera = (With<Camera>, With<SimCamera>);
-
-const SLOW_SPEED_MODIFIER: f64 = 0.025;
-const NORMAL_SPEED_MODIFIER: f64 = 0.25;
-const FAST_SPEED_MODIFIER: f64 = 1.0;
 
 pub fn control_camera(
     mut camera: Single<SimCameraInfo, FilterSimCamera>,
@@ -48,14 +41,17 @@ pub fn control_camera(
         camera.transform.rotation = Quat::IDENTITY;
     }
 
-    // Zoom: 10s/double | 1s/double | 0.25s/double
+    // Zoom: 5s/double | 0.5s/double | 0.125s/double
     if key.any_pressed(KB_CAM_ZOOM_OUT) {
-        camera.zoom.0 = (camera.zoom.0 / 2.0f64.powf(4.0 * delta_amount)).max(1e-20);
+        camera.zoom.0 = (camera.zoom.0 / (ZOOM_SPEED * delta_amount).exp()).max(MIN_ZOOM);
+        eprintln!("{}", camera.zoom.0);
     }
     if key.any_pressed(KB_CAM_ZOOM_IN) {
-        camera.zoom.0 = (camera.zoom.0 * 2.0f64.powf(4.0 * delta_amount)).min(1e20);
+        camera.zoom.0 = (camera.zoom.0 * (ZOOM_SPEED * delta_amount).exp()).min(MAX_ZOOM);
+        eprintln!("{}", camera.zoom.0);
     }
     if key.any_pressed(KB_CAM_ZOOM_RESET) {
         camera.zoom.0 = 1.0;
+        eprintln!("{}", camera.zoom.0);
     }
 }

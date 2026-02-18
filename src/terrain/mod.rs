@@ -1,4 +1,4 @@
-use crate::components::celestial::Terrain;
+use crate::components::{camera::SimCameraZoom, celestial::Terrain};
 use bevy::math::{DVec2, Vec3};
 use fastnoise_lite::{FastNoiseLite, FractalType};
 
@@ -10,10 +10,10 @@ pub mod render;
 pub struct TerrainPoint(pub DVec2);
 
 impl TerrainPoint {
-    /// Shifts this vector, then downcast it to 32-bit mesh-ready vectors.
+    /// Transforms this vector, then downcast it to 32-bit mesh-ready vectors.
     #[must_use]
-    pub fn shift_downcast(self, shift: DVec2) -> Vec3 {
-        (self.0 + shift).as_vec2().extend(0.0)
+    pub fn transform_downcast(self, shift: DVec2, zoom: SimCameraZoom) -> Vec3 {
+        (zoom.0 * (self.0 + shift)).as_vec2().extend(0.0)
     }
 }
 

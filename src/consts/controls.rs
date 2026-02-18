@@ -1,5 +1,20 @@
 use bevy::input::keyboard::KeyCode;
 
+/// The min zoom for the simulation camera.
+pub const MIN_ZOOM: f64 = 1e-20;
+
+/// The max zoom for the simulation camera.
+pub const MAX_ZOOM: f64 = 1e20;
+
+/// Zoom speed multiplier.
+pub const ZOOM_SPEED: f64 = 8.0;
+
+pub const SLOW_SPEED_MODIFIER: f64 = 0.025;
+pub const NORMAL_SPEED_MODIFIER: f64 = 0.25;
+pub const FAST_SPEED_MODIFIER: f64 = 1.0;
+
+// Keybinds
+
 pub const KB_MODE_SWITCH_TO_MAIN_MODE: [KeyCode; 1] = [KeyCode::Escape];
 pub const KB_MODE_SWITCH_TO_MENU_MODE: [KeyCode; 1] = [KeyCode::KeyM];
 pub const KB_MODE_SWITCH_TO_VESSEL_MODE: [KeyCode; 1] = [KeyCode::KeyV];

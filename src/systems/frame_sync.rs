@@ -193,7 +193,8 @@ pub fn post_rapier_frame_switch(
     });
 
     celestials.into_iter().for_each(|mut transform| {
-        // Offsetting is handled at the mesh layer
+        // Translation and scaling is done at the mesh level
         transform.translation = Vec3::ZERO;
+        transform.scale = Vec3::ONE;
     })
 }

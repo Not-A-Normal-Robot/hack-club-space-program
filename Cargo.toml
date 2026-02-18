@@ -4,6 +4,10 @@ version = "0.1.0"
 edition = "2024"
 publish = false
 
+[lints.clippy]
+suboptimal_flops = "warn"
+imprecise_flops = "warn"
+
 [features]
 trace = []
 

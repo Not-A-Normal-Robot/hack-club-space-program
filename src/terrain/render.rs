@@ -64,7 +64,7 @@ impl TerrainGen {
 
         core::array::from_fn(|i| {
             self.get_terrain_vector(
-                const { TAU / LOD_VERTS as f64 } * (i as f64 * iter_scale + start),
+                const { TAU / LOD_VERTS as f64 } * (i as f64).mul_add(iter_scale, start),
             )
         })
     }
@@ -253,7 +253,12 @@ mod tests {
 
         println!("=== Vert Buffer ===");
         println!("x,y,z");
-        let buffers = vecs.create_buffers(FOCUS, TEST_TERRAIN.subdivs.into(), DVec2::ZERO);
+        let buffers = vecs.create_buffers(
+            FOCUS,
+            TEST_TERRAIN.subdivs.into(),
+            DVec2::ZERO,
+            SimCameraZoom(1.0),
+        );
 
         for Vec3 { x, y, z } in buffers.vertices.iter() {
             println!("{x},{y},{z}");

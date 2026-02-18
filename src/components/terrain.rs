@@ -1,8 +1,11 @@
-use crate::terrain::{
-    TerrainGen, TerrainPoint,
-    render::{
-        Buffers, LOD_DIVISIONS, LOD_VERTS, LOD_VERTS_PER_DIVISION, MIN_LOD_VERTS, lod_level_index,
-        lod_level_start,
+use crate::{
+    components::camera::SimCameraZoom,
+    terrain::{
+        TerrainGen, TerrainPoint,
+        render::{
+            Buffers, LOD_DIVISIONS, LOD_VERTS, LOD_VERTS_PER_DIVISION, MIN_LOD_VERTS,
+            lod_level_index, lod_level_start,
+        },
     },
 };
 use bevy::{math::DVec2, mesh::Indices, prelude::*};
@@ -115,13 +118,15 @@ impl LodVectors {
 
     /// Creates a very minimal vertex and index buffer
     /// for extremely-zoomed-out scenarios.
-    fn create_min_buffer(&self, shift: DVec2) -> Buffers {
+    fn create_min_buffer(&self, shift: DVec2, zoom: SimCameraZoom) -> Buffers {
         // SAFETY: LoD 0 is always loaded, never mutated, and always created when
         // using the constructors.
         let vecs = unsafe { self.0.first().unwrap_unchecked() };
 
         let vertices = (0..MIN_LOD_VERTS)
-            .map(|i| vecs[(i * (LOD_VERTS / MIN_LOD_VERTS)) as usize].shift_downcast(shift))
+            .map(|i| {
+                vecs[(i * (LOD_VERTS / MIN_LOD_VERTS)) as usize].transform_downcast(shift, zoom)
+            })
             .collect();
 
         Buffers {
@@ -133,13 +138,16 @@ impl LodVectors {
     /// Creates a vertex and index buffer from the vectors for just the zeroth LoD.
     ///
     /// This doesn't need updating the LoD vectors as the zeroth LoD never changes.
-    fn create_zeroth_buffer(&self, shift: DVec2) -> Buffers {
+    fn create_zeroth_buffer(&self, shift: DVec2, zoom: SimCameraZoom) -> Buffers {
         let Some(vecs) = self.0.first() else {
             return Buffers::empty();
         };
 
         Buffers {
-            vertices: vecs.iter().map(|v| v.shift_downcast(shift)).collect(),
+            vertices: vecs
+                .iter()
+                .map(|v| v.transform_downcast(shift, zoom))
+                .collect(),
             indices: Indices::U16(Vec::from(const { Self::create_zeroth_index_buffer() })),
         }
     }
@@ -296,11 +304,17 @@ impl LodVectors {
     ///
     /// # Unchecked Operation
     /// This function assumes you have updated the LoD vectors.
-    fn create_buffers_inner(&self, focus: f64, max_level: NonZeroU8, shift: DVec2) -> Buffers {
+    fn create_buffers_inner(
+        &self,
+        focus: f64,
+        max_level: NonZeroU8,
+        shift: DVec2,
+        zoom: SimCameraZoom,
+    ) -> Buffers {
         let vertices: Vec<Vec3> = self
             .create_unshifted_vertex_buffer(focus, max_level)
             .into_iter()
-            .map(|point| point.shift_downcast(shift))
+            .map(|point| point.transform_downcast(shift, zoom))
             .collect();
         let indices = Self::create_index_buffer(vertices.len());
 
@@ -316,12 +330,18 @@ impl LodVectors {
     ///
     /// # Unchecked Operation
     /// This function assumes you have updated the LoD vectors.
-    pub fn create_buffers(&self, focus: f64, max_level: Option<u8>, shift: DVec2) -> Buffers {
+    pub fn create_buffers(
+        &self,
+        focus: f64,
+        max_level: Option<u8>,
+        shift: DVec2,
+        zoom: SimCameraZoom,
+    ) -> Buffers {
         match max_level {
-            None => self.create_min_buffer(shift),
-            Some(0) => self.create_zeroth_buffer(shift),
+            None => self.create_min_buffer(shift, zoom),
+            Some(0) => self.create_zeroth_buffer(shift, zoom),
             Some(max_level) => {
-                self.create_buffers_inner(focus, NonZeroU8::new(max_level).unwrap(), shift)
+                self.create_buffers_inner(focus, NonZeroU8::new(max_level).unwrap(), shift, zoom)
             }
         }
     }
@@ -480,8 +500,12 @@ mod tests {
 
             let mut vectors = LodVectors::new_full(&terrain, TEST_TERRAIN.subdivs, focus);
 
-            let old_buffers =
-                vectors.create_buffers(focus, Some(TEST_TERRAIN.subdivs), DVec2::ZERO);
+            let old_buffers = vectors.create_buffers(
+                focus,
+                Some(TEST_TERRAIN.subdivs),
+                DVec2::ZERO,
+                SimCameraZoom(1.0),
+            );
 
             vectors.update_lods(
                 &terrain,
@@ -490,8 +514,12 @@ mod tests {
                 focus,
             );
 
-            let new_buffers =
-                vectors.create_buffers(focus, Some(TEST_TERRAIN.subdivs), DVec2::ZERO);
+            let new_buffers = vectors.create_buffers(
+                focus,
+                Some(TEST_TERRAIN.subdivs),
+                DVec2::ZERO,
+                SimCameraZoom(1.0),
+            );
 
             assert_eq!(old_buffers, new_buffers);
         }
@@ -517,10 +545,18 @@ mod tests {
                 focus,
             );
 
-            let full_buffers =
-                full_vectors.create_buffers(focus, Some(TEST_TERRAIN.subdivs), DVec2::ZERO);
-            let lazy_buffers =
-                lazy_vectors.create_buffers(focus, Some(TEST_TERRAIN.subdivs), DVec2::ZERO);
+            let full_buffers = full_vectors.create_buffers(
+                focus,
+                Some(TEST_TERRAIN.subdivs),
+                DVec2::ZERO,
+                SimCameraZoom(1.0),
+            );
+            let lazy_buffers = lazy_vectors.create_buffers(
+                focus,
+                Some(TEST_TERRAIN.subdivs),
+                DVec2::ZERO,
+                SimCameraZoom(1.0),
+            );
 
             if full_buffers.vertices != lazy_buffers.vertices {
                 eprintln!("type,x,y");

@@ -141,7 +141,8 @@ fn update_mesh(
         lod_vectors.update_lods(&terrain_gen, ending_level, prev_focus, new_focus);
     }
 
-    let buffers = lod_vectors.create_buffers(new_focus, ending_level, camera_space_pos);
+    let buffers =
+        lod_vectors.create_buffers(new_focus, ending_level, camera_space_pos, global.zoom);
 
     if let CowMut::Owned(vecs) = lod_vectors {
         commands.entity(celestial.entity).insert(vecs);
