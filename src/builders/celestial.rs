@@ -12,7 +12,7 @@ use bevy_rapier2d::prelude::*;
 pub struct CelestialBodyBuilder<M: Material2d> {
     pub name: Name,
     pub radius: f32,
-    pub mass: AdditionalMassProperties,
+    pub mass: f32,
     pub angle: f32,
     pub mesh: Mesh2d,
     pub material: MeshMaterial2d<M>,
@@ -35,7 +35,11 @@ impl<M: Material2d> CelestialBodyBuilder<M> {
                 base_radius: self.radius,
             },
             Collider::ball(self.radius),
-            self.mass,
+            AdditionalMassProperties::MassProperties(MassProperties {
+                local_center_of_mass: Vec2::ZERO,
+                mass: self.mass,
+                ..Default::default()
+            }),
             self.mesh,
             self.material,
             Self::base_bundle(),

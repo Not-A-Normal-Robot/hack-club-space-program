@@ -33,7 +33,7 @@ fn test_writing_to_orbit_rails() {
         .spawn(
             CelestialBodyBuilder {
                 name: Name::new("Body"),
-                mass: AdditionalMassProperties::Mass(body_mass),
+                mass: body_mass,
                 radius: 10.0,
                 mesh,
                 material,
@@ -117,7 +117,7 @@ fn test_writing_to_surface_rails() {
         .spawn(
             CelestialBodyBuilder {
                 name: Name::new("Body"),
-                mass: AdditionalMassProperties::Mass(body_mass),
+                mass: body_mass,
                 radius: 10.0,
                 angle: 0.0,
                 mesh,
@@ -223,7 +223,7 @@ fn test_rail_to_sv() {
             CelestialBodyBuilder {
                 name: Name::new("Alpha"),
                 radius: ALPHA_RADIUS as f32,
-                mass: AdditionalMassProperties::Mass(ALPHA_MASS as f32),
+                mass: ALPHA_MASS as f32,
                 angle: 0.0,
                 mesh: mesh.clone(),
                 material: material.clone(),
@@ -282,7 +282,7 @@ fn test_rail_to_sv() {
             CelestialBodyBuilder {
                 name: Name::new("Beta"),
                 radius: BETA_RADIUS as f32,
-                mass: AdditionalMassProperties::Mass(BETA_MASS as f32),
+                mass: BETA_MASS as f32,
                 angle: 0.0,
                 mesh: mesh.clone(),
                 material: material.clone(),

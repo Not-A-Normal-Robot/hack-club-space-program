@@ -349,7 +349,7 @@ fn reference_frame_fixed_cam() {
             CelestialBodyBuilder {
                 name: Name::new("Body"),
                 radius: 1.0 / 4.0,
-                mass: AdditionalMassProperties::Mass(0.0),
+                mass: 0.0,
                 angle: 0.0,
                 mesh,
                 material,

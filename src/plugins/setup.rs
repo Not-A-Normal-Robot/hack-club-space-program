@@ -39,7 +39,7 @@ fn demo_startup(
     let body = CelestialBodyBuilder {
         name: Name::new("Body"),
         radius: CELESTIAL_RADIUS,
-        mass: AdditionalMassProperties::Mass(CELESTIAL_MASS),
+        mass: CELESTIAL_MASS,
         angle: 0.0,
         mesh: Mesh2d(mesh),
         material: MeshMaterial2d(material.clone()),
