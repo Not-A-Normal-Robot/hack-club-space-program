@@ -44,14 +44,11 @@ pub fn control_camera(
     // Zoom: 5s/double | 0.5s/double | 0.125s/double
     if key.any_pressed(KB_CAM_ZOOM_OUT) {
         camera.zoom.0 = (camera.zoom.0 / (ZOOM_SPEED * delta_amount).exp()).max(MIN_ZOOM);
-        eprintln!("{}", camera.zoom.0);
     }
     if key.any_pressed(KB_CAM_ZOOM_IN) {
         camera.zoom.0 = (camera.zoom.0 * (ZOOM_SPEED * delta_amount).exp()).min(MAX_ZOOM);
-        eprintln!("{}", camera.zoom.0);
     }
     if key.any_pressed(KB_CAM_ZOOM_RESET) {
         camera.zoom.0 = 1.0;
-        eprintln!("{}", camera.zoom.0);
     }
 }

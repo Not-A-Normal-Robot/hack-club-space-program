@@ -9,8 +9,8 @@ use crate::components::{
 pub struct GameDebugPlugin;
 
 impl Plugin for GameDebugPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(FixedPostUpdate, _print_vessel_sv);
+    fn build(&self, _app: &mut App) {
+        // app.add_systems(FixedPostUpdate, _print_vessel_sv);
     }
 }
 

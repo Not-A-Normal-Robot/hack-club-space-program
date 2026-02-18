@@ -18,10 +18,8 @@ use bevy::{asset::RenderAssetUsages, math::DVec2, mesh::PrimitiveTopology};
 use bevy::{log::LogPlugin, prelude::*};
 use bevy_rapier2d::prelude::*;
 
-// const CELESTIAL_RADIUS: f32 = 6378137.0;
-// const CELESTIAL_MASS: f32 = 5.972e24;
-const CELESTIAL_RADIUS: f32 = 100.0;
-const CELESTIAL_MASS: f32 = 4e16;
+const CELESTIAL_RADIUS: f32 = 6378137.0;
+const CELESTIAL_MASS: f32 = 5.972e24;
 const ALTITUDE: f32 = CELESTIAL_RADIUS + 100.0;
 
 fn demo_startup(
@@ -48,13 +46,13 @@ fn demo_startup(
     }
     .build_with_terrain(Terrain {
         seed: 2401,
-        octaves: 8,
-        frequency: 2.0,
-        gain: 0.5,
-        lacunarity: 0.5,
-        offset: 100.0,
-        multiplier: 8.0,
-        subdivs: 2,
+        octaves: 6,
+        frequency: 400.0,
+        gain: 0.4,
+        lacunarity: 0.6,
+        offset: CELESTIAL_RADIUS as f64,
+        multiplier: CELESTIAL_RADIUS as f64 * 0.001,
+        subdivs: 6,
     });
     let body = commands.spawn(body).id();
 
@@ -73,7 +71,7 @@ fn demo_startup(
         rail_mode: RailMode::None,
         position: vessel_pos,
         linvel: vessel_vel,
-        angvel: 0.0,
+        angvel: 129.0,
         angle: 0.0,
         mesh,
         material: MeshMaterial2d(material),
