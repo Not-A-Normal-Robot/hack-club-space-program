@@ -22,6 +22,7 @@ pub struct VesselBuilder<M: Material2d> {
 }
 
 impl<M: Material2d> VesselBuilder<M> {
+    #[must_use] 
     pub const fn base_bundle() -> impl Bundle {
         (
             Vessel,
@@ -39,6 +40,7 @@ impl<M: Material2d> VesselBuilder<M> {
     /// Builds a vessel with the rigid body properties processed (i.e., not on rails).
     ///
     /// For the on-rails version, see [`build_on_rails`][Self::build_on_rails].
+    #[must_use] 
     pub fn build_rigid(self) -> impl Bundle {
         (
             self.name,
@@ -62,6 +64,7 @@ impl<M: Material2d> VesselBuilder<M> {
     /// Builds a vessel with the rigid body properties skipped (i.e., on rails).
     ///
     /// For the rigid-body version, see [`build_rigid`][Self::build_rigid].
+    #[must_use] 
     pub fn build_on_rails(self) -> impl Bundle {
         (self.build_rigid(), RigidBodyDisabled)
     }

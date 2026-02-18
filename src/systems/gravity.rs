@@ -42,14 +42,14 @@ fn apply_gravity_inner(
     let r_sq = rel_pos.length_squared().max(1e-9);
     let grav_direction = -rel_pos.normalize_or_zero();
 
-    let m1 = match vessel.mass {
+    let m1 = f64::from(match vessel.mass {
         AdditionalMassProperties::Mass(m) => *m,
         AdditionalMassProperties::MassProperties(prop) => prop.mass,
-    } as f64;
-    let m2 = match parent.mass {
+    });
+    let m2 = f64::from(match parent.mass {
         AdditionalMassProperties::Mass(m) => *m,
         AdditionalMassProperties::MassProperties(prop) => prop.mass,
-    } as f64;
+    });
 
     let force = GRAVITATIONAL_CONSTANT * m1 * m2 / r_sq;
     let force = force * grav_direction;
@@ -69,5 +69,5 @@ pub fn apply_gravity(
 pub fn unapply_gravity_to_unloaded(mut vessels: Query<&mut ExternalForce, FilterUnloadedVessels>) {
     vessels
         .iter_mut()
-        .for_each(|mut force| *force = ExternalForce::default())
+        .for_each(|mut force| *force = ExternalForce::default());
 }

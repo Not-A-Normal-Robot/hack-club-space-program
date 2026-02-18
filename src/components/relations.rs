@@ -17,6 +17,7 @@ pub struct CelestialParent {
 pub struct CelestialChildren(Vec<Entity>);
 
 impl CelestialChildren {
+    #[must_use] 
     pub fn clone_to_box(&self) -> Box<[Entity]> {
         Box::from(self.0.as_slice())
     }
@@ -37,21 +38,25 @@ pub enum RailMode {
 
 impl RailMode {
     /// Checks whether or not this is the [`None`][RailMode::None] variant.
+    #[must_use] 
     pub const fn is_none(&self) -> bool {
         matches!(self, Self::None)
     }
 
     /// Checks whether or not this is the [`Orbit`][RailMode::Orbit] variant.
+    #[must_use] 
     pub const fn is_orbit(&self) -> bool {
         matches!(self, Self::Orbit(_))
     }
 
     /// Checks whether or not this is the [`Surface`][RailMode::Surface] variant.
+    #[must_use] 
     pub const fn is_surface(&self) -> bool {
         matches!(self, Self::Surface(_))
     }
 
     /// Gets the orbit in this rail, if any.
+    #[must_use] 
     pub const fn as_orbit(&self) -> Option<Orbit2D> {
         match self {
             Self::Orbit(o) => Some(*o),
@@ -60,6 +65,7 @@ impl RailMode {
     }
 
     /// Gets the surface attachment in this rail, if any.
+    #[must_use] 
     pub const fn as_attachment(&self) -> Option<SurfaceAttachment> {
         match self {
             Self::Surface(a) => Some(*a),

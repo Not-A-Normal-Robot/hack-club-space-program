@@ -17,7 +17,7 @@ impl TerrainPoint {
     }
 }
 
-/// A terrain generator wrapper around Terrain and FastNoiseLite.
+/// A terrain generator wrapper around Terrain and `FastNoiseLite`.
 pub struct TerrainGen {
     multiplier: f64,
     offset: f64,
@@ -25,6 +25,7 @@ pub struct TerrainGen {
 }
 
 impl TerrainGen {
+    #[must_use] 
     pub fn new(terrain: Terrain) -> Self {
         let mut noisegen = FastNoiseLite::with_seed(terrain.seed);
         noisegen.fractal_type = FractalType::FBm;
@@ -45,7 +46,7 @@ impl TerrainGen {
     fn get_terrain_vector(&self, theta: f64) -> TerrainPoint {
         let (sin, cos) = theta.sin_cos();
 
-        let noise = self.noisegen.get_noise_2d(sin, cos) as f64;
+        let noise = f64::from(self.noisegen.get_noise_2d(sin, cos));
         let noise = noise.mul_add(self.multiplier, self.offset);
 
         TerrainPoint(DVec2::new(noise * cos, noise * sin))

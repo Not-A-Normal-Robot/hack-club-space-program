@@ -1,6 +1,6 @@
 use crate::{
     components::camera::{SimCamera, SimCameraOffset, SimCameraZoom},
-    consts::controls::*,
+    consts::controls::{KB_CAM_SLOW_MOD, SLOW_SPEED_MODIFIER, KB_CAM_FAST_MOD, FAST_SPEED_MODIFIER, NORMAL_SPEED_MODIFIER, KB_CAM_ROT_LEFT, KB_CAM_ROT_RIGHT, KB_CAM_ROT_RESET, KB_CAM_ZOOM_OUT, ZOOM_SPEED, MIN_ZOOM, KB_CAM_ZOOM_IN, MAX_ZOOM, KB_CAM_ZOOM_RESET},
 };
 use bevy::{ecs::query::QueryData, prelude::*};
 use core::f64::consts::TAU;

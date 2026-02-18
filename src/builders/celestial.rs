@@ -19,6 +19,7 @@ pub struct CelestialBodyBuilder<M: Material2d> {
 }
 
 impl<M: Material2d> CelestialBodyBuilder<M> {
+    #[must_use] 
     pub const fn base_bundle() -> impl Bundle {
         (
             RigidBody::KinematicVelocityBased,
@@ -28,6 +29,7 @@ impl<M: Material2d> CelestialBodyBuilder<M> {
         )
     }
 
+    #[must_use] 
     pub fn build_without_terrain(self) -> impl Bundle {
         (
             self.name,
@@ -52,6 +54,7 @@ impl<M: Material2d> CelestialBodyBuilder<M> {
         )
     }
 
+    #[must_use] 
     pub fn build_with_terrain(self, terrain: Terrain) -> impl Bundle {
         (self.build_without_terrain(), terrain)
     }

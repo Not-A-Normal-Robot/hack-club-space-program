@@ -50,13 +50,13 @@ fn demo_startup(
         frequency: 400.0,
         gain: 0.4,
         lacunarity: 0.6,
-        offset: CELESTIAL_RADIUS as f64,
-        multiplier: CELESTIAL_RADIUS as f64 * 0.001,
+        offset: f64::from(CELESTIAL_RADIUS),
+        multiplier: f64::from(CELESTIAL_RADIUS) * 0.001,
         subdivs: 6,
     });
     let body = commands.spawn(body).id();
 
-    let vessel_pos = RootSpacePosition(DVec2::new(0.0, ALTITUDE as f64));
+    let vessel_pos = RootSpacePosition(DVec2::new(0.0, f64::from(ALTITUDE)));
     let vessel_vel = RootSpaceLinearVelocity(DVec2::new(100.0, 0.0));
     let vessel_half_x = 10.0;
     let vessel_half_y = 20.0;

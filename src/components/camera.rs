@@ -14,6 +14,7 @@ pub enum SimCameraOffset {
 }
 
 impl SimCameraOffset {
+    #[must_use] 
     pub fn immutably(&self) -> SimCameraOffsetReference<'_> {
         SimCameraOffsetReference::Immutable(self)
     }
@@ -28,7 +29,7 @@ pub enum SimCameraOffsetReference<'a> {
     Immutable(&'a SimCameraOffset),
 }
 
-impl<'a> Deref for SimCameraOffsetReference<'a> {
+impl Deref for SimCameraOffsetReference<'_> {
     type Target = SimCameraOffset;
     fn deref(&self) -> &Self::Target {
         match self {
@@ -38,8 +39,9 @@ impl<'a> Deref for SimCameraOffsetReference<'a> {
     }
 }
 
-impl<'a> SimCameraOffsetReference<'a> {
+impl SimCameraOffsetReference<'_> {
     /// Gets the current root position of the simulation camera.
+    #[must_use] 
     pub fn get_root_position(self, query: Query<&RootSpacePosition>) -> RootSpacePosition {
         let (entity, last_known_pos) = match *self {
             SimCameraOffset::Attached {
@@ -58,11 +60,12 @@ impl<'a> SimCameraOffsetReference<'a> {
         self.get_root_position_with_attached_pos(attached_obj_pos)
     }
 
-    /// Get the root position of the SimCamera, given the position of the attached object.
+    /// Get the root position of the `SimCamera`, given the position of the attached object.
     ///
     /// # Unchecked Operation
     /// This function does no checks to whether or not the position of the
     /// object is equal to the thing it's actually attached to.
+    #[must_use] 
     pub fn get_root_position_with_attached_pos(
         self,
         attached_obj_pos: RootSpacePosition,

@@ -10,14 +10,16 @@ pub struct SimCameraBuilder {
     /// This should only be for rotation, as
     /// translation and scaling is already
     /// handled using double-precision using
-    /// SimCameraOffset and SimCameraZoom.
+    /// `SimCameraOffset` and `SimCameraZoom`.
     transform: Transform,
 }
 
 impl SimCameraBuilder {
+    #[must_use] 
     pub const fn base_bundle() -> impl Bundle {
         (Camera2d, SimCamera)
     }
+    #[must_use] 
     pub fn build(self, active: bool) -> impl Bundle {
         (
             Self::base_bundle(),
@@ -30,6 +32,7 @@ impl SimCameraBuilder {
             self.transform,
         )
     }
+    #[must_use] 
     pub fn with_camera(self, camera: Camera) -> impl Bundle {
         (
             Self::base_bundle(),

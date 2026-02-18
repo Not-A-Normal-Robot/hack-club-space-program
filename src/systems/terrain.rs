@@ -62,7 +62,7 @@ enum CowMut<'a, T> {
     Owned(T),
 }
 
-impl<'a, T> Deref for CowMut<'a, T> {
+impl<T> Deref for CowMut<'_, T> {
     type Target = T;
     fn deref(&self) -> &Self::Target {
         match self {
@@ -72,7 +72,7 @@ impl<'a, T> Deref for CowMut<'a, T> {
     }
 }
 
-impl<'a, T> DerefMut for CowMut<'a, T> {
+impl<T> DerefMut for CowMut<'_, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         match self {
             Self::Borrowed(r) => r,
@@ -108,25 +108,22 @@ fn update_mesh(
 ) {
     // TODO: Consider celestial rotation
     let new_focus = get_focus(*celestial.pos, 0.0, global.cam_pos);
-    let prev_focus = match celestial.prev_focus {
-        Some(mut f) => {
-            let old = *f;
-            f.0 = new_focus;
-            old.0
-        }
-        None => {
-            commands
-                .entity(celestial.entity)
-                .insert(PrevFocus(new_focus));
-            f64::NAN
-        }
+    let prev_focus = if let Some(mut f) = celestial.prev_focus {
+        let old = *f;
+        f.0 = new_focus;
+        old.0
+    } else {
+        commands
+            .entity(celestial.entity)
+            .insert(PrevFocus(new_focus));
+        f64::NAN
     };
     let camera_space_pos = celestial.pos.0 - global.cam_pos.0;
     let distance_sq = global.cam_pos.0.distance_squared(celestial.pos.0);
 
     let terrain_gen = TerrainGen::new(*celestial.terrain);
     let ending_level =
-        get_lod_level_cap(celestial.body.base_radius as f64, global.zoom, distance_sq)
+        get_lod_level_cap(f64::from(celestial.body.base_radius), global.zoom, distance_sq)
             .map(|cap| celestial.terrain.subdivs.min(cap));
     let mut lod_vectors = match celestial.lod_vectors {
         Some(v) => CowMut::Borrowed(v),

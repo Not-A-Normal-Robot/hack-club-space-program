@@ -99,7 +99,7 @@ pub fn write_rigid_vel_to_root(
     }
 }
 
-/// Shifts all entities' RootSpacePosition based on its RootSpaceLinearVelocity
+/// Shifts all entities' [`RootSpacePosition`] based on its [`RootSpaceLinearVelocity`]
 /// (if any).
 pub fn apply_root_velocity(
     vels: Query<
@@ -196,5 +196,5 @@ pub fn post_rapier_frame_switch(
         // Translation and scaling is done at the mesh level
         transform.translation = Vec3::ZERO;
         transform.scale = Vec3::ONE;
-    })
+    });
 }

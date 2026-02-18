@@ -24,11 +24,13 @@ pub struct LodVectors(
 
 impl LodVectors {
     /// Generate a lowest-quality LoD vector list.
+    #[must_use]
     pub fn new(terrain_gen: &TerrainGen) -> Self {
         Self(vec![terrain_gen.gen_lod(0, 0.0)])
     }
 
     /// Generate a fully-realized LoD vector list.
+    #[must_use]
     pub fn new_full(terrain_gen: &TerrainGen, ending_level: u8, focus: f64) -> Self {
         let mut this = Self::new(terrain_gen);
         if let Some(ending_level) = NonZeroU8::new(ending_level) {
@@ -38,6 +40,7 @@ impl LodVectors {
     }
 
     /// Updates the LoD vectors.
+    #[allow(clippy::missing_panics_doc)]
     pub fn update_lods(
         &mut self,
         terrain_gen: &TerrainGen,
@@ -54,7 +57,7 @@ impl LodVectors {
                 prev_focus,
                 new_focus,
             );
-        })
+        });
     }
 
     fn update_lod(
@@ -135,9 +138,9 @@ impl LodVectors {
         }
     }
 
-    /// Creates a vertex and index buffer from the vectors for just the zeroth LoD.
+    /// Creates a vertex and index buffer from the vectors for just the zeroth `LoD`.
     ///
-    /// This doesn't need updating the LoD vectors as the zeroth LoD never changes.
+    /// This doesn't need updating the `LoD` vectors as the zeroth `LoD` never changes.
     fn create_zeroth_buffer(&self, shift: DVec2, zoom: SimCameraZoom) -> Buffers {
         let Some(vecs) = self.0.first() else {
             return Buffers::empty();
@@ -155,7 +158,7 @@ impl LodVectors {
     /// Creates a vertex buffer from the vectors.
     ///
     /// # Unchecked Operation
-    /// This function assumes you have updated the LoD vectors.
+    /// This function assumes you have updated the `LoD` vectors.
     #[must_use]
     fn create_unshifted_vertex_buffer(
         &self,
@@ -165,7 +168,7 @@ impl LodVectors {
         let max_level = max_level.get().min((self.0.len() - 1) as u8);
 
         // +1 vert in the center of the body
-        let vertex_count = LOD_VERTS * max_level as u32 + 1;
+        let vertex_count = LOD_VERTS * u32::from(max_level) + 1;
         let mut vertices: Vec<TerrainPoint> = Vec::with_capacity(vertex_count as usize);
 
         vertices.push(TerrainPoint(DVec2::ZERO));
@@ -246,7 +249,7 @@ impl LodVectors {
         let buf = unsafe { buf.assume_init() };
 
         let len = buf.len();
-        let ptr = Box::into_raw(buf) as *mut u16;
+        let ptr = Box::into_raw(buf).cast::<u16>();
 
         let vec = unsafe { Vec::from_raw_parts(ptr, len, len) };
 
@@ -279,7 +282,7 @@ impl LodVectors {
         let buf = unsafe { buf.assume_init() };
 
         let len = buf.len();
-        let ptr = Box::into_raw(buf) as *mut u32;
+        let ptr = Box::into_raw(buf).cast::<u32>();
 
         let vec = unsafe { Vec::from_raw_parts(ptr, len, len) };
 
@@ -303,7 +306,7 @@ impl LodVectors {
     /// Create a vertex and index buffer from the vectors.
     ///
     /// # Unchecked Operation
-    /// This function assumes you have updated the LoD vectors.
+    /// This function assumes you have updated the `LoD` vectors.
     fn create_buffers_inner(
         &self,
         focus: f64,
@@ -329,7 +332,9 @@ impl LodVectors {
     /// far away.
     ///
     /// # Unchecked Operation
-    /// This function assumes you have updated the LoD vectors.
+    /// This function assumes you have updated the `LoD` vectors.
+    #[must_use]
+    #[allow(clippy::missing_panics_doc)]
     pub fn create_buffers(
         &self,
         focus: f64,

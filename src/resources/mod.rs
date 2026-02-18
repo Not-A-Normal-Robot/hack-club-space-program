@@ -29,6 +29,7 @@ pub enum GameControlMode {
 }
 
 impl GameControlMode {
+    #[must_use] 
     pub const fn to_str(self) -> &'static str {
         match self {
             Self::Main => "main mode",

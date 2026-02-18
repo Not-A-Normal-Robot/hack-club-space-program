@@ -96,7 +96,7 @@ fn write_sv_to_rail_inner(
         velocity: rel_vel,
     }
     .to_cached_orbit(
-        GRAVITATIONAL_CONSTANT * parent_mass as f64,
+        GRAVITATIONAL_CONSTANT * f64::from(parent_mass),
         time.elapsed_secs_f64(),
     );
 
@@ -169,12 +169,12 @@ fn convert_rail_to_relative_sv(rail: RailMode, time: Duration) -> RelativeStateV
 }
 
 /// For every node's child:
-/// - Try to find it using the on_rails query
-///   - Calculate new SV using rail_mode and parent_sv
+/// - Try to find it using the `on_rails_query``
+///   - Calculate new SV using `RailMode` and `parent_sv`
 ///   - Calculate SV difference
-///   - Recurse, changing the parent_sv and accum_shift
-/// - Try to find it using the off_rails query
-///   - Shift SV using accum_shift
+///   - Recurse, changing the `parent_sv` and `accum_shift`
+/// - Try to find it using the `off_rails` query
+///   - Shift SV using `accum_shift`
 fn write_rail_to_sv_inner(
     node: Entity,
     parent_sv: (RootSpacePosition, RootSpaceLinearVelocity),
@@ -205,9 +205,12 @@ fn write_rail_to_sv_inner(
     if node.rail_mode.is_none() {
         trace!("      ...has no rails");
         return;
-    };
+    }
 
-    let old_rel_sv = convert_rail_to_relative_sv(*node.rail_mode, time.elapsed() - time.delta());
+    let old_rel_sv = convert_rail_to_relative_sv(
+        *node.rail_mode,
+        time.elapsed().checked_sub(time.delta()).unwrap(),
+    );
     let new_rel_sv = convert_rail_to_relative_sv(*node.rail_mode, time.elapsed());
 
     trace!("      rel old: {old_rel_sv:?}");
@@ -256,7 +259,7 @@ pub fn write_rail_to_sv(
                 on_rails_query.reborrow(),
                 off_rails_query.reborrow(),
                 *time,
-            )
-        })
+            );
+        });
     });
 }

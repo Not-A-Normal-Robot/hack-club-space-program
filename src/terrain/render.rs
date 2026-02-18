@@ -43,6 +43,7 @@ pub struct Buffers {
 }
 
 impl Buffers {
+    #[must_use]
     pub fn empty() -> Self {
         Self {
             vertices: Vec::new(),
@@ -53,6 +54,7 @@ impl Buffers {
 
 impl TerrainGen {
     /// Gets the LoD vector array at a certain LoD level.
+    #[must_use]
     pub fn gen_lod(&self, lod_level: u8, focus: f64) -> [TerrainPoint; LOD_VERTS as usize] {
         // From Desmos graph:
         // point((tau / verts) (i ⋅ iter_scale + start))
@@ -60,7 +62,7 @@ impl TerrainGen {
         let start = NonZeroU8::new(lod_level)
             .map(|l| lod_level_start(l, focus))
             .unwrap_or_default();
-        let iter_scale = (LOD_DIVISIONS as f64).powi(-(lod_level as i32));
+        let iter_scale = f64::from(LOD_DIVISIONS).powi(-i32::from(lod_level));
 
         core::array::from_fn(|i| {
             self.get_terrain_vector(
@@ -73,6 +75,7 @@ impl TerrainGen {
 /// Gets the starting theta for a given LoD level and focus theta.
 ///
 /// This is in revolutions. To get the theta in radians, multiply this by tau.
+#[must_use]
 pub fn lod_level_start(lod_level: NonZeroU8, focus: f64) -> f64 {
     // From Desmos graph:
     // start = divisions^(1 - level) ⋅
@@ -85,9 +88,9 @@ pub fn lod_level_start(lod_level: NonZeroU8, focus: f64) -> f64 {
 
     const FRAC_OFFSET: f64 = LOD_VERTS as f64 / (-2.0 * LOD_DIVISIONS as f64);
 
-    let coeff = (LOD_DIVISIONS as f64).powi(1 - lod_level.get() as i32);
+    let coeff = f64::from(LOD_DIVISIONS).powi(1 - i32::from(lod_level.get()));
     let frac = const { LOD_VERTS as f64 / TAU }
-        * LOD_DIVISIONS.pow(lod_level.get().wrapping_sub(1) as u32) as f64
+        * f64::from(LOD_DIVISIONS.pow(u32::from(lod_level.get().wrapping_sub(1))))
         * focus;
 
     coeff * (frac + FRAC_OFFSET).round()
@@ -97,12 +100,13 @@ pub fn lod_level_start(lod_level: NonZeroU8, focus: f64) -> f64 {
 ///
 /// This is for the part where the LoDs get stitched into a mesh.
 /// This helps figure out where the stitches should be.
+#[must_use]
 pub fn lod_level_index(lod_level: NonZeroU8, focus: f64) -> usize {
     // From Desmos graph:
     // indices = ((cur_start - prev_start) / prev_iter_scale).rem_euclid(verts)
     // prev_iter_scale = divisions^(1-o)
 
-    let prev_iter_scale = (LOD_DIVISIONS as f64).powi(1 - (lod_level.get() as i32));
+    let prev_iter_scale = f64::from(LOD_DIVISIONS).powi(1 - i32::from(lod_level.get()));
     let cur_start = lod_level_start(lod_level, focus);
     let prev_start = NonZeroU8::new(lod_level.get() - 1)
         .map(|level| lod_level_start(level, focus))
@@ -112,6 +116,7 @@ pub fn lod_level_index(lod_level: NonZeroU8, focus: f64) -> usize {
 }
 
 /// Finds a maximum reasonable LoD level based on certain parameters.
+#[must_use]
 pub fn get_lod_level_cap(_cel_radius: f64, _zoom: SimCameraZoom, _distance_sq: f64) -> Option<u8> {
     // TODO: lod level cap would be a small opt, low prio
     Some(u8::MAX)
@@ -119,7 +124,8 @@ pub fn get_lod_level_cap(_cel_radius: f64, _zoom: SimCameraZoom, _distance_sq: f
 
 /// Gets the angle of focus on the celestial body given the camera's position.
 ///
-/// Assumes the cel_rotation is a pure rotation around the Z-axis.
+/// Assumes the `cel_rotation` is a pure rotation around the Z-axis.
+#[must_use]
 pub fn get_focus(
     cel_position: RootSpacePosition,
     cel_rotation: f64,

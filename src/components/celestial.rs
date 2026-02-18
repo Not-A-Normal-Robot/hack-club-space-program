@@ -43,6 +43,7 @@ pub struct Terrain {
 pub struct Heightmap(pub Box<[f32]>);
 
 impl Heightmap {
+    #[must_use] 
     pub fn empty() -> Self {
         Self(Box::from([]))
     }
