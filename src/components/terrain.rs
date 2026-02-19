@@ -1,11 +1,9 @@
 use crate::{
     components::camera::SimCameraZoom,
+    consts::terrain::{LOD_DIVISIONS, LOD_VERTS, LOD_VERTS_PER_DIVISION, MIN_LOD_VERTS},
     terrain::{
         TerrainGen, TerrainPoint,
-        render::{
-            Buffers, LOD_DIVISIONS, LOD_VERTS, LOD_VERTS_PER_DIVISION, MIN_LOD_VERTS,
-            lod_level_index, lod_level_start,
-        },
+        render::{Buffers, lod_level_index, lod_level_start},
     },
 };
 use bevy::{math::DVec2, mesh::Indices, prelude::*};

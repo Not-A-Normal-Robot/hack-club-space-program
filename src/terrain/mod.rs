@@ -2,6 +2,7 @@ use crate::components::{camera::SimCameraZoom, celestial::Terrain};
 use bevy::math::{DVec2, Vec3};
 use fastnoise_lite::{FastNoiseLite, FractalType};
 
+pub mod collider;
 pub mod render;
 
 /// A vector relative to the celestial body's center,
@@ -25,7 +26,7 @@ pub struct TerrainGen {
 }
 
 impl TerrainGen {
-    #[must_use] 
+    #[must_use]
     pub fn new(terrain: Terrain) -> Self {
         let mut noisegen = FastNoiseLite::with_seed(terrain.seed);
         noisegen.fractal_type = FractalType::FBm;
