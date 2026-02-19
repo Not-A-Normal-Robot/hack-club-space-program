@@ -125,7 +125,7 @@ fn gen_index_ranges(theta_ranges: &[RangeInclusive<f64>], lod_level: u8) -> Vec<
             let start = *range.start();
             let end = *range.end();
 
-            to_index(start)..=to_index(end)
+            to_index(start)..to_index(end) + 1
         })
         .collect();
 
@@ -135,16 +135,15 @@ fn gen_index_ranges(theta_ranges: &[RangeInclusive<f64>], lod_level: u8) -> Vec<
     merge_ranges(wrapped_ranges)
 }
 
-/// Wrap the ranges such that things wrap around `verts`.
-/// Also makes them no longer inclusive at the end.
+/// Wrap the ranges such that things wrap around correctly based on `verts`.
 #[must_use]
-fn wrap_ranges(ranges: &[RangeInclusive<u64>], verts: u32) -> Vec<Range<u32>> {
+fn wrap_ranges(ranges: &[Range<u64>], verts: u32) -> Vec<Range<u32>> {
     let verts_u64 = u64::from(verts);
     let mut wrapped_ranges = Vec::with_capacity(ranges.len());
 
     for range in ranges {
-        let start = *range.start();
-        let end_exclusive = *range.end() + 1;
+        let start = range.start;
+        let end_exclusive = range.end;
 
         let new_start = start % verts_u64;
         let diff = start - new_start;
@@ -153,7 +152,7 @@ fn wrap_ranges(ranges: &[RangeInclusive<u64>], verts: u32) -> Vec<Range<u32>> {
         #[expect(clippy::cast_possible_truncation)]
         let new_start = new_start as u32;
 
-        if new_end_excl >= verts_u64 {
+        if new_end_excl > verts_u64 {
             wrapped_ranges.push(new_start..verts);
             let wrapped_end = new_end_excl - verts_u64;
             #[expect(clippy::cast_possible_truncation)]
@@ -189,6 +188,8 @@ fn merge_ranges(mut ranges: Vec<Range<u32>>) -> Vec<Range<u32>> {
             current_range = range;
         }
     }
+
+    merged.push(current_range);
 
     merged
 }
@@ -294,6 +295,51 @@ mod tests {
                     &terrain
                 ));
             }
+        }
+    }
+
+    #[test]
+    fn test_wrap_ranges() {
+        #[expect(clippy::single_range_in_vec_init)]
+        let test_cases = [
+            // 1. Simple case, no wrap
+            (vec![0..3, 5..7], 10, vec![0..3, 5..7]),
+            // 2. Single range wraps around verts
+            (vec![8..12], 10, vec![8..10, 0..2]),
+            // 3. Range exactly equal to verts (full wrap)
+            (vec![0..10], 10, vec![0..10]),
+            // 4. Multiple ranges, mixed wrap
+            (vec![3..5, 9..14], 10, vec![3..5, 9..10, 0..4]),
+            // 5. Range starting beyond verts
+            (vec![12..15], 10, vec![2..5]),
+            // 6. Zero-length ranges
+            (vec![0..0, 10..10], 10, vec![0..0, 0..0]),
+        ];
+
+        for (input, verts, expected) in test_cases {
+            let output = wrap_ranges(&input, verts);
+
+            assert_eq!(output, expected);
+        }
+    }
+
+    #[test]
+    fn test_merge_ranges() {
+        #[expect(clippy::single_range_in_vec_init)]
+        let test_cases = [
+            (vec![], vec![]),
+            (vec![0..5], vec![0..5]),
+            (vec![0..3, 5..7, 10..12], vec![0..3, 5..7, 10..12]),
+            (vec![1..4, 3..6, 5..8], vec![1..8]),
+            (vec![0..2, 2..4, 4..6], vec![0..6]),
+            (vec![0..2, 1..3, 5..7, 6..9], vec![0..3, 5..9]),
+            (vec![1..2, 2..3, 5..5, 7..8], vec![1..3, 5..5, 7..8]),
+        ];
+
+        for (input, expected) in test_cases {
+            let output = merge_ranges(input);
+
+            assert_eq!(output, expected);
         }
     }
 }
