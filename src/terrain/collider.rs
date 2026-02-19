@@ -109,6 +109,10 @@ fn gen_index_ranges(theta_ranges: &[RangeInclusive<f64>], lod_level: u8) -> Vec<
     let verts_f64 = f64::from(verts);
 
     #[expect(clippy::cast_possible_truncation)]
+    #[expect(
+        clippy::cast_sign_loss,
+        reason = "get_theta_range output is always positive"
+    )]
     let to_index = |theta: f64| {
         let theta_revs = theta / TAU;
         let vert_number = theta_revs * verts_f64;
@@ -128,13 +132,14 @@ fn gen_index_ranges(theta_ranges: &[RangeInclusive<f64>], lod_level: u8) -> Vec<
     let wrapped_ranges = wrap_ranges(&pre_modulo_ranges, verts);
     drop(pre_modulo_ranges);
 
-    simplify_ranges(&wrapped_ranges)
+    merge_ranges(wrapped_ranges)
 }
 
 /// Wrap the ranges such that things wrap around `verts`.
 /// Also makes them no longer inclusive at the end.
+#[must_use]
 fn wrap_ranges(ranges: &[RangeInclusive<u64>], verts: u32) -> Vec<Range<u32>> {
-    let verts_u64 = verts as u64;
+    let verts_u64 = u64::from(verts);
     let mut wrapped_ranges = Vec::with_capacity(ranges.len());
 
     for range in ranges {
@@ -148,7 +153,7 @@ fn wrap_ranges(ranges: &[RangeInclusive<u64>], verts: u32) -> Vec<Range<u32>> {
         #[expect(clippy::cast_possible_truncation)]
         let new_start = new_start as u32;
 
-        if new_end_excl >= verts as u64 {
+        if new_end_excl >= verts_u64 {
             wrapped_ranges.push(new_start..verts);
             let wrapped_end = new_end_excl - verts_u64;
             #[expect(clippy::cast_possible_truncation)]
@@ -164,9 +169,28 @@ fn wrap_ranges(ranges: &[RangeInclusive<u64>], verts: u32) -> Vec<Range<u32>> {
     wrapped_ranges
 }
 
-/// Simplifies ranges by combining them.
-fn simplify_ranges(ranges: &[Range<u32>]) -> Vec<Range<u32>> {
-    todo!();
+/// Merges ranges by combining them if possible.
+#[must_use]
+fn merge_ranges(mut ranges: Vec<Range<u32>>) -> Vec<Range<u32>> {
+    ranges.sort_unstable_by_key(|range| range.start);
+
+    let mut merged = Vec::with_capacity(ranges.len());
+
+    let mut ranges_iter = ranges.into_iter();
+    let Some(mut current_range) = ranges_iter.next() else {
+        return merged;
+    };
+
+    for range in ranges_iter {
+        if range.start <= current_range.end {
+            current_range.end = current_range.end.max(range.end);
+        } else {
+            merged.push(current_range);
+            current_range = range;
+        }
+    }
+
+    merged
 }
 
 #[cfg(test)]
