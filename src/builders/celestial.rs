@@ -19,7 +19,7 @@ pub struct CelestialBodyBuilder<M: Material2d> {
 }
 
 impl<M: Material2d> CelestialBodyBuilder<M> {
-    #[must_use] 
+    #[must_use]
     pub const fn base_bundle() -> impl Bundle {
         (
             RigidBody::KinematicVelocityBased,
@@ -29,14 +29,12 @@ impl<M: Material2d> CelestialBodyBuilder<M> {
         )
     }
 
-    #[must_use] 
-    pub fn build_without_terrain(self) -> impl Bundle {
+    fn shared_components(self) -> impl Bundle {
         (
             self.name,
             CelestialBody {
                 base_radius: self.radius,
             },
-            Collider::ball(self.radius),
             AdditionalMassProperties::MassProperties(MassProperties {
                 local_center_of_mass: Vec2::ZERO,
                 mass: self.mass,
@@ -54,8 +52,23 @@ impl<M: Material2d> CelestialBodyBuilder<M> {
         )
     }
 
-    #[must_use] 
+    #[must_use]
+    pub fn build_without_terrain(self) -> impl Bundle {
+        let radius = self.radius;
+        (self.shared_components(), Collider::ball(radius))
+    }
+
+    #[must_use]
+    #[allow(clippy::cast_possible_truncation)]
     pub fn build_with_terrain(self, terrain: Terrain) -> impl Bundle {
-        (self.build_without_terrain(), terrain)
+        (
+            self.shared_components(),
+            terrain,
+            Collider::compound(vec![(
+                Vec2::ZERO,
+                0.0,
+                Collider::ball((terrain.offset - terrain.multiplier) as f32),
+            )]),
+        )
     }
 }
