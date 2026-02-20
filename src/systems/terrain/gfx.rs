@@ -8,7 +8,7 @@ use crate::{
     systems::terrain::{CameraQuery, GlobalData},
     terrain::{
         TerrainGen,
-        render::{get_focus, get_lod_level_cap},
+        gfx::{get_focus, get_lod_level_cap},
     },
 };
 use bevy::{

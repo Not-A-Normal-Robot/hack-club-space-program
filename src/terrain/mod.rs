@@ -3,7 +3,7 @@ use bevy::math::{DVec2, Vec3};
 use fastnoise_lite::{FastNoiseLite, FractalType};
 
 pub mod collider;
-pub mod render;
+pub mod gfx;
 
 /// A vector relative to the celestial body's center,
 /// representing a point in the terrain/body boundary.

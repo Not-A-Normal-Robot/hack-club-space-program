@@ -7,8 +7,8 @@ use crate::{
         relations::{CelestialParent, RailMode},
     },
     plugins::{
-        controls::GameControlPlugin, debug::GameDebugPlugin, logic::GameLogicPlugin,
-        render::GameRenderPlugin,
+        controls::GameControlPlugin, debug::GameDebugPlugin, gfx::GameGfxPlugin,
+        logic::GameLogicPlugin,
     },
     resources::ActiveVessel,
 };
@@ -133,7 +133,7 @@ impl Plugin for GameSetupPlugin {
             GameLogicPlugin,
             GameDebugPlugin,
             GameControlPlugin,
-            GameRenderPlugin,
+            GameGfxPlugin,
         ));
     }
 }

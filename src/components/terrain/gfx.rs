@@ -3,7 +3,7 @@ use crate::{
     consts::terrain::{LOD_DIVISIONS, LOD_VERTS, LOD_VERTS_PER_DIVISION, MIN_LOD_VERTS},
     terrain::{
         TerrainGen, TerrainPoint,
-        render::{Buffers, lod_level_index, lod_level_start},
+        gfx::{Buffers, lod_level_index, lod_level_start},
     },
 };
 use bevy::{math::DVec2, mesh::Indices, prelude::*};

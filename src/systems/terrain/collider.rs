@@ -15,11 +15,13 @@ type PhyQueries<'w, 's> = (
 #[query_data(mutable)]
 pub struct CelestialPhyComponents {
     entity: Entity,
+    position: &'static RootSpacePosition,
 }
 
 #[derive(QueryData)]
 pub struct VesselData {
     entity: Entity,
+    position: &'static RootSpacePosition,
 }
 
 fn update_collider(
