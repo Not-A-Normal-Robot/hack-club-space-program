@@ -96,7 +96,7 @@ fn update_collider(
             .map(|point| point.phys_downcast(rigid_pos))
             .collect()
     } else {
-        let terrain_pts = gen_points(&idx_ranges);
+        let terrain_pts = gen_points(*celestial.terrain, &idx_ranges);
         let collider_pts: Vec<_> = terrain_pts
             .iter()
             .map(|point| point.phys_downcast(rigid_pos))
@@ -117,7 +117,7 @@ fn update_collider(
 
     *celestial.collider = Collider::compound(vec![
         (
-            Vec2::ZERO,
+            rigid_pos.as_vec2(),
             0.0,
             #[expect(clippy::cast_possible_truncation)]
             Collider::ball((celestial.terrain.offset - celestial.terrain.multiplier) as f32),

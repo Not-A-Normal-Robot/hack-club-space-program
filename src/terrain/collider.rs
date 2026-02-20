@@ -4,7 +4,7 @@ use bevy_rapier2d::rapier::prelude::Aabb;
 use crate::{
     components::celestial::Terrain,
     consts::terrain::{LOD_DIVISIONS, LOD_VERTS},
-    terrain::TerrainPoint,
+    terrain::{TerrainGen, TerrainPoint},
 };
 use core::{
     f64::consts::TAU,
@@ -194,12 +194,36 @@ pub fn gen_idx_ranges(ranges: &[RangeInclusive<f64>], verts: u32) -> Vec<Range<u
     merge_ranges(wrapped_ranges)
 }
 
+#[must_use]
+fn index_to_theta(index: u32, verts: u32) -> f64 {
+    f64::from(index) / f64::from(verts) * TAU
+}
+
 /// Generates a list of points based on the list of optimized index ranges.
 ///
 /// Includes the [0, 0] central point.
+///
+/// # Unchecked Operation
+/// This function does not check if there are any overlaps in the ranges.
+/// Make sure the ranges has no overlaps.
+/// Note that it need not be sorted.
 #[must_use]
-pub fn gen_points(ranges: &[Range<u32>]) -> Vec<TerrainPoint> {
-    todo!();
+pub fn gen_points(terrain: Terrain, ranges: &[Range<u32>]) -> Vec<TerrainPoint> {
+    let verts = verts_at_lod_level(terrain.subdivs);
+    let terrain = TerrainGen::new(terrain);
+
+    let total_len = ranges.iter().map(std::iter::ExactSizeIterator::len).sum();
+    let mut pts = Vec::with_capacity(total_len);
+
+    for range in ranges {
+        for i in range.clone() {
+            let theta = index_to_theta(i, verts);
+            let point = terrain.get_terrain_vector(theta);
+            pts.push(point);
+        }
+    }
+
+    pts
 }
 
 #[cfg(test)]
