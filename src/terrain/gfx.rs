@@ -117,6 +117,14 @@ pub fn get_focus(
     angle.rem_euclid(TAU)
 }
 
+/// Creates an index buffer for the collision mesh, given the amount of points.
+#[must_use]
+pub fn create_index_buffer(len: u32) -> Box<[[u32; 2]]> {
+    (0..len)
+        .map(|i| [i, if i == len - 1 { 0 } else { i + 1 }])
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use bevy::math::DVec2;

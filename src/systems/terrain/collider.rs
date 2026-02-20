@@ -7,10 +7,17 @@ use crate::{
         vessel::Vessel,
     },
     resources::ActiveVessel,
-    terrain::collider::{gen_idx_ranges, gen_points, get_theta_range, verts_at_lod_level},
+    terrain::{
+        collider::{gen_idx_ranges, gen_points, get_theta_range, verts_at_lod_level},
+        gfx::create_index_buffer,
+    },
 };
 use bevy::{ecs::query::QueryData, prelude::*};
-use bevy_rapier2d::prelude::{Collider, RigidBody, RigidBodyDisabled};
+use bevy_rapier2d::{
+    na::{Const, OPoint},
+    parry::{math::Isometry, shape::SharedShape, transformation::vhacd::VHACD},
+    prelude::{Collider, RigidBody, RigidBodyDisabled, VHACDParameters},
+};
 use core::ops::RangeInclusive;
 
 type CelestialQuery<'w, 's> = Query<'w, 's, CelestialComponents, With<CelestialBody>>;
@@ -68,6 +75,37 @@ fn gen_theta_ranges(
     vec
 }
 
+fn polyline_with_ball(
+    points: &[OPoint<f32, Const<2>>],
+    indices: &[[u32; 2]],
+    ball_offset: Vec2,
+    ball_radius: f32,
+) -> Collider {
+    let params = VHACDParameters {
+        concavity: 0.015,
+        alpha: 0.0,
+        ..Default::default()
+    };
+    let decomp = VHACD::decompose(&params, points, indices, true);
+
+    let mut parts = vec![];
+
+    parts.push((
+        Isometry::translation(ball_offset.x, ball_offset.y),
+        SharedShape::ball(ball_radius),
+    ));
+
+    for vertices in decomp.compute_exact_convex_hulls(points, indices) {
+        if let Some(convex) = SharedShape::convex_polyline(vertices) {
+            parts.push((Isometry::identity(), convex));
+        }
+    }
+
+    let shape = SharedShape::compound(parts);
+
+    Collider::from(shape)
+}
+
 fn update_collider(
     mut celestial: CelestialComponentsItem,
     vessel_query: VesselQuery,
@@ -94,12 +132,14 @@ fn update_collider(
             .0
             .iter()
             .map(|point| point.phys_downcast(rigid_pos))
+            .map(OPoint::from)
             .collect()
     } else {
         let terrain_pts = gen_points(*celestial.terrain, &idx_ranges);
         let collider_pts: Vec<_> = terrain_pts
             .iter()
             .map(|point| point.phys_downcast(rigid_pos))
+            .map(OPoint::from)
             .collect();
         new_terrain_pts = Some(terrain_pts);
         collider_pts
@@ -115,15 +155,14 @@ fn update_collider(
         }
     }
 
-    *celestial.collider = Collider::compound(vec![
-        (
-            rigid_pos.as_vec2(),
-            0.0,
-            #[expect(clippy::cast_possible_truncation)]
-            Collider::ball((celestial.terrain.offset - celestial.terrain.multiplier) as f32),
-        ),
-        (Vec2::ZERO, 0.0, Collider::polyline(collider_pts, None)),
-    ]);
+    #[expect(clippy::cast_possible_truncation)]
+    let decomp = polyline_with_ball(
+        &collider_pts,
+        &create_index_buffer(collider_pts.len() as u32),
+        rigid_pos.as_vec2(),
+        (celestial.terrain.offset - celestial.terrain.multiplier) as f32,
+    );
+    *celestial.collider = decomp;
 }
 
 pub fn update_terrain_colliders(
