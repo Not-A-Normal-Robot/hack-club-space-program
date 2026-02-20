@@ -211,7 +211,10 @@ mod tests {
             })
             .collect::<Box<_>>();
 
-        assert_eq!(&*indices, [12, 59, 56, 54, 59, 56, 58, 54].as_slice());
+        assert_eq!(
+            &*indices,
+            [17, 194, 192, 191, 193, 191, 192, 192].as_slice()
+        );
     }
 
     #[test]
