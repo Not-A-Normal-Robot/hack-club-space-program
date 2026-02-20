@@ -6,7 +6,7 @@ use crate::{
     consts::terrain::{LOD_DIVISIONS, LOD_VERTS},
 };
 use core::{
-    f64::consts::{PI, TAU},
+    f64::consts::TAU,
     ops::{Range, RangeInclusive},
 };
 
@@ -86,26 +86,16 @@ fn get_theta_range(
     let range_min = range_center - range_half_length;
     let range_max = range_center + range_half_length;
 
-    let range = if range_min.is_sign_negative() {
+    if range_min.is_sign_negative() {
         (range_min + TAU)..=(range_max + TAU)
     } else {
         range_min..=range_max
-    };
-
-    if cfg!(debug_assertions) {
-        assert!(range.start() < range.end());
-        assert!(range.start().is_sign_positive());
-        assert!(range.end().is_sign_positive());
-        assert!(*range.start() <= TAU);
-        assert!(*range.end() <= 4.0 * PI);
     }
-
-    range
 }
 
+/// Converts a theta range into a index range.
 #[must_use]
-fn gen_index_ranges(theta_ranges: &[RangeInclusive<f64>], lod_level: u8) -> Vec<Range<u32>> {
-    let verts = verts_at_lod_level(lod_level);
+fn theta_to_idx_range(range: RangeInclusive<f64>, verts: u32) -> Range<u64> {
     let verts_f64 = f64::from(verts);
 
     #[expect(clippy::cast_possible_truncation)]
@@ -119,20 +109,10 @@ fn gen_index_ranges(theta_ranges: &[RangeInclusive<f64>], lod_level: u8) -> Vec<
         vert_number as u64
     };
 
-    let pre_modulo_ranges: Box<[_]> = theta_ranges
-        .iter()
-        .map(|range| {
-            let start = *range.start();
-            let end = *range.end();
+    let start = *range.start();
+    let end = *range.end();
 
-            to_index(start)..to_index(end) + 1
-        })
-        .collect();
-
-    let wrapped_ranges = wrap_ranges(&pre_modulo_ranges, verts);
-    drop(pre_modulo_ranges);
-
-    merge_ranges(wrapped_ranges)
+    to_index(start)..to_index(end) + 1
 }
 
 /// Wrap the ranges such that things wrap around correctly based on `verts`.
@@ -196,9 +176,9 @@ fn merge_ranges(mut ranges: Vec<Range<u32>>) -> Vec<Range<u32>> {
 
 #[cfg(test)]
 mod tests {
-    use bevy::math::Vec2;
-
     use super::*;
+    use bevy::math::Vec2;
+    use core::f64::consts::PI;
 
     #[test]
     fn test_verts_at_lod_level() {
@@ -340,6 +320,98 @@ mod tests {
             let output = merge_ranges(input);
 
             assert_eq!(output, expected);
+        }
+    }
+
+    #[test]
+    fn test_theta_range() {
+        const ANGLE_ITERS: u32 = 8192;
+        const SIZE_ITERS: u32 = 32;
+        const CEL_SIZE_ITERS: u32 = 16;
+        const CEL_ROT_ITERS: u32 = 16;
+
+        const _TOTAL_ITERS: u32 = {
+            const ITERS: u32 = ANGLE_ITERS * SIZE_ITERS * CEL_SIZE_ITERS * CEL_ROT_ITERS;
+            assert!(
+                ITERS < 100_000_000,
+                "too many iters, you're killing your pc vro ;-;"
+            );
+            ITERS
+        };
+
+        for i in 1..=CEL_SIZE_ITERS {
+            let cel_radius = f64::from(i) * 1000.0;
+            let terrain = Terrain {
+                offset: cel_radius,
+                ..Default::default()
+            };
+
+            for i in 0..CEL_ROT_ITERS {
+                let cel_rot = f64::from(i) * TAU / f64::from(CEL_ROT_ITERS);
+
+                for i in 0..ANGLE_ITERS {
+                    let angle = f64::from(i) * TAU / f64::from(ANGLE_ITERS);
+                    let vessel_rel_pos = DVec2::from_angle(angle) * cel_radius;
+
+                    let surf_angle = angle - cel_rot;
+
+                    for i in 1..=SIZE_ITERS {
+                        #[expect(clippy::cast_precision_loss)]
+                        let size = i as f32 * 10.0;
+                        let half_size = size / 2.0;
+                        let aabb = Aabb::new(
+                            Vec2::splat(-half_size).into(),
+                            Vec2::splat(half_size).into(),
+                        );
+
+                        let angular_size = f64::from(size) / cel_radius;
+
+                        let range = get_theta_range(aabb, vessel_rel_pos, cel_rot, &terrain);
+
+                        assert!(range.start() < range.end());
+                        assert!(range.start().is_sign_positive());
+                        assert!(range.end().is_sign_positive());
+                        assert!(*range.start() <= TAU);
+                        assert!(*range.end() <= 4.0 * PI);
+
+                        let res_span = range.end() - range.start();
+
+                        assert!(res_span >= angular_size);
+
+                        assert!(range.contains(&surf_angle) || range.contains(&(surf_angle + TAU)));
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_index_ranges() {
+        const ANGLE_ITERS: u16 = 64;
+
+        for level in 0..8 {
+            let verts = verts_at_lod_level(level);
+
+            for start in 0..ANGLE_ITERS {
+                let start = TAU * f64::from(start) / f64::from(ANGLE_ITERS);
+
+                for end in 0..ANGLE_ITERS {
+                    let end = start + TAU * f64::from(end) / f64::from(ANGLE_ITERS);
+
+                    let range = start..=end;
+                    let range_span = end - start;
+
+                    let res = theta_to_idx_range(range, verts);
+
+                    assert!(res.end >= res.start);
+
+                    let res_span = res.end - res.start;
+                    #[expect(clippy::cast_precision_loss)]
+                    let res_span_revs = res_span as f64 / f64::from(verts);
+                    let res_span_rads = res_span_revs * TAU;
+                    assert!(res_span_rads >= range_span);
+                }
+            }
         }
     }
 }
