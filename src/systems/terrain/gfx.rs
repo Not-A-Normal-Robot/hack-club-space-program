@@ -5,7 +5,6 @@ use crate::{
         frames::RootSpacePosition,
         terrain::gfx::{LodVectors, PrevFocus},
     },
-    systems::terrain::{CameraQuery, GlobalData},
     terrain::{
         TerrainGen,
         gfx::{get_focus, get_lod_level_cap},
@@ -21,6 +20,17 @@ use core::{
     num::NonZeroU8,
     ops::{Deref, DerefMut},
 };
+
+type CameraQuery<'w, 's> = Query<
+    'w,
+    's,
+    (
+        &'static SimCameraZoom,
+        &'static mut SimCameraOffset,
+        &'static Camera,
+    ),
+    With<SimCamera>,
+>;
 
 type Queries<'w, 's> = (
     CameraQuery<'w, 's>,
@@ -39,6 +49,12 @@ pub struct CelestialComponents {
     aabb: Option<&'static mut Aabb>,
     lod_vectors: Option<&'static mut LodVectors>,
     prev_focus: Option<&'static mut PrevFocus>,
+}
+
+#[derive(Clone, Copy)]
+struct GlobalData {
+    zoom: SimCameraZoom,
+    cam_pos: RootSpacePosition,
 }
 
 enum CowMut<'a, T> {

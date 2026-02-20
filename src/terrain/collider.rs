@@ -4,6 +4,7 @@ use bevy_rapier2d::rapier::prelude::Aabb;
 use crate::{
     components::celestial::Terrain,
     consts::terrain::{LOD_DIVISIONS, LOD_VERTS},
+    terrain::TerrainPoint,
 };
 use core::{
     f64::consts::TAU,
@@ -64,7 +65,7 @@ pub fn is_vessel_within_terrain_altitude(
 ///
 /// Aabb reference frame doesn't matter, only its size is used
 #[must_use]
-fn get_theta_range(
+pub fn get_theta_range(
     aabb: Aabb,
     vessel_rel_pos: DVec2,
     celestial_rotation: f64,
@@ -98,7 +99,7 @@ fn get_theta_range(
 
 /// Converts a theta range into a index range.
 #[must_use]
-fn theta_to_idx_range(range: RangeInclusive<f64>, verts: u32) -> Range<u64> {
+fn theta_range_to_idx_range(range: RangeInclusive<f64>, verts: u32) -> Range<u64> {
     let verts_f64 = f64::from(verts);
 
     #[expect(clippy::cast_possible_truncation)]
@@ -175,6 +176,30 @@ fn merge_ranges(mut ranges: Vec<Range<u32>>) -> Vec<Range<u32>> {
     merged.push(current_range);
 
     merged
+}
+
+/// Generates an optimized [`Vec`] of index ranges
+/// based on a slice of theta ranges, as gotten through
+/// [`get_theta_range`].
+#[must_use]
+pub fn gen_idx_ranges(ranges: &[RangeInclusive<f64>], verts: u32) -> Vec<Range<u32>> {
+    let idx_ranges: Box<[_]> = ranges
+        .iter()
+        .map(|range| theta_range_to_idx_range(range.clone(), verts))
+        .collect();
+
+    let wrapped_ranges = wrap_ranges(&idx_ranges, verts);
+    drop(idx_ranges);
+
+    merge_ranges(wrapped_ranges)
+}
+
+/// Generates a list of points based on the list of optimized index ranges.
+///
+/// Includes the [0, 0] central point.
+#[must_use]
+pub fn gen_points(ranges: &[Range<u32>]) -> Vec<TerrainPoint> {
+    todo!();
 }
 
 #[cfg(test)]
@@ -404,7 +429,7 @@ mod tests {
                     let range = start..=end;
                     let range_span = end - start;
 
-                    let res = theta_to_idx_range(range, verts);
+                    let res = theta_range_to_idx_range(range, verts);
 
                     assert!(res.end >= res.start);
 
