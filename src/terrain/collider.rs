@@ -226,6 +226,34 @@ pub fn gen_points(terrain: Terrain, ranges: &[Range<u32>]) -> Vec<TerrainPoint> 
     pts
 }
 
+/// Creates an index buffer for the collision mesh, given the amount of points.
+#[must_use]
+pub fn create_index_buffer(len: u32) -> Vec<[u32; 3]> {
+    if len < 3 {
+        return Vec::new();
+    }
+
+    let mut buf = Box::new_uninit_slice(len as usize - 1);
+
+    for i in 0..len - 2 {
+        unsafe {
+            buf.get_unchecked_mut(i as usize).write([0, i + 1, i + 2]);
+        }
+    }
+
+    unsafe {
+        buf.get_unchecked_mut(len as usize - 2)
+            .write([0, len - 1, 1]);
+    }
+
+    let buf = unsafe { buf.assume_init() };
+
+    let len = buf.len();
+    let ptr = Box::into_raw(buf).cast::<[u32; 3]>();
+
+    unsafe { Vec::from_raw_parts(ptr, len, len) }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -464,6 +492,25 @@ mod tests {
                     assert!(res_span_rads >= range_span);
                 }
             }
+        }
+    }
+
+    #[test]
+    fn test_index_buffer() {
+        let test_cases = [
+            vec![],
+            vec![],
+            vec![],
+            vec![[0, 1, 2], [0, 2, 1]],
+            vec![[0, 1, 2], [0, 2, 3], [0, 3, 1]],
+            vec![[0, 1, 2], [0, 2, 3], [0, 3, 4], [0, 4, 1]],
+        ];
+
+        for (len, expected) in test_cases.into_iter().enumerate() {
+            #[expect(clippy::cast_possible_truncation)]
+            let output = create_index_buffer(len as u32);
+
+            assert_eq!(expected, output);
         }
     }
 }

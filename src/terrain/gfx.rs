@@ -117,30 +117,6 @@ pub fn get_focus(
     angle.rem_euclid(TAU)
 }
 
-/// Creates an index buffer for the collision mesh, given the amount of points.
-#[must_use]
-pub fn create_index_buffer(len: u32) -> Vec<[u32; 3]> {
-    let mut buf = Box::new_uninit_slice((len as usize - 1) * 3);
-
-    for i in 1..len - 1 {
-        unsafe {
-            buf.get_unchecked_mut(i as usize).write([0, i, i + 1]);
-        }
-    }
-
-    unsafe {
-        buf.get_unchecked_mut(len as usize - 1)
-            .write([0, len - 1, 1]);
-    }
-
-    let buf = unsafe { buf.assume_init() };
-
-    let len = buf.len();
-    let ptr = Box::into_raw(buf).cast::<[u32; 3]>();
-
-    unsafe { Vec::from_raw_parts(ptr, len, len) }
-}
-
 #[cfg(test)]
 mod tests {
     use bevy::math::DVec2;
