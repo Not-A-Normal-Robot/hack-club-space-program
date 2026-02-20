@@ -5,6 +5,7 @@ use crate::{
         frames::RootSpacePosition,
         terrain::gfx::{LodVectors, PrevFocus},
     },
+    systems::terrain::{CameraQuery, GlobalData},
     terrain::{
         TerrainGen,
         render::{get_focus, get_lod_level_cap},
@@ -21,29 +22,10 @@ use core::{
     ops::{Deref, DerefMut},
 };
 
-// TODO: Systems for terrain
-
-type CameraQuery<'w, 's> = Query<
-    'w,
-    's,
-    (
-        &'static SimCameraZoom,
-        &'static mut SimCameraOffset,
-        &'static Camera,
-    ),
-    With<SimCamera>,
->;
-
 type GfxQueries<'w, 's> = (
     CameraQuery<'w, 's>,
     Query<'w, 's, &'static RootSpacePosition>,
     Query<'w, 's, CelestialGfxComponents>,
-);
-
-type PhyQueries<'w, 's> = (
-    CameraQuery<'w, 's>,
-    Query<'w, 's, &'static RootSpacePosition>,
-    Query<'w, 's, CelestialPhyComponents>,
 );
 
 #[derive(QueryData)]
@@ -57,23 +39,6 @@ pub struct CelestialGfxComponents {
     aabb: Option<&'static mut Aabb>,
     lod_vectors: Option<&'static mut LodVectors>,
     prev_focus: Option<&'static mut PrevFocus>,
-}
-
-#[derive(QueryData)]
-#[query_data(mutable)]
-pub struct CelestialPhyComponents {
-    entity: Entity,
-}
-
-#[derive(QueryData)]
-pub struct VesselData {
-    entity: Entity,
-}
-
-#[derive(Clone, Copy)]
-struct GlobalData {
-    zoom: SimCameraZoom,
-    cam_pos: RootSpacePosition,
 }
 
 enum CowMut<'a, T> {
@@ -213,30 +178,5 @@ pub fn update_terrain_gfx(
 
     for celestial in queries.p2() {
         update_gfx_mesh(celestial, global, &mut meshes, &mut commands);
-    }
-}
-
-fn update_collider(
-    celestial: CelestialPhyComponentsItem,
-    global: GlobalData,
-    commands: &mut Commands,
-) {
-    todo!();
-}
-
-pub fn update_terrain_colliders(mut queries: ParamSet<PhyQueries>, mut commands: Commands) {
-    let Some((&zoom, &offset, _)) = queries.p0().iter().find(|(_, _, camera)| camera.is_active)
-    else {
-        #[cfg(feature = "trace")]
-        trace!("Could not find active sim camera for terrain collider rebuilding");
-        return;
-    };
-
-    let cam_pos = offset.immutably().get_root_position(queries.p1());
-
-    let global = GlobalData { zoom, cam_pos };
-
-    for celestial in queries.p2() {
-        update_collider(celestial, global, &mut commands);
     }
 }
