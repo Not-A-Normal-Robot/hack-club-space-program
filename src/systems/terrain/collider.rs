@@ -1,21 +1,24 @@
 use bevy::{ecs::query::QueryData, prelude::*};
+use bevy_rapier2d::prelude::Collider;
 
 use crate::{
-    components::frames::RootSpacePosition,
+    components::{frames::RootSpacePosition, relations::CelestialChildren},
     systems::terrain::{CameraQuery, GlobalData},
 };
 
-type PhyQueries<'w, 's> = (
+type Queries<'w, 's> = (
     CameraQuery<'w, 's>,
     Query<'w, 's, &'static RootSpacePosition>,
-    Query<'w, 's, CelestialPhyComponents>,
+    Query<'w, 's, CelestialComponents>,
 );
 
 #[derive(QueryData)]
 #[query_data(mutable)]
-pub struct CelestialPhyComponents {
+pub struct CelestialComponents {
     entity: Entity,
     position: &'static RootSpacePosition,
+    collider: &'static mut Collider,
+    children: &'static CelestialChildren,
 }
 
 #[derive(QueryData)]
@@ -25,14 +28,13 @@ pub struct VesselData {
 }
 
 fn update_collider(
-    celestial: CelestialPhyComponentsItem,
+    celestial: CelestialComponentsItem,
     global: GlobalData,
     commands: &mut Commands,
 ) {
-    todo!();
 }
 
-pub fn update_terrain_colliders(mut queries: ParamSet<PhyQueries>, mut commands: Commands) {
+pub fn update_terrain_colliders(mut queries: ParamSet<Queries>, mut commands: Commands) {
     let Some((&zoom, &offset, _)) = queries.p0().iter().find(|(_, _, camera)| camera.is_active)
     else {
         #[cfg(feature = "trace")]

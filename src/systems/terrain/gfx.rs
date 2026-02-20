@@ -22,15 +22,15 @@ use core::{
     ops::{Deref, DerefMut},
 };
 
-type GfxQueries<'w, 's> = (
+type Queries<'w, 's> = (
     CameraQuery<'w, 's>,
     Query<'w, 's, &'static RootSpacePosition>,
-    Query<'w, 's, CelestialGfxComponents>,
+    Query<'w, 's, CelestialComponents>,
 );
 
 #[derive(QueryData)]
 #[query_data(mutable)]
-pub struct CelestialGfxComponents {
+pub struct CelestialComponents {
     entity: Entity,
     terrain: &'static Terrain,
     body: &'static CelestialBody,
@@ -85,7 +85,7 @@ fn swap_indices(src: &Indices, dest: &mut Indices) {
 }
 
 fn update_gfx_mesh(
-    celestial: CelestialGfxComponentsItem,
+    celestial: CelestialComponentsItem,
     global: GlobalData,
     meshes: &mut ResMut<Assets<Mesh>>,
     commands: &mut Commands,
@@ -161,7 +161,7 @@ fn update_gfx_mesh(
 }
 
 pub fn update_terrain_gfx(
-    mut queries: ParamSet<GfxQueries>,
+    mut queries: ParamSet<Queries>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut commands: Commands,
 ) {
