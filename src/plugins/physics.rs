@@ -7,6 +7,7 @@ use crate::systems::{
     },
     gravity::{apply_gravity, unapply_gravity_to_unloaded},
     rail::{write_rail_to_sv, write_sv_to_rail},
+    terrain::collider::update_terrain_colliders,
 };
 
 pub struct GamePhysicsPlugin;
@@ -19,7 +20,7 @@ impl Plugin for GamePhysicsPlugin {
                 (apply_gravity, unapply_gravity_to_unloaded, write_rail_to_sv),
                 apply_root_velocity,
                 update_active_vessel_resource,
-                pre_rapier_frame_switch,
+                (pre_rapier_frame_switch, update_terrain_colliders),
             )
                 .chain(),
         );
