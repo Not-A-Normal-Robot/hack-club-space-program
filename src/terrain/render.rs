@@ -121,7 +121,7 @@ pub fn get_focus(
 mod tests {
     use bevy::math::DVec2;
 
-    use crate::components::{celestial::Terrain, terrain::LodVectors};
+    use crate::components::{celestial::Terrain, terrain::gfx::LodVectors};
 
     use super::*;
     use core::{

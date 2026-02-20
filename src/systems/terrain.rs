@@ -3,7 +3,7 @@ use crate::{
         camera::{SimCamera, SimCameraOffset, SimCameraZoom},
         celestial::{CelestialBody, Terrain},
         frames::RootSpacePosition,
-        terrain::{LodVectors, PrevFocus},
+        terrain::gfx::{LodVectors, PrevFocus},
     },
     terrain::{
         TerrainGen,
@@ -23,24 +23,32 @@ use core::{
 
 // TODO: Systems for terrain
 
-pub type Queries<'w, 's> = (
-    Query<
-        'w,
-        's,
-        (
-            &'static SimCameraZoom,
-            &'static mut SimCameraOffset,
-            &'static Camera,
-        ),
-        With<SimCamera>,
-    >,
+type CameraQuery<'w, 's> = Query<
+    'w,
+    's,
+    (
+        &'static SimCameraZoom,
+        &'static mut SimCameraOffset,
+        &'static Camera,
+    ),
+    With<SimCamera>,
+>;
+
+type GfxQueries<'w, 's> = (
+    CameraQuery<'w, 's>,
     Query<'w, 's, &'static RootSpacePosition>,
-    Query<'w, 's, CelestialEntity>,
+    Query<'w, 's, CelestialGfxComponents>,
+);
+
+type PhyQueries<'w, 's> = (
+    CameraQuery<'w, 's>,
+    Query<'w, 's, &'static RootSpacePosition>,
+    Query<'w, 's, CelestialPhyComponents>,
 );
 
 #[derive(QueryData)]
 #[query_data(mutable)]
-pub struct CelestialEntity {
+pub struct CelestialGfxComponents {
     entity: Entity,
     terrain: &'static Terrain,
     body: &'static CelestialBody,
@@ -49,6 +57,17 @@ pub struct CelestialEntity {
     aabb: Option<&'static mut Aabb>,
     lod_vectors: Option<&'static mut LodVectors>,
     prev_focus: Option<&'static mut PrevFocus>,
+}
+
+#[derive(QueryData)]
+#[query_data(mutable)]
+pub struct CelestialPhyComponents {
+    entity: Entity,
+}
+
+#[derive(QueryData)]
+pub struct VesselData {
+    entity: Entity,
 }
 
 #[derive(Clone, Copy)]
@@ -100,8 +119,8 @@ fn swap_indices(src: &Indices, dest: &mut Indices) {
     }
 }
 
-fn update_mesh(
-    celestial: CelestialEntityItem,
+fn update_gfx_mesh(
+    celestial: CelestialGfxComponentsItem,
     global: GlobalData,
     meshes: &mut ResMut<Assets<Mesh>>,
     commands: &mut Commands,
@@ -122,9 +141,12 @@ fn update_mesh(
     let distance_sq = global.cam_pos.0.distance_squared(celestial.pos.0);
 
     let terrain_gen = TerrainGen::new(*celestial.terrain);
-    let ending_level =
-        get_lod_level_cap(f64::from(celestial.body.base_radius), global.zoom, distance_sq)
-            .map(|cap| celestial.terrain.subdivs.min(cap));
+    let ending_level = get_lod_level_cap(
+        f64::from(celestial.body.base_radius),
+        global.zoom,
+        distance_sq,
+    )
+    .map(|cap| celestial.terrain.subdivs.min(cap));
     let mut lod_vectors = match celestial.lod_vectors {
         Some(v) => CowMut::Borrowed(v),
         // None => CowMut::Owned(LodVectors::new_full(celestial.terrain, ending_level, focus))
@@ -173,8 +195,8 @@ fn update_mesh(
     }
 }
 
-pub fn update_terrain_meshes(
-    mut queries: ParamSet<Queries>,
+pub fn update_terrain_gfx(
+    mut queries: ParamSet<GfxQueries>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut commands: Commands,
 ) {
@@ -190,6 +212,31 @@ pub fn update_terrain_meshes(
     let global = GlobalData { zoom, cam_pos };
 
     for celestial in queries.p2() {
-        update_mesh(celestial, global, &mut meshes, &mut commands);
+        update_gfx_mesh(celestial, global, &mut meshes, &mut commands);
+    }
+}
+
+fn update_collider(
+    celestial: CelestialPhyComponentsItem,
+    global: GlobalData,
+    commands: &mut Commands,
+) {
+    todo!();
+}
+
+pub fn update_terrain_colliders(mut queries: ParamSet<PhyQueries>, mut commands: Commands) {
+    let Some((&zoom, &offset, _)) = queries.p0().iter().find(|(_, _, camera)| camera.is_active)
+    else {
+        #[cfg(feature = "trace")]
+        trace!("Could not find active sim camera for terrain collider rebuilding");
+        return;
+    };
+
+    let cam_pos = offset.immutably().get_root_position(queries.p1());
+
+    let global = GlobalData { zoom, cam_pos };
+
+    for celestial in queries.p2() {
+        update_collider(celestial, global, &mut commands);
     }
 }

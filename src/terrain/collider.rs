@@ -32,6 +32,7 @@ pub const fn verts_at_lod_level(level: u8) -> u32 {
 
 /// `vessel_distance` is distance between vessel and celestial
 /// body center
+/// Aabb reference frame doesn't matter, only its size is used
 #[must_use]
 pub fn is_vessel_within_terrain_altitude(
     aabb: Aabb,
@@ -60,6 +61,8 @@ pub fn is_vessel_within_terrain_altitude(
 /// will always be in the range 0..=tau, and the
 /// end of the range will always be in the range
 /// 0..=4pi.
+///
+/// Aabb reference frame doesn't matter, only its size is used
 #[must_use]
 fn get_theta_range(
     aabb: Aabb,
