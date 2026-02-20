@@ -12,7 +12,10 @@ use crate::{
     },
 };
 use bevy::{ecs::query::QueryData, prelude::*};
-use bevy_rapier2d::prelude::{Collider, RigidBody, RigidBodyDisabled, TriMeshFlags};
+use bevy_rapier2d::{
+    parry::shape::TriMeshBuilderError,
+    prelude::{Collider, RigidBody, RigidBodyDisabled, TriMeshFlags},
+};
 use core::ops::RangeInclusive;
 
 type CelestialQuery<'w, 's> = Query<'w, 's, CelestialComponents, With<CelestialBody>>;
@@ -125,13 +128,15 @@ fn update_collider(
     let trimesh = Collider::trimesh_with_flags(
         collider_pts,
         idx_buffer,
-        TriMeshFlags::DELETE_DEGENERATE_TRIANGLES | TriMeshFlags::DELETE_BAD_TOPOLOGY_TRIANGLES,
+        // TriMeshFlags::DELETE_DEGENERATE_TRIANGLES | TriMeshFlags::DELETE_BAD_TOPOLOGY_TRIANGLES,
+        TriMeshFlags::empty(),
     );
 
     let ball = Collider::ball((celestial.terrain.offset - celestial.terrain.multiplier) as f32);
 
     *celestial.collider = match trimesh {
         Ok(trimesh) => trimesh, // TODO: Ball with trimesh
+        Err(TriMeshBuilderError::EmptyIndices) => ball,
         Err(e) => {
             error!("Error building terrain tri mesh: {e}");
             ball
