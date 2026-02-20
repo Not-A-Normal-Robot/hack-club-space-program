@@ -20,7 +20,7 @@ use bevy_rapier2d::prelude::*;
 
 const CELESTIAL_RADIUS: f32 = 6_378_137.0;
 const CELESTIAL_MASS: f32 = 5.972e24;
-const ALTITUDE: f32 = CELESTIAL_RADIUS + 100.0;
+const ALTITUDE: f32 = CELESTIAL_RADIUS - 2000.0;
 
 fn demo_startup(
     mut commands: Commands,
@@ -71,7 +71,7 @@ fn demo_startup(
         rail_mode: RailMode::None,
         position: vessel_pos,
         linvel: vessel_vel,
-        angvel: 129.0,
+        angvel: 0.5,
         angle: 0.0,
         mesh,
         material: MeshMaterial2d(material),
