@@ -7,14 +7,24 @@ use crate::{
         vessel::Vessel,
     },
     resources::ActiveVessel,
-    terrain::collider::{gen_idx_ranges, gen_points, verts_at_lod_level},
+    terrain::collider::{gen_idx_ranges, gen_points, get_theta_range, verts_at_lod_level},
 };
 use bevy::{ecs::query::QueryData, prelude::*};
-use bevy_rapier2d::prelude::Collider;
+use bevy_rapier2d::prelude::{Collider, RigidBody, RigidBodyDisabled};
 use core::ops::RangeInclusive;
 
 type CelestialQuery<'w, 's> = Query<'w, 's, CelestialComponents, With<CelestialBody>>;
-type VesselQuery<'w, 's> = Query<'w, 's, VesselData, (With<Vessel>, Without<CelestialBody>)>;
+type VesselQuery<'w, 's> = Query<
+    'w,
+    's,
+    VesselData,
+    (
+        With<Vessel>,
+        Without<CelestialBody>,
+        With<RigidBody>,
+        Without<RigidBodyDisabled>,
+    ),
+>;
 
 #[derive(QueryData)]
 #[query_data(mutable)]
@@ -30,16 +40,32 @@ pub struct CelestialComponents {
 
 #[derive(QueryData)]
 pub struct VesselData {
-    entity: Entity,
     position: &'static RootSpacePosition,
+    collider: &'static Collider,
 }
 
 fn gen_theta_ranges(
     celestial_position: RootSpacePosition,
+    terrain: &Terrain,
     children: &CelestialChildren,
     vessel_query: VesselQuery,
 ) -> Vec<RangeInclusive<f64>> {
-    todo!();
+    let iter = children
+        .iter()
+        .filter_map(|entity| vessel_query.get(entity).ok());
+
+    let size = iter.size_hint().1.unwrap_or_else(|| iter.size_hint().0);
+    let mut vec = Vec::with_capacity(size);
+
+    for vessel in iter {
+        let vessel_rel_pos = vessel.position.0 - celestial_position.0;
+        let aabb = vessel.collider.raw.compute_local_aabb();
+        // TODO: Consider celestial rotation
+        let range = get_theta_range(aabb, vessel_rel_pos, 0.0, terrain);
+        vec.push(range);
+    }
+
+    vec
 }
 
 fn update_collider(
@@ -50,7 +76,12 @@ fn update_collider(
 ) {
     let rigid_pos = celestial.position.0 - active_vessel.prev_tick_position.0;
 
-    let theta_ranges = gen_theta_ranges(*celestial.position, celestial.children, vessel_query);
+    let theta_ranges = gen_theta_ranges(
+        *celestial.position,
+        celestial.terrain,
+        celestial.children,
+        vessel_query,
+    );
     let verts = verts_at_lod_level(celestial.terrain.subdivs);
     let idx_ranges = gen_idx_ranges(&theta_ranges, verts);
 
@@ -96,7 +127,7 @@ fn update_collider(
 }
 
 pub fn update_terrain_colliders(
-    mut celestial_query: CelestialQuery,
+    celestial_query: CelestialQuery,
     vessel_query: VesselQuery,
     mut commands: Commands,
     active_vessel: Res<ActiveVessel>,
