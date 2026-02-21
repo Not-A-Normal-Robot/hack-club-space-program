@@ -1,4 +1,7 @@
 use bevy::prelude::*;
+use bevy_rapier2d::render::{
+    ColliderDebug, DebugRenderMode, DebugRenderStyle, RapierDebugRenderPlugin,
+};
 
 use crate::components::{
     frames::{RigidSpaceVelocity, RootSpaceLinearVelocity, RootSpacePosition},
@@ -9,7 +12,19 @@ use crate::components::{
 pub struct GameDebugPlugin;
 
 impl Plugin for GameDebugPlugin {
-    fn build(&self, _app: &mut App) {
+    fn build(&self, app: &mut App) {
+        app.add_plugins(RapierDebugRenderPlugin {
+            enabled: true,
+            default_collider_debug: ColliderDebug::AlwaysRender,
+            mode: DebugRenderMode::all(),
+            style: DebugRenderStyle {
+                rigid_body_axes_length: 20.0,
+                subdivisions: 512,
+                border_subdivisions: 20,
+                collider_aabb_color: [0.0, 0.0, 0.0, 0.0],
+                ..Default::default()
+            },
+        });
         // app.add_systems(FixedPostUpdate, _print_vessel_sv);
     }
 }

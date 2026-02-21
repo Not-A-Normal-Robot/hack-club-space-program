@@ -1,11 +1,9 @@
 use crate::{
     components::camera::SimCameraZoom,
+    consts::terrain::{LOD_DIVISIONS, LOD_VERTS, LOD_VERTS_PER_DIVISION, MIN_LOD_VERTS},
     terrain::{
         TerrainGen, TerrainPoint,
-        render::{
-            Buffers, LOD_DIVISIONS, LOD_VERTS, LOD_VERTS_PER_DIVISION, MIN_LOD_VERTS,
-            lod_level_index, lod_level_start,
-        },
+        gfx::{Buffers, lod_level_index, lod_level_start},
     },
 };
 use bevy::{math::DVec2, mesh::Indices, prelude::*};
@@ -133,7 +131,7 @@ impl LodVectors {
         let vecs = unsafe { self.0.first().unwrap_unchecked() };
 
         let vertices = (0..MIN_LOD_VERTS)
-            .map(|i| vecs[(i * LOD_VERTS_PER_MIN) as usize].transform_downcast(shift, zoom))
+            .map(|i| vecs[(i * LOD_VERTS_PER_MIN) as usize].gfx_tf_downcast(shift, zoom))
             .collect();
 
         Buffers {
@@ -153,7 +151,7 @@ impl LodVectors {
         Buffers {
             vertices: vecs
                 .iter()
-                .map(|v| v.transform_downcast(shift, zoom))
+                .map(|v| v.gfx_tf_downcast(shift, zoom))
                 .collect(),
             indices: Indices::U16(Vec::from(const { Self::create_zeroth_index_buffer() })),
         }
@@ -324,7 +322,7 @@ impl LodVectors {
         let vertices: Vec<Vec3> = self
             .create_unshifted_vertex_buffer(focus, max_level)
             .into_iter()
-            .map(|point| point.transform_downcast(shift, zoom))
+            .map(|point| point.gfx_tf_downcast(shift, zoom))
             .collect();
         let indices = Self::create_index_buffer(vertices.len());
 

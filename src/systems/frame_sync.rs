@@ -150,12 +150,16 @@ fn pre_rapier_frame_switch_inner(
 
 /// Sets transform into the rigid transform so that Rapier can process it
 pub fn pre_rapier_frame_switch(
-    query: Query<(
-        &RootSpacePosition,
-        &RootSpaceLinearVelocity,
-        &mut Transform,
-        &mut RigidSpaceVelocity,
-    )>,
+    query: Query<
+        (
+            &RootSpacePosition,
+            &RootSpaceLinearVelocity,
+            &mut Transform,
+            &mut RigidSpaceVelocity,
+        ),
+        Without<CelestialBody>,
+    >,
+    celestials: Query<&mut Transform, With<CelestialBody>>,
     active_vessel: Option<Res<ActiveVessel>>,
 ) {
     let Some(active_vessel) = active_vessel else {
@@ -168,6 +172,11 @@ pub fn pre_rapier_frame_switch(
         .for_each(|(&root_pos, &root_vel, transform, rigid_vel)| {
             pre_rapier_frame_switch_inner(root_pos, root_vel, transform, rigid_vel, &active_vessel);
         });
+
+    celestials.into_iter().for_each(|mut transform| {
+        // Translation is done at the collider level
+        transform.translation = Vec3::ZERO;
+    });
 }
 
 /// Sets transform into the camera transform so Bevy can render it

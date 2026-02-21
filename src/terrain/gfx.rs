@@ -1,5 +1,6 @@
 use crate::{
     components::{camera::SimCameraZoom, frames::RootSpacePosition},
+    consts::terrain::{LOD_DIVISIONS, LOD_VERTS},
     terrain::{TerrainGen, TerrainPoint},
 };
 use bevy::{mesh::Indices, prelude::*};
@@ -7,34 +8,6 @@ use core::{f64::consts::TAU, num::NonZeroU8};
 
 // Math based off a sketch:
 // https://www.desmos.com/calculator/sgyaomwmk6
-
-/// The amount of vertices to use for the extremely-zoomed-out mesh.
-///
-/// Is at most [`LOD_VERTS`].
-pub const MIN_LOD_VERTS: u16 = 8;
-
-/// How many vertices for each LoD level.
-///
-/// Is a multiple of [`LOD_DIVISIONS`] as well as [`MIN_LOD_VERTS`].
-pub const LOD_VERTS: u32 = 512;
-
-/// How much smaller the next LoD level is compared to the previous one.
-/// (Level 0 = full revolution)
-pub const LOD_DIVISIONS: u32 = 4;
-
-/// The length that a finer division covers in terms of the
-/// coarser division's verts.
-pub const LOD_VERTS_PER_DIVISION: u32 = LOD_VERTS / LOD_DIVISIONS;
-
-const _LOD_ASSERTIONS: () = {
-    assert!(MIN_LOD_VERTS as u32 <= LOD_VERTS);
-    assert!(LOD_VERTS.is_multiple_of(LOD_DIVISIONS));
-    assert!(LOD_VERTS.is_multiple_of(MIN_LOD_VERTS as u32));
-    assert!((LOD_VERTS / MIN_LOD_VERTS as u32) < u16::MAX as u32);
-    assert!((LOD_VERTS as u128) < isize::MAX as u128);
-    assert!(LOD_VERTS < i32::MAX as u32);
-    assert!(LOD_VERTS < u16::MAX as u32);
-};
 
 /// Vertex and index buffers for terrain.
 ///
@@ -148,7 +121,7 @@ pub fn get_focus(
 mod tests {
     use bevy::math::DVec2;
 
-    use crate::components::{celestial::Terrain, terrain::LodVectors};
+    use crate::components::{celestial::Terrain, terrain::gfx::LodVectors};
 
     use super::*;
     use core::{
@@ -238,7 +211,10 @@ mod tests {
             })
             .collect::<Box<_>>();
 
-        assert_eq!(&*indices, [12, 59, 56, 54, 59, 56, 58, 54].as_slice());
+        assert_eq!(
+            &*indices,
+            [17, 194, 192, 191, 193, 191, 192, 192].as_slice()
+        );
     }
 
     #[test]

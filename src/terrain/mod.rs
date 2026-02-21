@@ -1,8 +1,9 @@
 use crate::components::{camera::SimCameraZoom, celestial::Terrain};
-use bevy::math::{DVec2, Vec3};
+use bevy::{math::DVec2, prelude::*};
 use fastnoise_lite::{FastNoiseLite, FractalType};
 
-pub mod render;
+pub mod collider;
+pub mod gfx;
 
 /// A vector relative to the celestial body's center,
 /// representing a point in the terrain/body boundary.
@@ -10,9 +11,17 @@ pub mod render;
 pub struct TerrainPoint(pub DVec2);
 
 impl TerrainPoint {
-    /// Transforms this vector, then downcast it to 32-bit mesh-ready vectors.
+    /// Shifts this vector, then downcast it to 32-bit collider-ready vectors.
+    ///
+    /// For the shift, use a method similar to obtaining a `RigidSpacePosition`.
     #[must_use]
-    pub fn transform_downcast(self, shift: DVec2, zoom: SimCameraZoom) -> Vec3 {
+    pub fn phys_downcast(self, shift: DVec2) -> Vec2 {
+        (self.0 + shift).as_vec2()
+    }
+
+    /// Transforms this vector, then downcast it to 32-bit graphics-ready vectors.
+    #[must_use]
+    pub fn gfx_tf_downcast(self, shift: DVec2, zoom: SimCameraZoom) -> Vec3 {
         (zoom.0 * (self.0 + shift)).as_vec2().extend(0.0)
     }
 }
@@ -25,7 +34,7 @@ pub struct TerrainGen {
 }
 
 impl TerrainGen {
-    #[must_use] 
+    #[must_use]
     pub fn new(terrain: Terrain) -> Self {
         let mut noisegen = FastNoiseLite::with_seed(terrain.seed);
         noisegen.fractal_type = FractalType::FBm;
