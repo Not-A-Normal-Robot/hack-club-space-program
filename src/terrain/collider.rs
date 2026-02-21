@@ -74,7 +74,7 @@ pub fn get_theta_range(
     let length = aabb.maxs.x - aabb.mins.x;
     let width = aabb.maxs.y - aabb.mins.y;
 
-    let size = f64::from(length.hypot(width));
+    let size = f64::from(length.max(width) * 2.0);
 
     let conservative_radius = terrain.offset - terrain.multiplier;
 

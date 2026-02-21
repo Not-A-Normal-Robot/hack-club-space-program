@@ -8,7 +8,8 @@ use crate::{
     },
     resources::ActiveVessel,
     terrain::collider::{
-        create_index_buffer, gen_idx_ranges, gen_points, get_theta_range, verts_at_lod_level,
+        create_index_buffer, gen_idx_ranges, gen_points, get_theta_range,
+        is_vessel_within_terrain_altitude, verts_at_lod_level,
     },
 };
 use bevy::{ecs::query::QueryData, prelude::*};
@@ -66,6 +67,10 @@ fn gen_theta_ranges(
     for vessel in iter {
         let vessel_rel_pos = vessel.position.0 - celestial_position.0;
         let aabb = vessel.collider.raw.compute_local_aabb();
+        if !is_vessel_within_terrain_altitude(aabb, vessel_rel_pos.length(), terrain) {
+            continue;
+        }
+
         // TODO: Consider celestial rotation
         let range = get_theta_range(aabb, vessel_rel_pos, 0.0, terrain);
         vec.push(range);
