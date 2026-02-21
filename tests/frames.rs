@@ -7,7 +7,7 @@ use hack_club_space_program::{
     builders::{celestial::CelestialBodyBuilder, vessel::VesselBuilder},
     components::{
         camera::{SimCamera, SimCameraOffset, SimCameraZoom},
-        celestial::{CelestialBody, Heightmap},
+        celestial::CelestialBody,
         frames::{
             CameraSpaceTransform, RigidSpaceVelocity, RootSpaceLinearVelocity, RootSpacePosition,
         },
@@ -243,7 +243,6 @@ fn reference_frames() {
             AdditionalMassProperties::Mass(0.0),
             RigidBody::KinematicPositionBased,
             Collider::ball(1.0 / 4.0),
-            Heightmap(Box::from([])),
             RootSpacePosition(DVec2::ZERO),
             RootSpaceLinearVelocity(DVec2::ZERO),
             RigidSpaceVelocity::zero(),
