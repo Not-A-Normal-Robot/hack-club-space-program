@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+
+<body style="margin: 0px;">
+    <script type="module">
+        import init from './hack-club-space-program.js'
+
+        init().catch((error) =>
+        {
+            if (!error.message.includes("This isn't actually an error"))
+            {
+                throw error;
+            }
+        });
+    </script>
+</body>
+
+</html>
