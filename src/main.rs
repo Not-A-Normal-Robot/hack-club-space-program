@@ -13,6 +13,9 @@ fn enable_backtrace() {
 fn main() {
     enable_backtrace();
 
+    #[cfg(target_family = "wasm")]
+    hack_club_space_program::web::init_panic_handler();
+
     App::new()
         .add_plugins(GameSetupPlugin)
         .insert_resource(WireframeConfig {

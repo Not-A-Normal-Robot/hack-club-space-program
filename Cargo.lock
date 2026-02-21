@@ -2719,6 +2719,8 @@ dependencies = [
  "derive_more",
  "fastnoise-lite",
  "keplerian_sim",
+ "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]

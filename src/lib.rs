@@ -7,6 +7,8 @@ pub mod plugins;
 pub mod resources;
 pub mod systems;
 pub mod terrain;
+#[cfg(target_family = "wasm")]
+pub mod web;
 
 /// A wrapper around [`bevy::log::trace!`] that only
 /// gets considered when the `trace` feature is enabled.
