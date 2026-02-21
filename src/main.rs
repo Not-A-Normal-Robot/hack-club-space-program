@@ -1,6 +1,9 @@
-use bevy::{pbr::wireframe::WireframeConfig, prelude::*};
+use bevy::prelude::*;
 use hack_club_space_program::plugins::setup::GameSetupPlugin;
+#[cfg(target_family = "wasm")]
+use wasm_bindgen::prelude::wasm_bindgen;
 
+#[cfg(not(target_family = "wasm"))]
 fn enable_backtrace() {
     const BACKTRACE_KEY: &str = "RUST_BACKTRACE";
     unsafe {
@@ -11,16 +14,15 @@ fn enable_backtrace() {
 }
 
 fn main() {
+    #[cfg(not(target_family = "wasm"))]
     enable_backtrace();
 
-    #[cfg(target_family = "wasm")]
-    hack_club_space_program::web::init_panic_handler();
+    App::new().add_plugins(GameSetupPlugin).run();
+}
 
-    App::new()
-        .add_plugins(GameSetupPlugin)
-        .insert_resource(WireframeConfig {
-            global: true,
-            default_color: Color::Srgba(Srgba::RED),
-        })
-        .run();
+#[cfg(target_family = "wasm")]
+#[wasm_bindgen(start)]
+fn web_start() {
+    hack_club_space_program::web::panic_handler::init_panic_handler();
+    main();
 }

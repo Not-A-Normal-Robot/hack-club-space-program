@@ -2,6 +2,19 @@
 
 GAME_NAME="hack-club-space-program"
 OUT_DIR="./target/wasm32-unknown-unknown/web"
+RELEASE_MODE=0
+
+for arg in "$@"; do
+    if [ "$arg" = "--release" ]; then
+        RELEASE_MODE=1
+    fi
+done
+
+WASM_PATH="./target/wasm32-unknown-unknown/release/$GAME_NAME.wasm"
+
+if [ "$RELEASE_MODE" -eq 0 ]; then
+    WASM_PATH="./target/wasm32-unknown-unknown/debug/$GAME_NAME.wasm"
+fi
 
 if ! command -v cargo >/dev/null 2>&1; then
     echo "cargo not installed and is required to build for web"
@@ -16,15 +29,21 @@ fi
 
 rustup target add wasm32-unknown-unknown
 
-cargo build --release --target wasm32-unknown-unknown
+if [ "$RELEASE_MODE" -eq 0 ]; then
+    cargo build --target wasm32-unknown-unknown
+else
+    cargo build --release --target wasm32-unknown-unknown
+fi
 
 mkdir -p "$OUT_DIR"
-wasm-bindgen --no-typescript \
+wasm-bindgen \
     --target web \
     --out-dir "$OUT_DIR" \
     --out-name "$GAME_NAME" \
-    "./target/wasm32-unknown-unknown/release/$GAME_NAME.wasm"
+    "$WASM_PATH"
 
-# TODO: wasm-opt
+if [ "$RELEASE_MODE" -ne 0 ]; then
+    : # TODO: wasm-opt
+fi
 
-cp ./web/* "$OUT_DIR"
+cp ./web/index.html "$OUT_DIR"
