@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2024"
 publish = false
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 [lints.clippy]
 pedantic = "warn"
 needless_pass_by_value = { level = "allow", priority = 1 }
@@ -30,3 +33,18 @@ opt-level = 3
 opt-level = "z"
 lto = "thin"
 strip = "debuginfo"
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+wasm-bindgen = "0.2"
+web-sys = { version = "0.3", features = [
+    "Document",
+    "Element",
+    # "HtmlCanvasElement",
+    # "WebGl2RenderingContext",
+    "Window",
+    "console",
+    "Navigator",
+    "Performance",
+    "HtmlTextAreaElement",
+    "HtmlDocument",
+] }
