@@ -38,7 +38,7 @@ impl LodVectors {
     }
 
     /// Updates the LoD vectors.
-    #[allow(clippy::missing_panics_doc)]
+    #[expect(clippy::missing_panics_doc)]
     pub fn update_lods(
         &mut self,
         terrain_gen: &TerrainGen,
@@ -66,7 +66,7 @@ impl LodVectors {
         new_focus: f64,
     ) {
         let level_not_loaded = self.0.len() <= level.get() as usize;
-        #[allow(clippy::float_cmp)]
+        #[expect(clippy::float_cmp)]
         let lod_needs_updating =
             lod_level_start(level, prev_focus) != lod_level_start(level, new_focus);
 
@@ -82,7 +82,7 @@ impl LodVectors {
     }
 
     /// The index buffer for minimal quality rendering (far away)
-    #[allow(clippy::cast_possible_truncation)]
+    #[expect(clippy::cast_possible_truncation)]
     const fn create_min_index_buffer() -> [u16; (MIN_LOD_VERTS as usize - 1) * 3] {
         let mut arr = [0u16; _];
 
@@ -101,7 +101,7 @@ impl LodVectors {
         arr
     }
 
-    #[allow(clippy::cast_possible_truncation)]
+    #[expect(clippy::cast_possible_truncation)]
     const fn create_zeroth_index_buffer() -> [u16; (LOD_VERTS as usize - 1) * 3] {
         let mut arr = [0u16; _];
 
@@ -123,7 +123,7 @@ impl LodVectors {
     /// Creates a very minimal vertex and index buffer
     /// for extremely-zoomed-out scenarios.
     fn create_min_buffer(&self, shift: DVec2, zoom: SimCameraZoom) -> Buffers {
-        #[allow(clippy::cast_possible_truncation)]
+        #[expect(clippy::cast_possible_truncation)]
         const LOD_VERTS_PER_MIN: u16 = (LOD_VERTS / MIN_LOD_VERTS as u32) as u16;
 
         // SAFETY: LoD 0 is always loaded, never mutated, and always created when
@@ -303,7 +303,7 @@ impl LodVectors {
         if let Ok(len) = vertices.try_into() {
             Self::create_index_buffer_inner_16(len)
         } else {
-            #[allow(clippy::cast_possible_truncation)]
+            #[expect(clippy::cast_possible_truncation)]
             Self::create_index_buffer_inner_32(vertices as u32)
         }
     }
@@ -339,7 +339,7 @@ impl LodVectors {
     /// # Unchecked Operation
     /// This function assumes you have updated the `LoD` vectors.
     #[must_use]
-    #[allow(clippy::missing_panics_doc)]
+    #[expect(clippy::missing_panics_doc)]
     pub fn create_buffers(
         &self,
         focus: f64,
@@ -406,7 +406,7 @@ mod tests {
 
     #[test]
     #[ignore = "takes a few dozen secs"]
-    #[allow(clippy::cast_possible_truncation)]
+    #[expect(clippy::cast_possible_truncation)]
     fn test_index_buffer() {
         let buf = LodVectors::create_index_buffer_inner_16(7);
         assert_eq!(
@@ -499,7 +499,7 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::cast_precision_loss)]
+    #[expect(clippy::cast_precision_loss)]
     fn test_update_noop() {
         const ITERS: usize = 256;
 
@@ -538,7 +538,7 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::cast_precision_loss)]
+    #[expect(clippy::cast_precision_loss)]
     fn test_updating() {
         const ITERS: usize = 256;
 

@@ -62,7 +62,7 @@ impl<M: Material2d> CelestialBodyBuilder<M> {
     }
 
     #[must_use]
-    #[allow(clippy::cast_possible_truncation)]
+    #[expect(clippy::cast_possible_truncation)]
     pub fn build_with_terrain(self, terrain: Terrain) -> impl Bundle {
         (
             self.shared_components(),

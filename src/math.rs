@@ -14,8 +14,8 @@ mod tests {
     use core::f64::consts::TAU;
 
     #[test]
-    #[allow(clippy::cast_precision_loss)]
-    #[allow(clippy::cast_possible_truncation)]
+    #[expect(clippy::cast_precision_loss)]
+    #[expect(clippy::cast_possible_truncation)]
     fn test_quat_to_rot() {
         const ITERS: usize = 1024;
 

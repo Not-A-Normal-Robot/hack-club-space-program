@@ -43,7 +43,7 @@ impl RootSpacePosition {
     }
 
     #[must_use]
-    #[allow(clippy::cast_possible_truncation)]
+    #[expect(clippy::cast_possible_truncation)]
     pub fn to_camera_space_transform(
         self,
         rotation: Quat,

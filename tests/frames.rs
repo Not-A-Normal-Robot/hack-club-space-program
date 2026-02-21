@@ -182,7 +182,7 @@ impl Assertions for PostTickAssertions {
 }
 
 #[test]
-#[allow(clippy::too_many_lines)]
+#[expect(clippy::too_many_lines)]
 fn reference_frames() {
     static ASSERTION_COLLECTION: LazyLock<Box<[PostTickAssertions]>> = LazyLock::new(|| {
         Box::new([PostTickAssertions {
@@ -314,7 +314,7 @@ fn reference_frames() {
 }
 
 #[test]
-#[allow(clippy::cast_possible_truncation)]
+#[expect(clippy::cast_possible_truncation)]
 fn reference_frame_fixed_cam() {
     const CAM_POSITION: RootSpacePosition = RootSpacePosition(DVec2::ONE);
 

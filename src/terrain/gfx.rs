@@ -42,7 +42,7 @@ impl TerrainGen {
         let iter_scale = f64::from(LOD_DIVISIONS).powi(-i32::from(lod_level));
 
         core::array::from_fn(|i| {
-            #[allow(clippy::cast_precision_loss)]
+            #[expect(clippy::cast_precision_loss)]
             self.get_terrain_vector(
                 const { TAU / LOD_VERTS as f64 } * (i as f64).mul_add(iter_scale, start),
             )
@@ -79,8 +79,8 @@ pub fn lod_level_start(lod_level: NonZeroU8, focus: f64) -> f64 {
 /// This is for the part where the LoDs get stitched into a mesh.
 /// This helps figure out where the stitches should be.
 #[must_use]
-#[allow(clippy::cast_possible_truncation)]
-#[allow(clippy::cast_possible_wrap)]
+#[expect(clippy::cast_possible_truncation)]
+#[expect(clippy::cast_possible_wrap)]
 pub fn lod_level_index(lod_level: NonZeroU8, focus: f64) -> usize {
     // From Desmos graph:
     // indices = ((cur_start - prev_start) / prev_iter_scale).rem_euclid(verts)

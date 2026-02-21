@@ -19,7 +19,7 @@ pub struct SimCameraInfo {
 
 type FilterSimCamera = (With<Camera>, With<SimCamera>);
 
-#[allow(clippy::cast_possible_truncation)]
+#[expect(clippy::cast_possible_truncation)]
 pub fn control_camera(
     mut camera: Single<SimCameraInfo, FilterSimCamera>,
     key: Res<ButtonInput<KeyCode>>,

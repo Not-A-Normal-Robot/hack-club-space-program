@@ -194,8 +194,8 @@ fn test_writing_to_surface_rails() {
 ///         - Betarove (3/2π radians, 1e5 alt) => (0 -1e5) (0 0)
 ///         - LOADED Betabase (beta pos + beta radius) (alpha vel + beta vel)
 #[test]
-#[allow(clippy::cast_possible_truncation)]
-#[allow(clippy::too_many_lines)]
+#[expect(clippy::cast_possible_truncation)]
+#[expect(clippy::too_many_lines)]
 fn test_rail_to_sv() {
     const ALPHA_RADIUS: f64 = 1e6;
     const ALPHA_MASS: f64 = 1e20;

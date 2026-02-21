@@ -313,7 +313,7 @@ mod tests {
             eprintln!("### {i} — {min_terrain}..{max_terrain}");
 
             for size in 1..10 {
-                #[allow(clippy::cast_precision_loss)]
+                #[expect(clippy::cast_precision_loss)]
                 let half_size = size as f32 * 10.0;
                 let aabb = Aabb::new(
                     Vec2::splat(-half_size).into(),
