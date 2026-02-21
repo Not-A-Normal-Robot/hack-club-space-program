@@ -17,9 +17,14 @@ if [ "$RELEASE_MODE" -eq 0 ]; then
 fi
 
 if ! command -v cargo >/dev/null 2>&1; then
-    echo "cargo not installed and is required to build for web"
-    echo "one way to get cargo and the rest of the rust toolchain is rustup: https://rustup.rs"
-    exit 1
+    if [ -f "$HOME/.cargo/env" ]; then
+        . "$HOME/.cargo/env"
+    fi
+    if ! command -v cargo >/dev/null 2>&1; then
+        echo "cargo not installed and is required to build for web"
+        echo "one way to get cargo and the rest of the rust toolchain is rustup: https://rustup.rs"
+        exit 1
+    fi
 fi
 
 if ! command -v wasm-bindgen >/dev/null 2>&1; then
