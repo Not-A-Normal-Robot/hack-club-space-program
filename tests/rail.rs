@@ -88,7 +88,9 @@ fn test_writing_to_orbit_rails() {
         .get::<RailMode>()
         .expect("vessel should have rail");
 
-    let orbit = rail.as_orbit().expect("rail mode should be orbit");
+    let Some(orbit) = rail.as_orbit() else {
+        panic!("rail mode should be orbit, found {rail:?}");
+    };
     let expected_orbit = StateVectors2D {
         position: pos.0,
         velocity: vel.0,
@@ -165,6 +167,12 @@ fn test_writing_to_surface_rails() {
         .world()
         .get::<RailMode>(vessel)
         .expect("vessel should have rail mode");
+
+    let vessel_pos = app
+        .world()
+        .get::<RootSpacePosition>(vessel)
+        .copied()
+        .expect("vessel should have position");
 
     let expected_att = SurfaceAttachment {
         angle: PI / 2.0,

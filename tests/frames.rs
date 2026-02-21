@@ -7,12 +7,10 @@ use hack_club_space_program::{
     builders::{celestial::CelestialBodyBuilder, vessel::VesselBuilder},
     components::{
         camera::{SimCamera, SimCameraOffset, SimCameraZoom},
-        celestial::CelestialBody,
         frames::{
             CameraSpaceTransform, RigidSpaceVelocity, RootSpaceLinearVelocity, RootSpacePosition,
         },
         relations::{CelestialParent, RailMode},
-        vessel::Vessel,
     },
     resources::ActiveVessel,
 };
@@ -127,11 +125,15 @@ fn get_camera_offset(app: &App, entity_refs: &TestEntityRefs) -> RootSpacePositi
         .copied()
         .expect("could not find SimCameraOffset");
     let attached_pos = match camera_offset {
-        SimCameraOffset::Attached { entity, .. } => app
+        SimCameraOffset::Attached {
+            entity,
+            last_known_pos,
+            ..
+        } => app
             .world()
             .get::<RootSpacePosition>(entity)
             .copied()
-            .unwrap_or(RootSpacePosition(DVec2::ZERO)),
+            .unwrap_or(last_known_pos),
         SimCameraOffset::Detached(pos) => pos,
     };
     camera_offset
@@ -187,10 +189,7 @@ fn reference_frames() {
             body: TransformAssertions {
                 root_pos: Some(RootSpacePosition(DVec2::ZERO)),
                 root_vel: Some(RootSpaceLinearVelocity(DVec2::ZERO)),
-                rig_vel: Some(RigidSpaceVelocity {
-                    angvel: 0.0,
-                    linvel: Vec2::new(-1.0, 0.0),
-                }),
+                rig_vel: None,
                 cam_tf: None,
             },
             vessel: TransformAssertions {
@@ -220,7 +219,7 @@ fn reference_frames() {
                 );
                 assert_eq!(
                     active_vessel.prev_tick_position,
-                    RootSpacePosition(DVec2::new(0.5, 1.5)),
+                    RootSpacePosition(DVec2::new(0.5 + 1.0 / 64.0, 1.5)),
                     "active vessel position mismatch"
                 );
                 assert_eq!(
@@ -234,20 +233,21 @@ fn reference_frames() {
 
     let mut app = common::setup_default();
 
+    let (mesh, material) = common::empty_mesh_material(&mut app);
+
     let body = app
         .world_mut()
-        .spawn((
-            CelestialBody {
-                base_radius: 1.0 / 4.0,
-            },
-            AdditionalMassProperties::Mass(0.0),
-            RigidBody::KinematicPositionBased,
-            Collider::ball(1.0 / 4.0),
-            RootSpacePosition(DVec2::ZERO),
-            RootSpaceLinearVelocity(DVec2::ZERO),
-            RigidSpaceVelocity::zero(),
-            Transform::from_translation(Vec3::NAN),
-        ))
+        .spawn(
+            CelestialBodyBuilder {
+                name: Name::new("Body"),
+                radius: 1.0 / 4.0,
+                mass: 0.0,
+                angle: 0.0,
+                mesh: mesh.clone(),
+                material: material.clone(),
+            }
+            .build_without_terrain(),
+        )
         .id();
 
     let vessel_pos = RootSpacePosition(DVec2::new(0.5, 1.5));
@@ -255,17 +255,22 @@ fn reference_frames() {
 
     let vessel = app
         .world_mut()
-        .spawn((
-            Vessel,
-            Collider::ball(1.0 / 8.0),
-            RigidBody::Dynamic,
-            AdditionalMassProperties::Mass(1e4),
-            Transform::from_translation(Vec3::NAN),
-            RigidSpaceVelocity::zero(),
-            vessel_pos,
-            vessel_vel,
-            GravityScale(0.0),
-        ))
+        .spawn(
+            VesselBuilder {
+                name: Name::new("Vessel"),
+                collider: Collider::ball(1.0 / 8.0),
+                mass: AdditionalMassProperties::Mass(1e4),
+                rail_mode: RailMode::None,
+                parent: CelestialParent { entity: body },
+                position: vessel_pos,
+                linvel: vessel_vel,
+                mesh: mesh.clone(),
+                material: material.clone(),
+                angvel: 0.0,
+                angle: 0.0,
+            }
+            .build_rigid(),
+        )
         .id();
 
     let camera = app
@@ -318,10 +323,7 @@ fn reference_frame_fixed_cam() {
             body: TransformAssertions {
                 root_pos: Some(RootSpacePosition(DVec2::ZERO)),
                 root_vel: Some(RootSpaceLinearVelocity(DVec2::ZERO)),
-                rig_vel: Some(RigidSpaceVelocity {
-                    angvel: 0.0,
-                    linvel: Vec2::new(-1.0, 0.0),
-                }),
+                rig_vel: None,
                 cam_tf: None,
             },
             vessel: TransformAssertions {

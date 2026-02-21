@@ -16,7 +16,7 @@ use bevy::{ecs::query::QueryData, prelude::*};
 use bevy_rapier2d::{
     na::{Const, OPoint},
     parry::{math::Isometry, shape::SharedShape, transformation::vhacd::VHACD},
-    prelude::{Collider, RigidBody, RigidBodyDisabled, VHACDParameters},
+    prelude::{Collider, ColliderDisabled, RigidBody, RigidBodyDisabled, VHACDParameters},
 };
 use core::ops::RangeInclusive;
 
@@ -30,6 +30,7 @@ type VesselQuery<'w, 's> = Query<
         Without<CelestialBody>,
         With<RigidBody>,
         Without<RigidBodyDisabled>,
+        Without<ColliderDisabled>,
     ),
 >;
 
@@ -182,8 +183,13 @@ pub fn update_terrain_colliders(
     celestial_query: CelestialQuery,
     vessel_query: VesselQuery,
     mut commands: Commands,
-    active_vessel: Res<ActiveVessel>,
+    active_vessel: Option<Res<ActiveVessel>>,
 ) {
+    let Some(active_vessel) = active_vessel else {
+        error!("cannot update terrain colliders: active vessel doesn't exist");
+        return;
+    };
+
     for celestial in celestial_query {
         update_collider(celestial, vessel_query, &active_vessel, &mut commands);
     }

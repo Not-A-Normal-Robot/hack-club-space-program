@@ -4,7 +4,7 @@ use bevy_rapier2d::prelude::RigidBody;
 use crate::{
     components::{
         camera::{SimCamera, SimCameraOffset, SimCameraZoom},
-        celestial::CelestialBody,
+        celestial::Terrain,
         frames::{
             RigidSpaceTransform, RigidSpaceVelocity, RigidSpaceVelocityImpl,
             RootSpaceLinearVelocity, RootSpacePosition,
@@ -102,14 +102,11 @@ pub fn write_rigid_vel_to_root(
 /// Shifts all entities' [`RootSpacePosition`] based on its [`RootSpaceLinearVelocity`]
 /// (if any).
 pub fn apply_root_velocity(
-    vels: Query<
-        (&RootSpaceLinearVelocity, &mut RootSpacePosition, &RigidBody),
-        FilterLoadedVessels,
-    >,
+    vels: Query<(&RootSpaceLinearVelocity, &mut RootSpacePosition), FilterLoadedVessels>,
     time: Res<Time>,
 ) {
     vels.into_iter()
-        .for_each(|(root_vel, mut root_pos, _)| root_pos.0 += root_vel.0 * time.delta_secs_f64());
+        .for_each(|(root_vel, mut root_pos)| root_pos.0 += root_vel.0 * time.delta_secs_f64());
 }
 
 /// Updates the last tick position and last parent body of the active vessel.
@@ -157,9 +154,9 @@ pub fn pre_rapier_frame_switch(
             &mut Transform,
             &mut RigidSpaceVelocity,
         ),
-        Without<CelestialBody>,
+        Without<Terrain>,
     >,
-    celestials: Query<&mut Transform, With<CelestialBody>>,
+    terrestrial_cels: Query<&mut Transform, With<Terrain>>,
     active_vessel: Option<Res<ActiveVessel>>,
 ) {
     let Some(active_vessel) = active_vessel else {
@@ -173,7 +170,7 @@ pub fn pre_rapier_frame_switch(
             pre_rapier_frame_switch_inner(root_pos, root_vel, transform, rigid_vel, &active_vessel);
         });
 
-    celestials.into_iter().for_each(|mut transform| {
+    terrestrial_cels.into_iter().for_each(|mut transform| {
         // Translation is done at the collider level
         transform.translation = Vec3::ZERO;
     });
@@ -181,8 +178,8 @@ pub fn pre_rapier_frame_switch(
 
 /// Sets transform into the camera transform so Bevy can render it
 pub fn post_rapier_frame_switch(
-    query: Query<(&mut Transform, &RootSpacePosition), Without<CelestialBody>>,
-    celestials: Query<&mut Transform, With<CelestialBody>>,
+    query: Query<(&mut Transform, &RootSpacePosition), Without<Terrain>>,
+    terrestrial_cels: Query<&mut Transform, With<Terrain>>,
     sim_camera: Query<(&mut SimCameraOffset, &SimCameraZoom, &Camera), With<SimCamera>>,
     camera_offset_query: Query<&RootSpacePosition>,
 ) {
@@ -201,7 +198,7 @@ pub fn post_rapier_frame_switch(
             .0;
     });
 
-    celestials.into_iter().for_each(|mut transform| {
+    terrestrial_cels.into_iter().for_each(|mut transform| {
         // Translation and scaling is done at the mesh level
         transform.translation = Vec3::ZERO;
         transform.scale = Vec3::ONE;

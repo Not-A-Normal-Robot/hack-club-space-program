@@ -224,8 +224,9 @@ where
 {
     fn run_assertions_collection(self, app: &mut App, extra: A::ExtraData) {
         for (idx, assertions) in self.into_iter().enumerate() {
-            eprintln!(">> Running assertions: tick {idx}");
+            eprintln!(">> Simulating tick {idx}");
             app.update();
+            eprintln!(">> Running assertions: tick {idx}");
             assertions.check_assertions(app, extra);
         }
     }
