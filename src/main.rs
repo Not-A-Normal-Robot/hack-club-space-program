@@ -13,6 +13,8 @@ fn enable_backtrace() {
 fn main() {
     enable_backtrace();
 
+    todo!();
+
     App::new()
         .add_plugins(GameSetupPlugin)
         .insert_resource(WireframeConfig {
