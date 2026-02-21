@@ -117,18 +117,6 @@ impl Plugin for GameSetupPlugin {
             ..Default::default()
         }));
         app.add_systems(Startup, demo_startup);
-        app.add_plugins(RapierDebugRenderPlugin {
-            enabled: true,
-            default_collider_debug: ColliderDebug::AlwaysRender,
-            mode: DebugRenderMode::all(),
-            style: DebugRenderStyle {
-                rigid_body_axes_length: 20.0,
-                subdivisions: 512,
-                border_subdivisions: 20,
-                collider_aabb_color: [0.0, 0.0, 0.0, 0.0],
-                ..Default::default()
-            },
-        });
         app.add_plugins((
             GameLogicPlugin,
             GameDebugPlugin,

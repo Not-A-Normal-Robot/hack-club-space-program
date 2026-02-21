@@ -94,15 +94,15 @@ fn polyline_with_ball(
         SharedShape::ball(ball_radius),
     ));
 
-    // let decomp = VHACD::decompose(&params, points, indices, true);
+    let decomp = VHACD::decompose(&params, points, indices, true);
 
-    // for vertices in decomp.compute_exact_convex_hulls(points, indices) {
-    //     if let Some(convex) = SharedShape::convex_polyline(vertices) {
-    //         parts.push((Isometry::identity(), convex));
-    //     }
-    // }
+    for vertices in decomp.compute_exact_convex_hulls(points, indices) {
+        if let Some(convex) = SharedShape::convex_polyline(vertices) {
+            parts.push((Isometry::identity(), convex));
+        }
+    }
 
-    let shape = SharedShape::compound(dbg!(parts));
+    let shape = SharedShape::compound(parts);
 
     Collider::from(shape)
 }
