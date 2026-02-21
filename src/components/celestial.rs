@@ -1,4 +1,3 @@
-
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::RigidBody;
 
@@ -43,7 +42,7 @@ pub struct Terrain {
 pub struct Heightmap(pub Box<[f32]>);
 
 impl Heightmap {
-    #[must_use] 
+    #[must_use]
     pub fn empty() -> Self {
         Self(Box::from([]))
     }
@@ -51,7 +50,7 @@ impl Heightmap {
 
 #[derive(Clone, Copy, Component)]
 #[require(Heightmap)]
-#[require(RigidBody::KinematicVelocityBased)]
+#[require(RigidBody::KinematicPositionBased)]
 pub struct CelestialBody {
     /// The "base radius" of a celestial body.
     ///

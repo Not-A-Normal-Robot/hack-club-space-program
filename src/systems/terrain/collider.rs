@@ -13,8 +13,9 @@ use crate::{
 };
 use bevy::{ecs::query::QueryData, prelude::*};
 use bevy_rapier2d::{
-    parry::shape::TriMeshBuilderError,
-    prelude::{Collider, RigidBody, RigidBodyDisabled, TriMeshFlags},
+    na::{Const, OPoint},
+    parry::{math::Isometry, shape::SharedShape, transformation::vhacd::VHACD},
+    prelude::{Collider, RigidBody, RigidBodyDisabled, VHACDParameters},
 };
 use core::ops::RangeInclusive;
 
@@ -73,6 +74,39 @@ fn gen_theta_ranges(
     vec
 }
 
+fn polyline_with_ball(
+    points: &[OPoint<f32, Const<2>>],
+    // points: &[Vec2],
+    indices: &[[u32; 2]],
+    ball_offset: Vec2,
+    ball_radius: f32,
+) -> Collider {
+    let params = VHACDParameters {
+        concavity: 0.015,
+        alpha: 0.0,
+        ..Default::default()
+    };
+
+    let mut parts = vec![];
+
+    parts.push((
+        Isometry::translation(ball_offset.x, ball_offset.y),
+        SharedShape::ball(ball_radius),
+    ));
+
+    // let decomp = VHACD::decompose(&params, points, indices, true);
+
+    // for vertices in decomp.compute_exact_convex_hulls(points, indices) {
+    //     if let Some(convex) = SharedShape::convex_polyline(vertices) {
+    //         parts.push((Isometry::identity(), convex));
+    //     }
+    // }
+
+    let shape = SharedShape::compound(dbg!(parts));
+
+    Collider::from(shape)
+}
+
 fn update_collider(
     mut celestial: CelestialComponentsItem,
     vessel_query: VesselQuery,
@@ -103,12 +137,17 @@ fn update_collider(
             .0
             .iter()
             .map(|point| point.phys_downcast(rigid_pos))
+            .map(OPoint::from)
             .collect()
     } else {
         let terrain_pts = gen_points(*celestial.terrain, &idx_ranges);
+        if terrain_pts.len() < 3 {
+            return; // Not a valid mesh, ignore
+        }
         let collider_pts: Vec<_> = terrain_pts
             .iter()
             .map(|point| point.phys_downcast(rigid_pos))
+            .map(OPoint::from)
             .collect();
         new_terrain_pts = Some(terrain_pts);
         collider_pts
@@ -124,24 +163,14 @@ fn update_collider(
         }
     }
 
-    let idx_buffer = create_index_buffer(collider_pts.len() as u32);
-    let trimesh = Collider::trimesh_with_flags(
-        collider_pts,
-        idx_buffer,
-        // TriMeshFlags::DELETE_DEGENERATE_TRIANGLES | TriMeshFlags::DELETE_BAD_TOPOLOGY_TRIANGLES,
-        TriMeshFlags::empty(),
+    #[expect(clippy::cast_possible_truncation)]
+    let decomp = polyline_with_ball(
+        &collider_pts,
+        &create_index_buffer(collider_pts.len() as u32),
+        rigid_pos.as_vec2(),
+        (celestial.terrain.offset - celestial.terrain.multiplier) as f32,
     );
-
-    let ball = Collider::ball((celestial.terrain.offset - celestial.terrain.multiplier) as f32);
-
-    *celestial.collider = match trimesh {
-        Ok(trimesh) => trimesh, // TODO: Ball with trimesh
-        Err(TriMeshBuilderError::EmptyIndices) => ball,
-        Err(e) => {
-            error!("Error building terrain tri mesh: {e}");
-            ball
-        }
-    };
+    *celestial.collider = decomp;
 }
 
 pub fn update_terrain_colliders(

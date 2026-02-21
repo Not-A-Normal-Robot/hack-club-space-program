@@ -22,7 +22,7 @@ impl<M: Material2d> CelestialBodyBuilder<M> {
     #[must_use]
     pub const fn base_bundle() -> impl Bundle {
         (
-            RigidBody::KinematicVelocityBased,
+            RigidBody::KinematicPositionBased,
             RootSpacePosition(DVec2::ZERO),
             RootSpaceLinearVelocity(DVec2::ZERO),
             Friction::new(0.7),
@@ -36,6 +36,9 @@ impl<M: Material2d> CelestialBodyBuilder<M> {
                 base_radius: self.radius,
             },
             AdditionalMassProperties::MassProperties(MassProperties {
+                // To keep it aligned with the mesh, local center of mass
+                // is updated every tick to be the rigid-space position
+                // of the body
                 local_center_of_mass: Vec2::ZERO,
                 mass: self.mass,
                 ..Default::default()

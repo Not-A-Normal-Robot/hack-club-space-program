@@ -212,8 +212,9 @@ pub fn gen_points(terrain: Terrain, ranges: &[Range<u32>]) -> Vec<TerrainPoint> 
     let verts = verts_at_lod_level(terrain.subdivs);
     let terrain = TerrainGen::new(terrain);
 
-    let total_len = ranges.iter().map(std::iter::ExactSizeIterator::len).sum();
-    let mut pts = Vec::with_capacity(total_len);
+    let total_len: usize = ranges.iter().map(std::iter::ExactSizeIterator::len).sum();
+    let mut pts = Vec::with_capacity(total_len + 1);
+    pts.push(TerrainPoint(DVec2::ZERO));
 
     for range in ranges {
         for i in range.clone() {
@@ -228,31 +229,43 @@ pub fn gen_points(terrain: Terrain, ranges: &[Range<u32>]) -> Vec<TerrainPoint> 
 
 /// Creates an index buffer for the collision mesh, given the amount of points.
 #[must_use]
-pub fn create_index_buffer(len: u32) -> Vec<[u32; 3]> {
-    if len < 3 {
+pub fn create_index_buffer(len: u32) -> Vec<[u32; 2]> {
+    if len == 0 {
         return Vec::new();
     }
 
-    let mut buf = Box::new_uninit_slice(len as usize - 1);
-
-    for i in 0..len - 2 {
-        unsafe {
-            buf.get_unchecked_mut(i as usize).write([0, i + 1, i + 2]);
-        }
-    }
-
-    unsafe {
-        buf.get_unchecked_mut(len as usize - 2)
-            .write([0, len - 1, 1]);
-    }
-
-    let buf = unsafe { buf.assume_init() };
-
-    let len = buf.len();
-    let ptr = Box::into_raw(buf).cast::<[u32; 3]>();
-
-    unsafe { Vec::from_raw_parts(ptr, len, len) }
+    (0..len - 1)
+        .map(|i| [i, i + 1])
+        .chain(core::iter::once([len - 1, 0]))
+        .collect()
 }
+
+// #[must_use]
+// pub fn create_index_buffer(len: u32) -> Vec<[u32; 3]> {
+//     if len < 3 {
+//         return Vec::new();
+//     }
+
+//     let mut buf = Box::new_uninit_slice(len as usize - 1);
+
+//     for i in 0..len - 2 {
+//         unsafe {
+//             buf.get_unchecked_mut(i as usize).write([0, i + 1, i + 2]);
+//         }
+//     }
+
+//     unsafe {
+//         buf.get_unchecked_mut(len as usize - 2)
+//             .write([0, len - 1, 1]);
+//     }
+
+//     let buf = unsafe { buf.assume_init() };
+
+//     let len = buf.len();
+//     let ptr = Box::into_raw(buf).cast::<[u32; 3]>();
+
+//     unsafe { Vec::from_raw_parts(ptr, len, len) }
+// }
 
 #[cfg(test)]
 mod tests {
@@ -499,11 +512,10 @@ mod tests {
     fn test_index_buffer() {
         let test_cases = [
             vec![],
-            vec![],
-            vec![],
-            vec![[0, 1, 2], [0, 2, 1]],
-            vec![[0, 1, 2], [0, 2, 3], [0, 3, 1]],
-            vec![[0, 1, 2], [0, 2, 3], [0, 3, 4], [0, 4, 1]],
+            vec![[0, 0]],
+            vec![[0, 1], [1, 0]],
+            vec![[0, 1], [1, 2], [2, 0]],
+            vec![[0, 1], [1, 2], [2, 3], [3, 0]],
         ];
 
         for (len, expected) in test_cases.into_iter().enumerate() {
@@ -513,4 +525,23 @@ mod tests {
             assert_eq!(expected, output);
         }
     }
+
+    // #[test]
+    // fn test_index_buffer() {
+    //     let test_cases = [
+    //         vec![],
+    //         vec![],
+    //         vec![],
+    //         vec![[0, 1, 2], [0, 2, 1]],
+    //         vec![[0, 1, 2], [0, 2, 3], [0, 3, 1]],
+    //         vec![[0, 1, 2], [0, 2, 3], [0, 3, 4], [0, 4, 1]],
+    //     ];
+
+    //     for (len, expected) in test_cases.into_iter().enumerate() {
+    //         #[expect(clippy::cast_possible_truncation)]
+    //         let output = create_index_buffer(len as u32);
+
+    //         assert_eq!(expected, output);
+    //     }
+    // }
 }

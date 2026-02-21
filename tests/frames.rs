@@ -241,7 +241,7 @@ fn reference_frames() {
                 base_radius: 1.0 / 4.0,
             },
             AdditionalMassProperties::Mass(0.0),
-            RigidBody::KinematicVelocityBased,
+            RigidBody::KinematicPositionBased,
             Collider::ball(1.0 / 4.0),
             Heightmap(Box::from([])),
             RootSpacePosition(DVec2::ZERO),
