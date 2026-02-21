@@ -27,8 +27,8 @@ impl Plugin for GameLogicPlugin {
                     integration_parameters: IntegrationParameters {
                         dt,
                         max_ccd_substeps: 4,
-                        // num_solver_iterations: 32,
-                        num_solver_iterations: 1, // DEBUG
+                        num_solver_iterations: 32,
+                        normalized_max_corrective_velocity: 250.0,
                         ..Default::default()
                     },
                     rapier_configuration: RAPIER_CONFIGURATION,
