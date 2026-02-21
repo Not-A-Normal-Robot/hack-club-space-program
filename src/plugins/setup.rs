@@ -1,7 +1,7 @@
 use crate::{
-    builders::{celestial::CelestialBodyBuilder, vessel::VesselBuilder},
+    builders::{camera::SimCameraBuilder, celestial::CelestialBodyBuilder, vessel::VesselBuilder},
     components::{
-        camera::{SimCamera, SimCameraOffset, SimCameraZoom},
+        camera::{SimCameraOffset, SimCameraZoom},
         celestial::Terrain,
         frames::{RootSpaceLinearVelocity, RootSpacePosition},
         relations::{CelestialParent, RailMode},
@@ -80,21 +80,21 @@ fn demo_startup(
     let vessel = commands.spawn(vessel);
     let vessel_entity = vessel.id();
 
-    commands.spawn((
-        Camera {
+    commands.spawn(
+        SimCameraBuilder {
+            offset: SimCameraOffset::Attached {
+                entity: vessel_entity,
+                last_known_pos: vessel_pos,
+                offset: DVec2::ZERO,
+            },
+            zoom: SimCameraZoom(1.0),
+            transform: Transform::IDENTITY,
+        }
+        .with_camera(Camera {
             is_active: true,
             ..Default::default()
-        },
-        Camera2d,
-        SimCamera,
-        SimCameraOffset::Attached {
-            entity: vessel_entity,
-            last_known_pos: vessel_pos,
-            offset: DVec2::ZERO,
-        },
-        SimCameraZoom(1.0),
-        Transform::IDENTITY,
-    ));
+        }),
+    );
 
     commands.insert_resource(ActiveVessel {
         entity: vessel_entity,

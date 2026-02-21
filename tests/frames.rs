@@ -4,9 +4,9 @@ use crate::common::{Assertions, AssertionsCollection};
 use bevy::{math::DVec2, prelude::*};
 use bevy_rapier2d::prelude::*;
 use hack_club_space_program::{
-    builders::{celestial::CelestialBodyBuilder, vessel::VesselBuilder},
+    builders::{camera::SimCameraBuilder, celestial::CelestialBodyBuilder, vessel::VesselBuilder},
     components::{
-        camera::{SimCamera, SimCameraOffset, SimCameraZoom},
+        camera::{SimCameraOffset, SimCameraZoom},
         frames::{
             CameraSpaceTransform, RigidSpaceVelocity, RootSpaceLinearVelocity, RootSpacePosition,
         },
@@ -275,21 +275,21 @@ fn reference_frames() {
 
     let camera = app
         .world_mut()
-        .spawn((
-            Camera {
+        .spawn(
+            SimCameraBuilder {
+                offset: SimCameraOffset::Attached {
+                    entity: vessel,
+                    last_known_pos: RootSpacePosition(DVec2::ZERO),
+                    offset: DVec2::ZERO,
+                },
+                transform: Transform::IDENTITY,
+                zoom: SimCameraZoom(1.0),
+            }
+            .with_camera(Camera {
                 is_active: true,
                 ..Default::default()
-            },
-            Camera2d,
-            SimCamera,
-            SimCameraOffset::Attached {
-                entity: vessel,
-                last_known_pos: RootSpacePosition(DVec2::ZERO),
-                offset: DVec2::ZERO,
-            },
-            SimCameraZoom(1.0),
-            Transform::from_rotation(Quat::from_rotation_z(0.0)),
-        ))
+            }),
+        )
         .id();
 
     app.world_mut().insert_resource(ActiveVessel {
@@ -388,17 +388,17 @@ fn reference_frame_fixed_cam() {
 
     let camera = app
         .world_mut()
-        .spawn((
-            Camera {
+        .spawn(
+            SimCameraBuilder {
+                offset: SimCameraOffset::Detached(CAM_POSITION),
+                transform: Transform::IDENTITY,
+                zoom: SimCameraZoom(1.0),
+            }
+            .with_camera(Camera {
                 is_active: true,
                 ..Default::default()
-            },
-            Camera2d,
-            SimCamera,
-            SimCameraOffset::Detached(CAM_POSITION),
-            SimCameraZoom(1.0),
-            Transform::from_rotation(Quat::from_rotation_z(0.0)),
-        ))
+            }),
+        )
         .id();
 
     app.world_mut().insert_resource(ActiveVessel {
