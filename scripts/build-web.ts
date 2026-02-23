@@ -273,7 +273,9 @@ async function optimizeWasm()
         }
 
         console.log("Applying the optimized WASM...");
-        await fs.move(tempFile, BOUND_WASM_PATH);
+        await fs.move(tempFile, BOUND_WASM_PATH, {
+            overwrite: true
+        });
 
         console.log("Finished optimizing the WASM");
     } finally
