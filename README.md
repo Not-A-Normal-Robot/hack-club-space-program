@@ -40,10 +40,10 @@ To do this, you can insert it manually:
 export PATH="$PATH:$HOME/.cargo/bin" && deno -P scripts/build-web.ts
 ```
 
-Or you can import `~/.cargo/env` before running the script:
+Or you can run `~/.cargo/env` before running the script:
 
 ```
-~/.cargo/env && deno -P scripts/build-web.ts
+. ~/.cargo/env && deno -P scripts/build-web.ts
 ```
 
 ### Compilation Features
