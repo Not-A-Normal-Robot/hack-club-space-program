@@ -9,23 +9,29 @@ if (!("Deno" in globalThis))
 import * as path from "@std/path";
 import * as fs from "@std/fs";
 
+const GAME_NAME = "hack-club-space-program";
+const RELEASE_MODE = Deno.args.includes("--release");
+
 const DIRNAME = import.meta.dirname;
 if (!DIRNAME)
 {
     throw new Error("`import.meta.dirname` is undefined. This script must be run locally.");
 }
 
-const GAME_NAME = "hack-club-space-program";
 const OUT_DIR = path.join(DIRNAME, "../target/wasm32-unknown-unknown/web");
-const RELEASE_MODE = Deno.args.includes("--release");
-const WASM_PATH = path.join(
+const UNBOUND_WASM_PATH = path.join(
     DIRNAME,
     "../target/wasm32-unknown-unknown",
     RELEASE_MODE ? "release" : "debug",
     GAME_NAME + ".wasm",
 );
+const BOUND_WASM_PATH = path.join(
+    OUT_DIR,
+    GAME_NAME + "_bg.wasm",
+);
 const WEB_ADDITIONS_PATH = path.join(DIRNAME, "../web");
 const ASSETS_PATH = path.join(DIRNAME, "../assets");
+const WASM_OPT_LEVEL = "-O3";
 
 /** Checks if the given executable is accessible, by running `<cmd> --version`. */
 async function isExecAvailable(cmd: string): Promise<boolean>
@@ -213,7 +219,7 @@ async function bindWasm()
 {
     console.log("Binding WASM to JS using wasm-bindgen...");
     const command = new Deno.Command("wasm-bindgen", {
-        args: ["--target", "web", "--out-dir", OUT_DIR, "--out-name", GAME_NAME, WASM_PATH],
+        args: ["--target", "web", "--out-dir", OUT_DIR, "--out-name", GAME_NAME, UNBOUND_WASM_PATH],
         stdin: "null",
         stdout: "piped",
     });
@@ -229,6 +235,47 @@ async function bindWasm()
             output.stdout,
             output.stderr,
         );
+    }
+}
+
+async function optimizeWasm()
+{
+    if (!(await isExecAvailable("wasm-opt")))
+    {
+        console.warn("Could not find optional dependency `wasm-opt`, the build will not be fully optimized");
+        console.warn("Make sure you have it installed. To install it on Debian, do `sudo apt install binaryen`");
+        console.warn("Make sure it's in your PATH.");
+        return;
+    }
+
+    console.log("Optimizing the WASM using wasm-opt");
+
+    const tempFile = await Deno.makeTempFile();
+
+    try
+    {
+        const command = new Deno.Command("wasm-opt", {
+            args: [BOUND_WASM_PATH, WASM_OPT_LEVEL, "-o", tempFile],
+            stdin: "null",
+            stdout: "piped",
+        });
+        const output = await command.output();
+
+        if (!output.success)
+        {
+            throw execError(
+                "optimizing the WASM",
+                "wasm-opt",
+                output.code,
+                output.stdout,
+                output.stderr,
+            );
+        }
+
+        console.log("Finished optimizing the WASM");
+    } finally
+    {
+        await Deno.remove(tempFile);
     }
 }
 
@@ -264,8 +311,10 @@ async function main()
 
     await buildWasm();
     await bindWasm();
-    // TODO: wasm-opt
-
+    if (RELEASE_MODE)
+    {
+        await optimizeWasm();
+    }
 
     console.log("Copying additional files...");
     await copyAdditionalFiles();
