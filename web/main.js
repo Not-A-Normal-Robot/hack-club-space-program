@@ -186,6 +186,11 @@ async function main()
     {
         LOADING_OVERLAY.remove();
     }
+    if (CANVAS)
+    {
+        CANVAS.ariaBusy = "false";
+        CANVAS.ariaDescribedByElements = null;
+    }
 
     /** @type {function({module_or_path: WebAssembly.Module}): *} */
     let init;
