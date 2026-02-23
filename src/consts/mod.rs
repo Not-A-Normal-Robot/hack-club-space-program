@@ -9,7 +9,7 @@ pub mod terrain;
 pub const GRAVITATIONAL_CONSTANT: f64 = 6.6743e-11;
 
 /// The selector for the canvas in the WASM version of this game.
-pub const WEB_CANVAS_SELECTOR: &str = "#hsp";
+pub const WEB_CANVAS_SELECTOR: &str = "#h";
 
 pub type FilterLoadedVessels = (
     With<Vessel>,

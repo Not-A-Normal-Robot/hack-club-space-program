@@ -336,7 +336,16 @@ async function getJsString(): Promise<string>
     const externsFile = await Deno.makeTempFile({ dir: OUT_DIR });
     await Deno.writeTextFile(
         externsFile,
-        `/** @externs */ /** @returns {Promise<*>} */ async function ${IMPORT_REPLACEMENT}() {}`
+        `
+        /** @externs */
+        /** @returns {Promise<*>} */
+        async function ${IMPORT_REPLACEMENT}() {}
+        
+        /**
+         * @param {string} a
+         * @param {function(): void} b
+         */
+        function addEventListener(a, b) {}`
     );
 
     const compiler = new ClosureCompiler({
