@@ -50,7 +50,7 @@ const MINIFY_HTML_CONFIG = {
     minify_doctype: true,
     preserve_brace_template_syntax: true,
 };
-const WASM_OPT_LEVEL = "-O3";
+const WASM_OPT_LEVEL = "-O4";
 
 /** Checks if the given executable is accessible, by running `<cmd> --version`. */
 async function isExecAvailable(cmd: string): Promise<boolean>

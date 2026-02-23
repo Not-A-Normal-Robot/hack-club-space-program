@@ -4087,6 +4087,7 @@ dependencies = [
  "simba",
  "static_assertions",
  "thiserror 2.0.18",
+ "vec_map",
  "wide",
 ]
 
