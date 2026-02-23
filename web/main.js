@@ -25,7 +25,12 @@ let [
     LOADING_TEXT,
     LOADING_PROGRESS,
     CANVAS
-] = /** @type {*} */([null, null, null, null]);
+] = /** @type {*} */ ([
+    IDS.LOADING_OVERLAY,
+    IDS.LOADING_TEXT,
+    IDS.LOADING_PROGRESS,
+    IDS.CANVAS,
+].map(id => document.getElementById(id)));
 
 /**
  * @private
@@ -219,4 +224,5 @@ addEventListener("DOMContentLoaded", () =>
         IDS.LOADING_PROGRESS,
         IDS.CANVAS,
     ].map(id => document.getElementById(id)));
+    console.log("HTML finished parsing");
 });
