@@ -8,10 +8,14 @@ if (!("Deno" in globalThis))
 
 import * as path from "@std/path";
 import * as fs from "@std/fs";
+import ClosureCompiler from "google-closure-compiler";
+import { minify as minifyHtml } from "@minify-html/deno";
 
+// General
 const GAME_NAME = "hack-club-space-program";
 const RELEASE_MODE = Deno.args.includes("--release");
 
+// Paths
 const DIRNAME = import.meta.dirname;
 if (!DIRNAME)
 {
@@ -29,8 +33,24 @@ const BOUND_WASM_PATH = path.join(
     OUT_DIR,
     GAME_NAME + "_bg.wasm",
 );
-const WEB_ADDITIONS_PATH = path.join(DIRNAME, "../web");
+const WBG_JS_PATH = path.join(OUT_DIR, GAME_NAME + ".js");
 const ASSETS_PATH = path.join(DIRNAME, "../assets");
+const INDEX_HTML_PATH = path.join(DIRNAME, "../web/index.html");
+const MAIN_JS_PATH = path.join(DIRNAME, "../web/main.js");
+
+// Web file processing
+const JS_TEMPLATE_WASM_TOTAL_BYTES = "/*{{INLINER:WASM_TOTAL_SIZE}}*/";
+const IMPORT_REGEX = /\bimport\b(?=\s*\()/;
+const IMPORT_REPLACEMENT = "__Wk2hQs1ynle8rKILAmsDoYFD__";
+const HTML_TEMPLATE_JS = "{{mainscript}}";
+const MINIFY_HTML_CONFIG = {
+    allow_noncompliant_unquoted_attribute_values: true,
+    allow_optimal_entities: true,
+    allow_removing_spaces_between_attributes: true,
+    minify_css: true,
+    minify_doctype: true,
+    preserve_brace_template_syntax: true,
+};
 const WASM_OPT_LEVEL = "-O3";
 
 /** Checks if the given executable is accessible, by running `<cmd> --version`. */
@@ -65,11 +85,12 @@ function execError(
     stderr: Uint8Array,
 ): Error
 {
+    const decoder = new TextDecoder("utf-8");
     return new Error(
         `An error occurred while ${action}:\n` +
         `'${cmd}' returned with exit code ${code}\n\n` +
-        `===== ${cmd} stdout =====\n\n${stdout}` +
-        `===== ${cmd} stderr =====\n\n${stderr}`
+        `===== ${cmd} stdout =====\n\n${decoder.decode(stdout)}` +
+        `===== ${cmd} stderr =====\n\n${decoder.decode(stderr)}`
     );
 }
 
@@ -285,24 +306,100 @@ async function optimizeWasm()
     }
 }
 
+async function processIndexHtml()
+{
+    console.log("Processing index.html...");
+    const js = getJsString();
+    const init = await Deno.readFile(INDEX_HTML_PATH);
+    const min = new TextDecoder("utf-8").decode(minifyHtml(init, MINIFY_HTML_CONFIG));
+    const inlined = min.replace(
+        HTML_TEMPLATE_JS,
+        `<script async type="module">${await js}</script>`
+    );
+    await Deno.writeTextFile(path.join(OUT_DIR, "index.html"), inlined);
+    console.log("Processed index.html");
+}
+
+async function getJsString(): Promise<string>
+{
+    console.log("Processing the JS bootstrap...");
+
+    const init = await Deno.readTextFile(MAIN_JS_PATH);
+    const wasmStat = await (await Deno.open(BOUND_WASM_PATH)).stat();
+    const inlined = init
+        .replace(JS_TEMPLATE_WASM_TOTAL_BYTES, wasmStat.size + ";")
+        .replace(IMPORT_REGEX, IMPORT_REPLACEMENT);
+    const inlinedFile = await Deno.makeTempFile({ dir: OUT_DIR });
+
+    await Deno.writeTextFile(inlinedFile, inlined);
+
+    const externsFile = await Deno.makeTempFile({ dir: OUT_DIR });
+    await Deno.writeTextFile(
+        externsFile,
+        `/** @externs */ /** @returns {Promise<*>} */ async function ${IMPORT_REPLACEMENT}() {}`
+    );
+
+    const compiler = new ClosureCompiler({
+        js: [inlinedFile],
+        externs: [externsFile],
+        compilation_level: "ADVANCED_OPTIMIZATIONS",
+        language_in: "ECMASCRIPT_NEXT",
+    });
+    const compilerProcess: Promise<string> = new Promise((resolve, reject) =>
+    {
+        compiler.run((exitCode: number, stdout: string, stderr: string) =>
+        {
+            if (exitCode !== 0)
+            {
+                reject([exitCode, stdout, stderr]);
+            } else
+            {
+                resolve(stdout);
+            }
+        });
+    });
+
+    let string = "";
+
+    try
+    {
+        string = (await compilerProcess).replace(IMPORT_REPLACEMENT, "import");
+        console.log("Processed the JS bootstrap");
+    } catch (e)
+    {
+        const [exitCode, stdout, stderr] = e as unknown as [number, string, string];
+        throw execError(
+            "running Closure Compiler",
+            "google-closure-compiler",
+            exitCode,
+            new TextEncoder().encode(stdout),
+            new TextEncoder().encode(stderr),
+        );
+    } finally
+    {
+        await Promise.all([
+            Deno.remove(inlinedFile),
+            Deno.remove(externsFile),
+        ]);
+    }
+
+    return string;
+}
+
 async function copyAssets(): Promise<void>
 {
     if (await fs.exists(ASSETS_PATH))
     {
-        await fs.copy(ASSETS_PATH, OUT_DIR, {
-            overwrite: true,
-        });
+        console.log("Copying assets folder...");
+        await fs.copy(ASSETS_PATH, OUT_DIR);
+        console.log("Finished copying assets folder");
     }
-}
 
-async function copyWebAdditions(): Promise<void>
-{
-    await fs.copy(WEB_ADDITIONS_PATH, OUT_DIR, { overwrite: true });
 }
 
 async function copyAdditionalFiles()
 {
-    await Promise.all([copyAssets(), copyWebAdditions()]);
+    await Promise.all([copyAssets(), processIndexHtml()]);
 }
 
 async function main()

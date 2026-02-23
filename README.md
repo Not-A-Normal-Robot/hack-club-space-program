@@ -25,25 +25,17 @@ cargo run
 
 ## Building for Web
 
-You'll need Rustup and Deno to build this:
+### Dependencies (they need to be in PATH!)
+
+- Rustup
+- Cargo
+- Deno
+- Java
+
+### Build Script
 
 ```
 deno -P scripts/build-web.ts
-```
-
-NOTE: You'll need Cargo and Rustup to be in your `PATH` whilst running the build
-script.
-
-To do this, you can insert it manually:
-
-```
-export PATH="$PATH:$HOME/.cargo/bin" && deno -P scripts/build-web.ts
-```
-
-Or you can run `~/.cargo/env` before running the script:
-
-```
-. ~/.cargo/env && deno -P scripts/build-web.ts
 ```
 
 ### Compilation Features

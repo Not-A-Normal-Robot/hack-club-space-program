@@ -6,45 +6,7 @@
     type="application/wasm">
   <link rel="preload" href="./hack-club-space-program.js" as="script" fetchpriority="high">
 
-  <script async type="module">
-    // @ts-check
-    import init from './hack-club-space-program.js';
-
-    /**
-     * @param {string} stage
-     * @param {string|Error} message
-     */
-    function displayLoadError(stage, message)
-    {
-      console.error(message);
-      // TODO: Error Screen
-    }
-
-    /**
-     * @param {number} loaded
-     * @param {number} total
-     */
-    function displayLoadProgress(loaded, total)
-    {
-      // TODO
-      // Don't forget about NaNs!
-    }
-
-    async function main()
-    {
-      init().catch((error) =>
-      {
-        if (!error.message.includes("This isn't actually an error"))
-        {
-          throw error;
-        }
-      });
-    }
-
-    main();
-
-
-  </script>
+  {{mainscript}}
   <style>
     :root {
       background-color: black;
@@ -53,22 +15,43 @@
 
     canvas {
       position: fixed;
-      inset: 0;
+      width: 100%;
+      width: 100vw;
+      width: 100dvw;
+      height: 100%;
+      height: 100vh;
+      height: 100dvh;
     }
 
-    #load {
+    #l {
       display: flex;
+      flex-direction: column;
       position: fixed;
       inset: 0;
       z-index: 1;
+      text-align: center;
     }
   </style>
+  <noscript>
+    <style>
+      p,
+      progress,
+      canvas {
+        display: none;
+      }
+    </style>
+  </noscript>
 </head>
 
 <body style="margin: 0px;">
-  <!-- <div id="load">
-
-  </div> -->
+  <div id="l">
+    <noscript>
+      JavaScript is disabled or unsupported.
+      This site cannot function without it.
+    </noscript>
+    <p id="t">Loading JavaScript...</p>
+    <progress id="p"></progress>
+  </div>
   <canvas id="hsp"></canvas>
 </body>
 

@@ -5,11 +5,10 @@
                 "cargo",
                 "rustup",
                 "wasm-bindgen",
-                "wasm-opt"
+                "wasm-opt",
+                "java"
             ],
-            "env": [
-                "PATH"
-            ],
+            "env": true,
             "read": [
                 "./web",
                 "./assets",
@@ -17,11 +16,16 @@
             ],
             "write": [
                 "./target/wasm32-unknown-unknown"
+            ],
+            "net": [
+                "jsr.io"
             ]
         }
     },
     "imports": {
+        "@minify-html/deno": "jsr:@minify-html/deno@^0.18.1",
         "@std/fs": "jsr:@std/fs@^1.0.23",
-        "@std/path": "jsr:@std/path@^1.1.4"
+        "@std/path": "jsr:@std/path@^1.1.4",
+        "google-closure-compiler": "npm:google-closure-compiler@^20260218.0.0"
     }
 }
