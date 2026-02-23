@@ -250,7 +250,7 @@ async function optimizeWasm()
 
     console.log("Optimizing the WASM using wasm-opt");
 
-    const tempFile = await Deno.makeTempFile();
+    const tempFile = await Deno.makeTempFile({ dir: OUT_DIR });
 
     try
     {
@@ -272,10 +272,14 @@ async function optimizeWasm()
             );
         }
 
+        console.log("Applying the optimized WASM...");
+        await fs.move(tempFile, BOUND_WASM_PATH);
+
         console.log("Finished optimizing the WASM");
     } finally
     {
-        await Deno.remove(tempFile);
+        if (await fs.exists(tempFile))
+            await Deno.remove(tempFile);
     }
 }
 
