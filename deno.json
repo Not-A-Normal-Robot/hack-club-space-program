@@ -1,0 +1,27 @@
+{
+    "permissions": {
+        "default": {
+            "run": [
+                "cargo",
+                "rustup",
+                "wasm-bindgen",
+                "wasm-opt"
+            ],
+            "env": [
+                "PATH"
+            ],
+            "read": [
+                "./web",
+                "./assets",
+                "./target/wasm32-unknown-unknown"
+            ],
+            "write": [
+                "./target/wasm32-unknown-unknown"
+            ]
+        }
+    },
+    "imports": {
+        "@std/fs": "jsr:@std/fs@^1.0.23",
+        "@std/path": "jsr:@std/path@^1.1.4"
+    }
+}

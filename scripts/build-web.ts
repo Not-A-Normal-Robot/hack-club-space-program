@@ -6,8 +6,8 @@ if (!("Deno" in globalThis))
     throw new Error("Deno object not found; please run this script using Deno. You can get deno at https://deno.land/");
 }
 
-import * as path from "jsr:@std/path@1";
-import * as fs from "jsr:@std/fs@1";
+import * as path from "@std/path";
+import * as fs from "@std/fs";
 
 const DIRNAME = import.meta.dirname;
 if (!DIRNAME)
