@@ -33,7 +33,6 @@ const BOUND_WASM_PATH = path.join(
     OUT_DIR,
     GAME_NAME + "_bg.wasm",
 );
-const WBG_JS_PATH = path.join(OUT_DIR, GAME_NAME + ".js");
 const ASSETS_PATH = path.join(DIRNAME, "../assets");
 const INDEX_HTML_PATH = path.join(DIRNAME, "../web/index.html");
 const MAIN_JS_PATH = path.join(DIRNAME, "../web/main.js");
