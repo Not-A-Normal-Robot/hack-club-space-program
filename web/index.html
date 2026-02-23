@@ -2,20 +2,74 @@
 <html lang="en">
 
 <head>
-  <script type="module">
-    import init from './hack-club-space-program.js'
+  <link rel="preload" href="./hack-club-space-program_bg.wasm" as="fetch" crossorigin fetchpriority="high"
+    type="application/wasm">
+  <link rel="preload" href="./hack-club-space-program.js" as="script" fetchpriority="high">
 
-    init().catch((error) =>
+  <script async type="module">
+    // @ts-check
+    import init from './hack-club-space-program.js';
+
+    /**
+     * @param {string} stage
+     * @param {string|Error} message
+     */
+    function displayLoadError(stage, message)
     {
-      if (!error.message.includes("This isn't actually an error"))
+      console.error(message);
+      // TODO: Error Screen
+    }
+
+    /**
+     * @param {number} loaded
+     * @param {number} total
+     */
+    function displayLoadProgress(loaded, total)
+    {
+      // TODO
+      // Don't forget about NaNs!
+    }
+
+    async function main()
+    {
+      init().catch((error) =>
       {
-        throw error;
-      }
-    });
+        if (!error.message.includes("This isn't actually an error"))
+        {
+          throw error;
+        }
+      });
+    }
+
+    main();
+
+
   </script>
+  <style>
+    :root {
+      background-color: black;
+      color: white;
+    }
+
+    canvas {
+      position: fixed;
+      inset: 0;
+    }
+
+    #load {
+      display: flex;
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+    }
+  </style>
 </head>
 
 <body style="margin: 0px;">
+  <div id="load">
+
+  </div>
+  <canvas id="#hsp"></canvas>
 </body>
 
 </html>

@@ -6,6 +6,7 @@ use crate::{
         frames::{RootSpaceLinearVelocity, RootSpacePosition},
         relations::{CelestialParent, RailMode},
     },
+    consts::WEB_CANVAS_SELECTOR,
     plugins::{
         controls::GameControlPlugin, debug::GameDebugPlugin, gfx::GameGfxPlugin,
         logic::GameLogicPlugin,
@@ -111,11 +112,21 @@ pub struct GameSetupPlugin;
 
 impl Plugin for GameSetupPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(DefaultPlugins.set(LogPlugin {
-            #[cfg(feature = "trace")]
-            level: Level::TRACE,
-            ..Default::default()
-        }));
+        app.add_plugins(
+            DefaultPlugins
+                .set(LogPlugin {
+                    #[cfg(feature = "trace")]
+                    level: Level::TRACE,
+                    ..Default::default()
+                })
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        canvas: Some(WEB_CANVAS_SELECTOR.into()),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                }),
+        );
         app.add_systems(Startup, demo_startup);
         app.add_plugins((
             GameLogicPlugin,
