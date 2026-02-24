@@ -1,8 +1,5 @@
 /// <reference lib="dom" />
 // @ts-check
-/** @suppress {moduleLoad} */
-const WBG = import("./hack-club-space-program.js");
-const WASM_PATH = "./hack-club-space-program_bg.wasm";
 
 /** @private @const */
 const IDS = {
@@ -32,6 +29,11 @@ let [
     IDS.CANVAS,
 ].map(id => document.getElementById(id)));
 
+const MULTITHREADED = "SharedArrayBuffer" in globalThis;
+const WASM_DIR = MULTITHREADED ? "./multithreaded" : "./singlethreaded";
+const WASM_PATH = WASM_DIR + "/hack-club-space-program_bg.wasm";
+const WBG = import(WASM_DIR + "/hack-club-space-program.js");
+
 /**
  * @private
  * @returns {number}
@@ -48,6 +50,18 @@ function getWasmMultithreadedBytes()
 function getWasmSinglethreadedBytes()
 {
     return /*{{INLINER:WASM_SINGLE_BYTES}}*/ 0;
+}
+
+/**
+ * @private
+ * @returns {number}
+ */
+function getWasmTotalBytes()
+{
+    if (MULTITHREADED)
+        return getWasmMultithreadedBytes();
+    else
+        return getWasmSinglethreadedBytes();
 }
 
 /**
@@ -87,21 +101,21 @@ function displayLoadError(stage, message)
  */
 function displayDlProgress(loaded)
 {
-    console.log(`Loaded ${loaded}/${getWasmSinglethreadedBytes()}`);
+    const totalBytes = getWasmTotalBytes();
+    console.log(`Loaded ${loaded}/${totalBytes}`);;
     if (LOADING_PROGRESS)
     {
-        LOADING_PROGRESS.max = getWasmSinglethreadedBytes();
+        LOADING_PROGRESS.max = totalBytes;
         LOADING_PROGRESS.value = loaded;
     }
     if (LOADING_TEXT)
     {
         const loadedMB = (loaded / 1000000).toPrecision(3);
-        const totalMB = (getWasmSinglethreadedBytes() / 1000000).toPrecision(3);
-        const percentage = (loaded * 100 / getWasmSinglethreadedBytes()).toPrecision(3);
+        const totalMB = (totalBytes / 1000000).toPrecision(3);
+        const percentage = (loaded * 100 / totalBytes).toPrecision(3);
         LOADING_TEXT.textContent =
             `Downloading WASM file: ${loadedMB} / ${totalMB} MB (${percentage}%)`;
     }
-    // TODO: Progress Screen
 }
 
 async function main()
