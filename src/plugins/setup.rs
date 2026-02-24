@@ -91,10 +91,7 @@ fn demo_startup(
             zoom: SimCameraZoom(1.0),
             transform: Transform::IDENTITY,
         }
-        .with_camera(Camera {
-            is_active: true,
-            ..Default::default()
-        }),
+        .build(true),
     );
 
     commands.insert_resource(ActiveVessel {
@@ -103,6 +100,8 @@ fn demo_startup(
         prev_tick_position: vessel_pos,
         prev_tick_velocity: vessel_vel,
     });
+
+    commands.insert_resource(ClearColor(Color::BLACK));
 }
 
 /// The entry point for the full game as a plugin.
