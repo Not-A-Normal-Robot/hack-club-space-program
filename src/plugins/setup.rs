@@ -1,12 +1,12 @@
 use crate::{
     builders::{camera::SimCameraBuilder, celestial::CelestialBodyBuilder, vessel::VesselBuilder},
     components::{
-        camera::{SimCameraOffset, SimCameraZoom},
+        camera::{SimCamera, SimCameraOffset, SimCameraZoom},
         celestial::Terrain,
         frames::{RootSpaceLinearVelocity, RootSpacePosition},
         relations::{CelestialParent, RailMode},
     },
-    consts::{FilterSimObjects, WEB_CANVAS_SELECTOR},
+    consts::WEB_CANVAS_SELECTOR,
     plugins::{
         controls::GameControlPlugin, debug::GameDebugPlugin, gfx::GameGfxPlugin,
         logic::GameLogicPlugin,
@@ -102,10 +102,15 @@ fn init_game(
     });
 }
 
-fn exit_game(mut commands: Commands, sim_objects: Query<Entity, FilterSimObjects>) {
+type FilterInGameObjects = Or<(With<RigidBody>, With<SimCamera>)>;
+
+fn exit_game(mut commands: Commands, sim_objects: Query<Entity, FilterInGameObjects>) {
     // TODO: Save
+
     for obj in sim_objects {
-        commands.entity(obj).despawn();
+        commands
+            .entity(obj)
+            .queue_silenced(|e: EntityWorldMut<'_>| e.despawn());
     }
 
     commands.remove_resource::<ActiveVessel>();
@@ -134,7 +139,7 @@ impl Plugin for GameSetupPlugin {
                     ..Default::default()
                 }),
         );
-        // app.add_systems(Startup, demo_startup);
+        app.init_state::<GameScene>();
         app.add_systems(OnEnter(GameScene::InGame), init_game);
         app.add_systems(OnExit(GameScene::InGame), exit_game);
         app.add_plugins((
