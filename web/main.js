@@ -102,7 +102,6 @@ function displayLoadError(stage, message)
 function displayDlProgress(loaded)
 {
     const totalBytes = getWasmTotalBytes();
-    console.log(`Loaded ${loaded}/${totalBytes}`);;
     if (LOADING_PROGRESS)
     {
         LOADING_PROGRESS.max = totalBytes;
@@ -257,5 +256,4 @@ addEventListener("DOMContentLoaded", () =>
         IDS.LOADING_PROGRESS,
         IDS.CANVAS,
     ].map(id => document.getElementById(id)));
-    console.log("HTML finished parsing");
 });
