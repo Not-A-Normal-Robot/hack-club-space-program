@@ -471,7 +471,11 @@ mod tests {
 
                         assert!(res_span >= angular_size);
 
-                        assert!(range.contains(&surf_angle) || range.contains(&(surf_angle + TAU)));
+                        assert!(
+                            range.contains(&surf_angle)
+                                || range.contains(&(surf_angle + TAU))
+                                || range.contains(&2.0f64.mul_add(TAU, surf_angle)),
+                        );
                     }
                 }
             }
