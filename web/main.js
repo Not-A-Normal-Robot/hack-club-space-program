@@ -187,11 +187,16 @@ async function main()
         return;
     }
 
+    if (LOADING_TEXT)
+    {
+        LOADING_TEXT.textContent = "Fetching WBG script...";
+    }
+
     /** @type {function({module_or_path: WebAssembly.Module}): *} */
-    let init;
+    let wbg;
     try
     {
-        init = (await WBG).default;
+        wbg = (await WBG).default;
     } catch (e)
     {
         displayLoadError(
@@ -201,7 +206,12 @@ async function main()
         return;
     }
 
-    await init({ module_or_path: module });
+    if (LOADING_TEXT)
+    {
+        LOADING_TEXT.textContent = "Instantiating WASM module...";
+    }
+
+    await wbg({ module_or_path: module });
 
     if (LOADING_OVERLAY)
     {

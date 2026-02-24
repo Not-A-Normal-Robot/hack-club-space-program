@@ -344,7 +344,10 @@ async function getJsString(): Promise<string>
          * @param {string} a
          * @param {function(): void} b
          */
-        function addEventListener(a, b) {}`
+        function addEventListener(a, b) {}
+        
+        /** @param {{module_or_path: WebAssembly.Module}} a */
+        async function wbg(a) {}`
     );
 
     const compiler = new ClosureCompiler({
