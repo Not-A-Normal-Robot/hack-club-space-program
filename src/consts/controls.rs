@@ -7,7 +7,10 @@ pub const MIN_ZOOM: f64 = 1e-20;
 pub const MAX_ZOOM: f64 = 1e20;
 
 /// Zoom speed multiplier.
-pub const ZOOM_SPEED: f64 = 8.0;
+pub const ZOOM_SPEED_MULT: f64 = 8.0;
+
+/// Camera translational movement speed multiplier.
+pub const MOVE_SPEED_MULT: f64 = 8.0;
 
 pub const SLOW_SPEED_MODIFIER: f64 = 0.025;
 pub const NORMAL_SPEED_MODIFIER: f64 = 0.25;
@@ -31,6 +34,7 @@ pub const KB_CAM_MOV_UP: [KeyCode; 2] = [KeyCode::KeyW, KeyCode::ArrowUp];
 pub const KB_CAM_MOV_DOWN: [KeyCode; 2] = [KeyCode::KeyS, KeyCode::ArrowDown];
 pub const KB_CAM_MOV_LEFT: [KeyCode; 2] = [KeyCode::KeyA, KeyCode::ArrowLeft];
 pub const KB_CAM_MOV_RIGHT: [KeyCode; 2] = [KeyCode::KeyD, KeyCode::ArrowRight];
+pub const KB_CAM_MOV_RESET: [KeyCode; 1] = [KeyCode::KeyC]; // "Center" camera
 
 pub const KB_CAM_ZOOM_IN: [KeyCode; 2] = [KeyCode::Equal, KeyCode::NumpadAdd];
 pub const KB_CAM_ZOOM_OUT: [KeyCode; 2] = [KeyCode::Minus, KeyCode::NumpadSubtract];

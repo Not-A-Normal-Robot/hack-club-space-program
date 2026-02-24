@@ -7,10 +7,11 @@ use crate::{
         vessel::Vessel,
     },
     consts::controls::{
-        FAST_SPEED_MODIFIER, KB_CAM_FAST_MOD, KB_CAM_ROT_LEFT, KB_CAM_ROT_RESET, KB_CAM_ROT_RIGHT,
+        FAST_SPEED_MODIFIER, KB_CAM_FAST_MOD, KB_CAM_MOV_DOWN, KB_CAM_MOV_LEFT, KB_CAM_MOV_RESET,
+        KB_CAM_MOV_RIGHT, KB_CAM_MOV_UP, KB_CAM_ROT_LEFT, KB_CAM_ROT_RESET, KB_CAM_ROT_RIGHT,
         KB_CAM_SLOW_MOD, KB_CAM_SWITCH_NEXT, KB_CAM_SWITCH_PREV, KB_CAM_ZOOM_IN, KB_CAM_ZOOM_OUT,
-        KB_CAM_ZOOM_RESET, MAX_ZOOM, MIN_ZOOM, NORMAL_SPEED_MODIFIER, SLOW_SPEED_MODIFIER,
-        ZOOM_SPEED,
+        KB_CAM_ZOOM_RESET, MAX_ZOOM, MIN_ZOOM, MOVE_SPEED_MULT, NORMAL_SPEED_MODIFIER,
+        SLOW_SPEED_MODIFIER, ZOOM_SPEED_MULT,
     },
     resources::{FocusableData, FocusableEntry},
 };
@@ -144,15 +145,45 @@ pub fn control_camera(
 
     // Zoom: 5s/double | 0.5s/double | 0.125s/double
     if key.any_pressed(KB_CAM_ZOOM_OUT) {
-        camera.zoom.0 = (camera.zoom.0 / (ZOOM_SPEED * delta_amount).exp()).max(MIN_ZOOM);
+        camera.zoom.0 = (camera.zoom.0 / (ZOOM_SPEED_MULT * delta_amount).exp()).max(MIN_ZOOM);
     }
     if key.any_pressed(KB_CAM_ZOOM_IN) {
-        camera.zoom.0 = (camera.zoom.0 * (ZOOM_SPEED * delta_amount).exp()).min(MAX_ZOOM);
+        camera.zoom.0 = (camera.zoom.0 * (ZOOM_SPEED_MULT * delta_amount).exp()).min(MAX_ZOOM);
     }
     if key.any_pressed(KB_CAM_ZOOM_RESET) {
         camera.zoom.0 = 1.0;
     }
 
+    // Movement
+    let movement_speed = MOVE_SPEED_MULT * speed_mult / camera.zoom.0;
+    let mut movement_delta = DVec2::ZERO;
+
+    if key.any_pressed(KB_CAM_MOV_UP) {
+        movement_delta += DVec2::new(0.0, movement_speed);
+    }
+    if key.any_pressed(KB_CAM_MOV_DOWN) {
+        movement_delta += DVec2::new(0.0, -movement_speed);
+    }
+    if key.any_pressed(KB_CAM_MOV_LEFT) {
+        movement_delta += DVec2::new(-movement_speed, 0.0);
+    }
+    if key.any_pressed(KB_CAM_MOV_RIGHT) {
+        movement_delta += DVec2::new(movement_speed, 0.0);
+    }
+
+    match &mut *camera.offset {
+        SimCameraOffset::Attached { offset, .. } => *offset += movement_delta,
+        SimCameraOffset::Detached(pos) => pos.0 += movement_delta,
+    }
+
+    if key.any_just_pressed(KB_CAM_MOV_RESET) {
+        match &mut *camera.offset {
+            SimCameraOffset::Attached { offset, .. } => *offset = DVec2::ZERO,
+            SimCameraOffset::Detached(pos) => pos.0 = DVec2::ZERO,
+        }
+    }
+
+    // Focus switching
     let current_pos = camera.offset.mutably().get_root_position(queries.p0());
 
     if key.any_just_pressed(KB_CAM_SWITCH_PREV) {
