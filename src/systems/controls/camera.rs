@@ -13,6 +13,7 @@ use crate::{
         KB_CAM_ZOOM_RESET, MAX_ZOOM, MIN_ZOOM, MOVE_SPEED_MULT, NORMAL_SPEED_MODIFIER,
         SLOW_SPEED_MODIFIER, ZOOM_SPEED_MULT,
     },
+    math::quat_to_rot,
     resources::{FocusableData, FocusableEntry},
 };
 use bevy::{ecs::query::QueryData, math::DVec2, prelude::*};
@@ -143,6 +144,8 @@ pub fn control_camera(
         camera.transform.rotation = Quat::IDENTITY;
     }
 
+    let cam_rotation = quat_to_rot(camera.transform.rotation);
+
     // Zoom: 5s/double | 0.5s/double | 0.125s/double
     if key.any_pressed(KB_CAM_ZOOM_OUT) {
         camera.zoom.0 = (camera.zoom.0 / (ZOOM_SPEED_MULT * delta_amount).exp()).max(MIN_ZOOM);
@@ -170,6 +173,8 @@ pub fn control_camera(
     if key.any_pressed(KB_CAM_MOV_RIGHT) {
         movement_delta += DVec2::new(movement_speed, 0.0);
     }
+
+    let movement_delta = DVec2::from_angle(cam_rotation).rotate(movement_delta);
 
     match &mut *camera.offset {
         SimCameraOffset::Attached { offset, .. } => *offset += movement_delta,
