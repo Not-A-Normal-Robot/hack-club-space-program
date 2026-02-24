@@ -4,13 +4,13 @@ use bevy::input::keyboard::KeyCode;
 pub const MIN_ZOOM: f64 = 1e-20;
 
 /// The max zoom for the simulation camera.
-pub const MAX_ZOOM: f64 = 1e20;
+pub const MAX_ZOOM: f64 = 1000.0;
 
 /// Zoom speed multiplier.
-pub const ZOOM_SPEED_MULT: f64 = 8.0;
+pub const ZOOM_SPEED_MULT: f64 = 12.0;
 
 /// Camera translational movement speed multiplier.
-pub const MOVE_SPEED_MULT: f64 = 8.0;
+pub const MOVE_SPEED_MULT: f64 = 36.0;
 
 pub const SLOW_SPEED_MODIFIER: f64 = 0.025;
 pub const NORMAL_SPEED_MODIFIER: f64 = 0.25;
