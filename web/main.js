@@ -36,9 +36,18 @@ let [
  * @private
  * @returns {number}
  */
-function getWasmTotalBytes()
+function getWasmMultithreadedBytes()
 {
-    return /*{{INLINER:WASM_TOTAL_SIZE}}*/ 0;
+    return /*{{INLINER:WASM_MULTI_BYTES}}*/ 0;
+}
+
+/**
+ * @private
+ * @returns {number}
+ */
+function getWasmSinglethreadedBytes()
+{
+    return /*{{INLINER:WASM_SINGLE_BYTES}}*/ 0;
 }
 
 /**
@@ -78,17 +87,17 @@ function displayLoadError(stage, message)
  */
 function displayDlProgress(loaded)
 {
-    console.log(`Loaded ${loaded}/${getWasmTotalBytes()}`);
+    console.log(`Loaded ${loaded}/${getWasmSinglethreadedBytes()}`);
     if (LOADING_PROGRESS)
     {
-        LOADING_PROGRESS.max = getWasmTotalBytes();
+        LOADING_PROGRESS.max = getWasmSinglethreadedBytes();
         LOADING_PROGRESS.value = loaded;
     }
     if (LOADING_TEXT)
     {
         const loadedMB = (loaded / 1000000).toPrecision(3);
-        const totalMB = (getWasmTotalBytes() / 1000000).toPrecision(3);
-        const percentage = (loaded * 100 / getWasmTotalBytes()).toPrecision(3);
+        const totalMB = (getWasmSinglethreadedBytes() / 1000000).toPrecision(3);
+        const percentage = (loaded * 100 / getWasmSinglethreadedBytes()).toPrecision(3);
         LOADING_TEXT.textContent =
             `Downloading WASM file: ${loadedMB} / ${totalMB} MB (${percentage}%)`;
     }
@@ -128,7 +137,7 @@ async function main()
         return;
     }
 
-    const binary = new Uint8Array(getWasmTotalBytes());
+    const binary = new Uint8Array(getWasmSinglethreadedBytes());
     let loadedBytes = 0;
 
     try
@@ -137,11 +146,11 @@ async function main()
         {
             const newLoadedBytes = loadedBytes + chunk.byteLength;
 
-            if (newLoadedBytes > getWasmTotalBytes())
+            if (newLoadedBytes > getWasmSinglethreadedBytes())
             {
                 displayLoadError(
                     "WASM downloading",
-                    `Expected WASM to be ${getWasmTotalBytes()} bytes, but it was more`
+                    `Expected WASM to be ${getWasmSinglethreadedBytes()} bytes, but it was more`
                 );
                 return;
             }
@@ -157,11 +166,11 @@ async function main()
         return;
     }
 
-    if (loadedBytes !== getWasmTotalBytes())
+    if (loadedBytes !== getWasmSinglethreadedBytes())
     {
         displayLoadError(
             "Post-WASM download",
-            `Expected WASM to be ${getWasmTotalBytes()} bytes, got ${loadedBytes} bytes`
+            `Expected WASM to be ${getWasmSinglethreadedBytes()} bytes, got ${loadedBytes} bytes`
         );
         return;
     }
