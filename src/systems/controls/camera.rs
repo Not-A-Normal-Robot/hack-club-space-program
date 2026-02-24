@@ -14,7 +14,7 @@ use crate::{
         SLOW_SPEED_MODIFIER, ZOOM_SPEED_MULT,
     },
     math::quat_to_rot,
-    resources::{FocusableData, FocusableEntry},
+    resources::controls::{FocusableData, FocusableEntry},
 };
 use bevy::{ecs::query::QueryData, math::DVec2, prelude::*};
 use core::{cmp::Ordering, f64::consts::TAU};

@@ -6,7 +6,7 @@ use crate::{
         terrain::collider::{PrevColliderPoints, PrevIndexRanges},
         vessel::Vessel,
     },
-    resources::ActiveVessel,
+    resources::simulation::ActiveVessel,
     terrain::collider::{
         create_index_buffer, gen_idx_ranges, gen_points, get_theta_range,
         is_vessel_within_terrain_altitude, verts_at_lod_level,

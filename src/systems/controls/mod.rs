@@ -5,7 +5,7 @@ use crate::{
         KB_MODE_SWITCH_TO_CAM_MODE, KB_MODE_SWITCH_TO_MAIN_MODE, KB_MODE_SWITCH_TO_MENU_MODE,
         KB_MODE_SWITCH_TO_VESSEL_MODE,
     },
-    resources::GameControlMode,
+    resources::controls::GameControlMode,
 };
 use bevy::prelude::*;
 

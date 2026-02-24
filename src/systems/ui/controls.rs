@@ -1,4 +1,4 @@
-use crate::resources::GameControlMode;
+use crate::resources::controls::GameControlMode;
 use bevy::prelude::*;
 
 #[derive(Component)]

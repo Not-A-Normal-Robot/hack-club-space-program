@@ -12,7 +12,7 @@ use hack_club_space_program::{
         },
         relations::{CelestialParent, RailMode},
     },
-    resources::ActiveVessel,
+    resources::simulation::ActiveVessel,
 };
 use std::sync::LazyLock;
 

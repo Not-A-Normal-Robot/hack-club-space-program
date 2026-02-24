@@ -11,7 +11,7 @@ use crate::{
         relations::CelestialParent,
     },
     consts::FilterLoadedVessels,
-    resources::ActiveVessel,
+    resources::simulation::ActiveVessel,
 };
 
 /// Updates root-space position based on rigid-space transform (if any).

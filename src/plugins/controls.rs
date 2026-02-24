@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    resources::{FocusableData, GameControlMode},
+    resources::controls::{FocusableData, GameControlMode},
     systems::{
         controls::{
             camera::{control_camera, update_focusable_data},

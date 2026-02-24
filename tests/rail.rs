@@ -11,7 +11,7 @@ use hack_club_space_program::{
         relations::{CelestialParent, RailMode, SurfaceAttachment},
     },
     consts::GRAVITATIONAL_CONSTANT,
-    resources::ActiveVessel,
+    resources::simulation::ActiveVessel,
 };
 use keplerian_sim::{CompactOrbit2D, Orbit2D, OrbitTrait2D, StateVectors2D};
 

@@ -11,7 +11,7 @@ use crate::{
         controls::GameControlPlugin, debug::GameDebugPlugin, gfx::GameGfxPlugin,
         logic::GameLogicPlugin,
     },
-    resources::ActiveVessel,
+    resources::simulation::ActiveVessel,
 };
 #[cfg(feature = "trace")]
 use bevy::log::Level;
