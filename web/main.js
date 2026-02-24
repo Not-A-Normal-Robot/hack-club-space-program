@@ -12,7 +12,7 @@ const IDS = {
 /**
  * @type {[
  *  HTMLDivElement | null,
- *  HTMLParagraphElement | null,
+ *  HTMLPreElement | null,
  *  HTMLProgressElement | null,
  *  HTMLCanvasElement | null,
  * ]}
@@ -126,14 +126,14 @@ async function main()
         response = await fetch(WASM_PATH);
     } catch (e)
     {
-        displayLoadError("initial WASM fetch", /** @type {Error} *//** @type {*} */(e));
+        displayLoadError("initially fetching WASM", /** @type {Error} *//** @type {*} */(e));
         return;
     }
 
     if (!response.ok)
     {
         displayLoadError(
-            "initial WASM fetch",
+            "initially fetching WASM",
             `Response returned code ${response.status}, with text ${response.statusText}`
         );
         return;
@@ -144,13 +144,14 @@ async function main()
     if (!body)
     {
         displayLoadError(
-            "initial WASM fetch",
+            "initially fetching WASM",
             "Response body was empty",
         );
         return;
     }
 
-    const binary = new Uint8Array(getWasmSinglethreadedBytes());
+    const totalBytes = getWasmTotalBytes();
+    const binary = new Uint8Array(totalBytes);
     let loadedBytes = 0;
 
     try
@@ -159,11 +160,11 @@ async function main()
         {
             const newLoadedBytes = loadedBytes + chunk.byteLength;
 
-            if (newLoadedBytes > getWasmSinglethreadedBytes())
+            if (newLoadedBytes > totalBytes)
             {
                 displayLoadError(
-                    "WASM downloading",
-                    `Expected WASM to be ${getWasmSinglethreadedBytes()} bytes, but it was more`
+                    "downloading WASM",
+                    `Expected WASM to be ${totalBytes} bytes, but it was more`
                 );
                 return;
             }
@@ -175,15 +176,15 @@ async function main()
         }
     } catch (e)
     {
-        displayLoadError("WASM downloading", /** @type {Error} *//** @type {*} */(e));
+        displayLoadError("downloading WASM", /** @type {Error} *//** @type {*} */(e));
         return;
     }
 
-    if (loadedBytes !== getWasmSinglethreadedBytes())
+    if (loadedBytes !== totalBytes)
     {
         displayLoadError(
             "Post-WASM download",
-            `Expected WASM to be ${getWasmSinglethreadedBytes()} bytes, got ${loadedBytes} bytes`
+            `Expected WASM to be ${totalBytes} bytes, got ${loadedBytes} bytes`
         );
         return;
     }
