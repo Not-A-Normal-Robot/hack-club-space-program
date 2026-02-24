@@ -187,16 +187,6 @@ async function main()
         return;
     }
 
-    if (LOADING_OVERLAY)
-    {
-        LOADING_OVERLAY.remove();
-    }
-    if (CANVAS)
-    {
-        CANVAS.ariaBusy = "false";
-        CANVAS.ariaDescribedByElements = null;
-    }
-
     /** @type {function({module_or_path: WebAssembly.Module}): *} */
     let init;
     try
@@ -211,7 +201,17 @@ async function main()
         return;
     }
 
-    init({ module_or_path: module });
+    await init({ module_or_path: module });
+
+    if (LOADING_OVERLAY)
+    {
+        LOADING_OVERLAY.remove();
+    }
+    if (CANVAS)
+    {
+        CANVAS.ariaBusy = "false";
+        CANVAS.ariaDescribedByElements = null;
+    }
 }
 
 main();
