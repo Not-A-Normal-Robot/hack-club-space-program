@@ -1,5 +1,5 @@
 use crate::components::frames::{RootSpaceLinearVelocity, RootSpacePosition};
-use bevy::prelude::*;
+use bevy::{platform::collections::HashMap, prelude::*};
 use derive_more::with_trait::IsVariant;
 
 #[derive(Resource)]
@@ -29,7 +29,7 @@ pub enum GameControlMode {
 }
 
 impl GameControlMode {
-    #[must_use] 
+    #[must_use]
     pub const fn to_str(self) -> &'static str {
         match self {
             Self::Main => "main mode",
@@ -38,4 +38,15 @@ impl GameControlMode {
             Self::CameraControl => "camera control mode",
         }
     }
+}
+
+pub struct FocusableEntry {
+    pub entity: Entity,
+    pub is_celestial_body: bool,
+}
+
+#[derive(Default, Resource)]
+pub struct FocusableData {
+    pub index_map: HashMap<Entity, usize>,
+    pub list: Vec<FocusableEntry>,
 }

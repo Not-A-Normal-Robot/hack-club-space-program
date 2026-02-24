@@ -35,3 +35,6 @@ pub const KB_CAM_MOV_RIGHT: [KeyCode; 2] = [KeyCode::KeyD, KeyCode::ArrowRight];
 pub const KB_CAM_ZOOM_IN: [KeyCode; 2] = [KeyCode::Equal, KeyCode::NumpadAdd];
 pub const KB_CAM_ZOOM_OUT: [KeyCode; 2] = [KeyCode::Minus, KeyCode::NumpadSubtract];
 pub const KB_CAM_ZOOM_RESET: [KeyCode; 2] = [KeyCode::Digit0, KeyCode::Numpad0];
+
+pub const KB_CAM_SWITCH_PREV: [KeyCode; 1] = [KeyCode::BracketLeft];
+pub const KB_CAM_SWITCH_NEXT: [KeyCode; 1] = [KeyCode::BracketRight];

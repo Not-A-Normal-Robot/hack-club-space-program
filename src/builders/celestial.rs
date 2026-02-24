@@ -1,4 +1,5 @@
 use crate::components::{
+    camera::Focusable,
     celestial::{CelestialBody, Terrain},
     frames::{RigidSpaceVelocity, RootSpaceLinearVelocity, RootSpacePosition},
 };
@@ -26,6 +27,7 @@ impl<M: Material2d> CelestialBodyBuilder<M> {
             RootSpacePosition(DVec2::ZERO),
             RootSpaceLinearVelocity(DVec2::ZERO),
             Friction::new(0.7),
+            Focusable,
         )
     }
 
