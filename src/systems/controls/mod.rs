@@ -5,9 +5,17 @@ use crate::{
         KB_MODE_SWITCH_TO_CAM_MODE, KB_MODE_SWITCH_TO_MAIN_MODE, KB_MODE_SWITCH_TO_MENU_MODE,
         KB_MODE_SWITCH_TO_VESSEL_MODE,
     },
-    resources::controls::GameControlMode,
+    resources::controls::{FocusableData, GameControlMode},
 };
 use bevy::prelude::*;
+
+pub fn init_controls(mut commands: Commands) {
+    commands.init_resource::<FocusableData>();
+}
+
+pub fn cleanup_controls(mut commands: Commands) {
+    commands.remove_resource::<FocusableData>();
+}
 
 macro_rules! mode_switches {
     ($keyboard:expr, $next_mode:expr, []) => {};
