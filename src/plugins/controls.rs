@@ -1,7 +1,10 @@
 use bevy::prelude::*;
 
 use crate::{
-    resources::controls::{FocusableData, GameControlMode},
+    resources::{
+        controls::{FocusableData, GameControlMode},
+        scene::GameScene,
+    },
     systems::{
         controls::{
             camera::{control_camera, update_focusable_data},
@@ -23,7 +26,8 @@ impl Plugin for GameControlPlugin {
                 (control_switching, update_controls_text),
                 (control_camera, update_focusable_data)
                     .run_if(|state: Res<State<GameControlMode>>| state.get().is_camera_control()),
-            ),
+            )
+                .run_if(in_state(GameScene::InGame)),
         );
     }
 }

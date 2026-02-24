@@ -1,28 +1,32 @@
 use bevy::prelude::*;
 
-use crate::components::{
-    frames::{RigidSpaceVelocity, RootSpaceLinearVelocity, RootSpacePosition},
-    relations::RailMode,
-    vessel::Vessel,
+use crate::{
+    components::{
+        frames::{RigidSpaceVelocity, RootSpaceLinearVelocity, RootSpacePosition},
+        relations::RailMode,
+        vessel::Vessel,
+    },
+    resources::scene::GameScene,
 };
 
 pub struct GameDebugPlugin;
 
 impl Plugin for GameDebugPlugin {
-    fn build(&self, _app: &mut App) {
-        // app.add_plugins(RapierDebugRenderPlugin {
-        //     enabled: true,
-        //     default_collider_debug: ColliderDebug::AlwaysRender,
-        //     mode: DebugRenderMode::all(),
-        //     style: DebugRenderStyle {
-        //         rigid_body_axes_length: 20.0,
-        //         subdivisions: 512,
-        //         border_subdivisions: 20,
-        //         collider_aabb_color: [0.0, 0.0, 0.0, 0.0],
-        //         ..Default::default()
-        //     },
-        // });
-        // app.add_systems(FixedPostUpdate, _print_vessel_sv);
+    fn build(&self, app: &mut App) {
+        app.add_systems(Update, switch_game_scenes);
+    }
+}
+
+fn switch_game_scenes(
+    input: Res<ButtonInput<KeyCode>>,
+    scene: Res<State<GameScene>>,
+    mut next_scene: ResMut<NextState<GameScene>>,
+) {
+    if input.just_pressed(KeyCode::Delete) {
+        next_scene.set(match *scene.get() {
+            GameScene::MainMenu => GameScene::InGame,
+            GameScene::InGame => GameScene::MainMenu,
+        });
     }
 }
 

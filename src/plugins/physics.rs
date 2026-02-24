@@ -1,13 +1,16 @@
 use bevy::prelude::*;
 
-use crate::systems::{
-    frame_sync::{
-        apply_root_velocity, post_rapier_frame_switch, pre_rapier_frame_switch,
-        update_active_vessel_resource, write_rigid_pos_to_root, write_rigid_vel_to_root,
+use crate::{
+    resources::scene::GameScene,
+    systems::{
+        frame_sync::{
+            apply_root_velocity, post_rapier_frame_switch, pre_rapier_frame_switch,
+            update_active_vessel_resource, write_rigid_pos_to_root, write_rigid_vel_to_root,
+        },
+        gravity::{apply_gravity, unapply_gravity_to_unloaded},
+        rail::{write_rail_to_sv, write_sv_to_rail},
+        terrain::collider::update_terrain_colliders,
     },
-    gravity::{apply_gravity, unapply_gravity_to_unloaded},
-    rail::{write_rail_to_sv, write_sv_to_rail},
-    terrain::collider::update_terrain_colliders,
 };
 
 pub struct GamePhysicsPlugin;
@@ -22,7 +25,8 @@ impl Plugin for GamePhysicsPlugin {
                 update_active_vessel_resource,
                 (pre_rapier_frame_switch, update_terrain_colliders),
             )
-                .chain(),
+                .chain()
+                .run_if(in_state(GameScene::InGame)),
         );
         app.add_systems(
             FixedPostUpdate,
@@ -30,7 +34,8 @@ impl Plugin for GamePhysicsPlugin {
                 (write_rigid_vel_to_root, write_rigid_pos_to_root),
                 (post_rapier_frame_switch, write_sv_to_rail),
             )
-                .chain(),
+                .chain()
+                .run_if(in_state(GameScene::InGame)),
         );
     }
 }

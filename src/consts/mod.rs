@@ -22,3 +22,5 @@ pub type FilterUnloadedVessels = (
     With<RigidBodyDisabled>,
     Without<CelestialBody>,
 );
+
+pub type FilterSimObjects = Or<(With<CelestialBody>, With<Vessel>)>;

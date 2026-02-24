@@ -1,10 +1,13 @@
 use bevy::{platform::collections::HashMap, prelude::*};
 use derive_more::with_trait::IsVariant;
 
+use crate::resources::scene::GameScene;
+
 /// An enum determining how to interpret inputs, akin to Vim's different modes.
 ///
 /// Only affects in-game.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, States, IsVariant)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, SubStates, IsVariant)]
+#[source(GameScene = GameScene::InGame)]
 pub enum GameControlMode {
     /// The "hub" control mode that allows switching to other control modes.
     ///

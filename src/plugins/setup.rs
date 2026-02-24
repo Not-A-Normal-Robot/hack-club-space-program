@@ -6,12 +6,12 @@ use crate::{
         frames::{RootSpaceLinearVelocity, RootSpacePosition},
         relations::{CelestialParent, RailMode},
     },
-    consts::WEB_CANVAS_SELECTOR,
+    consts::{FilterSimObjects, WEB_CANVAS_SELECTOR},
     plugins::{
         controls::GameControlPlugin, debug::GameDebugPlugin, gfx::GameGfxPlugin,
         logic::GameLogicPlugin,
     },
-    resources::simulation::ActiveVessel,
+    resources::{scene::GameScene, simulation::ActiveVessel},
 };
 #[cfg(feature = "trace")]
 use bevy::log::Level;
@@ -23,7 +23,7 @@ const CELESTIAL_RADIUS: f32 = 6_378_137.0;
 const CELESTIAL_MASS: f32 = 5.972e24;
 const ALTITUDE: f32 = CELESTIAL_RADIUS - 2000.0;
 
-fn demo_startup(
+fn init_game(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
@@ -100,8 +100,16 @@ fn demo_startup(
         prev_tick_position: vessel_pos,
         prev_tick_velocity: vessel_vel,
     });
+}
 
-    commands.insert_resource(ClearColor(Color::BLACK));
+fn exit_game(mut commands: Commands, sim_objects: Query<Entity, FilterSimObjects>) {
+    // TODO: Save
+    for obj in sim_objects {
+        commands.entity(obj).despawn();
+    }
+
+    commands.remove_resource::<ActiveVessel>();
+    commands.remove_resource::<ClearColor>();
 }
 
 /// The entry point for the full game as a plugin.
@@ -126,7 +134,9 @@ impl Plugin for GameSetupPlugin {
                     ..Default::default()
                 }),
         );
-        app.add_systems(Startup, demo_startup);
+        // app.add_systems(Startup, demo_startup);
+        app.add_systems(OnEnter(GameScene::InGame), init_game);
+        app.add_systems(OnExit(GameScene::InGame), exit_game);
         app.add_plugins((
             GameLogicPlugin,
             GameDebugPlugin,

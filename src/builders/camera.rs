@@ -25,6 +25,7 @@ impl SimCameraBuilder {
             Self::base_bundle(),
             Camera {
                 is_active: active,
+                clear_color: ClearColorConfig::Custom(Color::BLACK),
                 ..Default::default()
             },
             self.offset,
