@@ -1,8 +1,11 @@
 use crate::{
     consts::WEB_CANVAS_SELECTOR,
-    plugins::main_game::{
-        controls::GameControlPlugin, debug::GameDebugPlugin, gfx::GameGfxPlugin,
-        logic::GameLogicPlugin, transition::GameTransitionPlugin,
+    plugins::{
+        main_game::{
+            controls::GameControlPlugin, debug::GameDebugPlugin, gfx::GameGfxPlugin,
+            logic::GameLogicPlugin, transition::GameTransitionPlugin,
+        },
+        main_menu::MainMenuPlugin,
     },
     resources::scene::GameScene,
 };
@@ -34,6 +37,7 @@ impl Plugin for GameSetupPlugin {
         );
         app.init_state::<GameScene>();
         app.add_plugins((
+            MainMenuPlugin,
             GameLogicPlugin,
             GameTransitionPlugin,
             GameDebugPlugin,
