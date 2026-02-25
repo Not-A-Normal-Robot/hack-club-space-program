@@ -1,7 +1,8 @@
-use crate::resources::controls::GameControlMode;
+use crate::resources::{controls::GameControlMode, scene::GameScene};
 use bevy::prelude::*;
 
 #[derive(Component)]
+#[require(DespawnOnExit::<GameScene>(GameScene::InGame))]
 pub struct ControlsText;
 
 pub fn update_controls_text(
