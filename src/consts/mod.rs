@@ -2,6 +2,7 @@ use crate::components::{celestial::CelestialBody, vessel::Vessel};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
+pub mod colors;
 pub mod controls;
 pub mod terrain;
 
