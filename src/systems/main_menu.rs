@@ -3,7 +3,7 @@ use bevy::{
     window::{PrimaryWindow, WindowResized},
 };
 
-use crate::resources::scene::GameScene;
+use crate::{assets::fonts::URI_FONT_WDXL_LUBRIFONT_SC, resources::scene::GameScene};
 
 #[derive(Clone, Copy, Component)]
 #[require(DespawnOnExit::<GameScene>(GameScene::MainMenu))]
@@ -15,7 +15,11 @@ struct PlayButton;
 #[derive(Clone, Copy, Component)]
 struct QuitButton;
 
-fn main_menu_button(marker: impl Component, text: impl Into<String>) -> impl Bundle {
+fn main_menu_button(
+    marker: impl Component,
+    text: impl Into<String>,
+    font: Handle<Font>,
+) -> impl Bundle {
     (
         marker,
         Node {
@@ -28,7 +32,7 @@ fn main_menu_button(marker: impl Component, text: impl Into<String>) -> impl Bun
         },
         Button,
         BackgroundColor(Color::Srgba(Srgba::RED)),
-        children![Text::new(text)],
+        children![(Text::new(text), TextFont::from(font))],
     )
 }
 
@@ -40,17 +44,24 @@ fn root_margin(window_size: Vec2) -> UiRect {
     }
 }
 
-pub fn init_main_menu(mut commands: Commands, window: Single<&Window, With<PrimaryWindow>>) {
+pub fn init_main_menu(
+    mut commands: Commands,
+    window: Single<&Window, With<PrimaryWindow>>,
+    assets: Res<AssetServer>,
+) {
+    let font = assets.load::<Font>(URI_FONT_WDXL_LUBRIFONT_SC);
+
     let play_button = commands
-        .spawn(main_menu_button(PlayButton, "Play"))
+        .spawn(main_menu_button(PlayButton, "Play", font.clone()))
         .observe(
             |_: On<Pointer<Click>>, mut scene: ResMut<NextState<GameScene>>| {
                 scene.set(GameScene::InGame);
             },
         )
         .id();
+
     let quit_button = commands
-        .spawn(main_menu_button(QuitButton, "Quit"))
+        .spawn(main_menu_button(QuitButton, "Quit", font))
         .observe(|_: On<Pointer<Click>>| std::process::exit(0))
         .id();
 
