@@ -2,8 +2,8 @@ use crate::plugins::main_game::physics::GamePhysicsPlugin;
 use bevy::prelude::*;
 use bevy_rapier2d::{prelude::*, rapier::prelude::IntegrationParameters};
 
-/// The plugin for the game's inner logic, including
-/// physics.
+/// The plugin for the game's inner logic that runs every
+/// frame, including physics.
 pub struct GameLogicPlugin;
 
 pub const RAPIER_CONFIGURATION: RapierConfiguration = RapierConfiguration {
