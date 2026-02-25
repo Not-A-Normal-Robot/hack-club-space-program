@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::{
     resources::{controls::GameControlMode, scene::GameScene},
-    systems::{
+    systems::main_game::{
         controls::{
             camera::{control_camera, update_focusable_data},
             cleanup_controls, control_switching, init_controls,

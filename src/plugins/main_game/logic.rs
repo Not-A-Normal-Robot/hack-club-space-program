@@ -1,4 +1,4 @@
-use crate::plugins::physics::GamePhysicsPlugin;
+use crate::plugins::main_game::physics::GamePhysicsPlugin;
 use bevy::prelude::*;
 use bevy_rapier2d::{prelude::*, rapier::prelude::IntegrationParameters};
 

@@ -7,7 +7,7 @@ use crate::{
         relations::{CelestialParent, RailMode},
     },
     consts::WEB_CANVAS_SELECTOR,
-    plugins::{
+    plugins::main_game::{
         controls::GameControlPlugin, debug::GameDebugPlugin, gfx::GameGfxPlugin,
         logic::GameLogicPlugin,
     },

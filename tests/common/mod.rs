@@ -11,7 +11,7 @@ use bevy::{
 };
 use hack_club_space_program::{
     components::frames::{RootSpaceLinearVelocity, RootSpacePosition},
-    plugins::logic::GameLogicPlugin,
+    plugins::main_game::logic::GameLogicPlugin,
 };
 
 fn setup_time(

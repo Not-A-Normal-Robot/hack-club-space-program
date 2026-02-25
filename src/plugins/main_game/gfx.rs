@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{resources::scene::GameScene, systems::terrain::gfx::update_terrain_gfx};
+use crate::{resources::scene::GameScene, systems::main_game::terrain::gfx::update_terrain_gfx};
 
 pub struct GameGfxPlugin;
 

@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::{
     resources::scene::GameScene,
-    systems::{
+    systems::main_game::{
         frame_sync::{
             apply_root_velocity, post_rapier_frame_switch, pre_rapier_frame_switch,
             update_active_vessel_resource, write_rigid_pos_to_root, write_rigid_vel_to_root,
