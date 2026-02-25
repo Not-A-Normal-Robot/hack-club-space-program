@@ -75,6 +75,7 @@ bevy_rapier2d = { version = "0.32.0", features = ["simd-stable"] }
 derive_more = { version = "2.1.1", features = ["is_variant"] }
 fastnoise-lite = { version = "1.1.1", features = ["std", "f64"] }
 keplerian_sim = "0.7.3"
+pastey = "0.2.1"
 
 [profile.dev]
 opt-level = 0

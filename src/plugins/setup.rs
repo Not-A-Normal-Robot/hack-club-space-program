@@ -1,4 +1,5 @@
 use crate::{
+    assets::fonts::initialize_fonts,
     consts::WEB_CANVAS_SELECTOR,
     plugins::{
         main_game::{
@@ -35,6 +36,7 @@ impl Plugin for GameSetupPlugin {
                     ..Default::default()
                 }),
         );
+        initialize_fonts(app);
         app.init_state::<GameScene>();
         app.add_plugins((
             MainMenuPlugin,
