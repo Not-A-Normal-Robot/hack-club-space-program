@@ -15,7 +15,7 @@ struct PlayButton;
 #[derive(Clone, Copy, Component)]
 struct QuitButton;
 
-fn main_menu_button(marker: impl Component) -> impl Bundle {
+fn main_menu_button(marker: impl Component, text: impl Into<String>) -> impl Bundle {
     (
         marker,
         Node {
@@ -28,6 +28,7 @@ fn main_menu_button(marker: impl Component) -> impl Bundle {
         },
         Button,
         BackgroundColor(Color::Srgba(Srgba::RED)),
+        children![Text::new(text)],
     )
 }
 
@@ -40,30 +41,38 @@ fn root_margin(window_size: Vec2) -> UiRect {
 }
 
 pub fn init_main_menu(mut commands: Commands, window: Single<&Window, With<PrimaryWindow>>) {
-    commands
-        .spawn((
-            MainMenuRootNode,
-            Node {
-                display: Display::Flex,
-                flex_direction: FlexDirection::Column,
-                justify_content: JustifyContent::Center,
-                max_width: Val::Px(480.0),
-                margin: root_margin(window.size()),
-                width: Val::Vw(100.0),
-                height: Val::Vh(100.0),
-                row_gap: Val::Px(16.0),
-                ..Default::default()
+    let play_button = commands
+        .spawn(main_menu_button(PlayButton, "Play"))
+        .observe(
+            |_: On<Pointer<Click>>, mut scene: ResMut<NextState<GameScene>>| {
+                scene.set(GameScene::InGame);
             },
-            BackgroundColor(Color::Srgba(Srgba::BLUE)),
-        ))
-        .with_children(|spawner| {
-            spawner
-                .spawn(main_menu_button(PlayButton))
-                .with_child(Text::new("Play"));
-            spawner
-                .spawn(main_menu_button(QuitButton))
-                .with_child(Text::new("Quit"));
-        });
+        )
+        .id();
+    let quit_button = commands
+        .spawn(main_menu_button(QuitButton, "Quit"))
+        .observe(|_: On<Pointer<Click>>| std::process::exit(0))
+        .id();
+
+    let root = (
+        MainMenuRootNode,
+        Node {
+            display: Display::Flex,
+            flex_direction: FlexDirection::Column,
+            justify_content: JustifyContent::Center,
+            max_width: Val::Px(480.0),
+            margin: root_margin(window.size()),
+            width: Val::Vw(100.0),
+            height: Val::Vh(100.0),
+            row_gap: Val::Px(16.0),
+            ..Default::default()
+        },
+        BackgroundColor(Color::Srgba(Srgba::BLUE)),
+    );
+
+    commands
+        .spawn(root)
+        .add_children([play_button, quit_button].as_slice());
 
     commands.spawn((
         DespawnOnExit(GameScene::MainMenu),
@@ -76,8 +85,6 @@ pub fn init_main_menu(mut commands: Commands, window: Single<&Window, With<Prima
         IsDefaultUiCamera,
     ));
 }
-
-pub fn update_main_menu() {}
 
 pub fn handle_resize(
     mut root: Single<&mut Node, With<MainMenuRootNode>>,

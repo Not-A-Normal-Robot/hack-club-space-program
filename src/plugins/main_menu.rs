@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::{
     resources::scene::GameScene,
-    systems::main_menu::{handle_resize, init_main_menu, update_main_menu},
+    systems::main_menu::{handle_resize, init_main_menu},
 };
 
 pub struct MainMenuPlugin;
@@ -12,7 +12,7 @@ impl Plugin for MainMenuPlugin {
         app.add_systems(OnEnter(GameScene::MainMenu), init_main_menu);
         app.add_systems(
             Update,
-            (update_main_menu, handle_resize).run_if(in_state(GameScene::MainMenu)),
+            (handle_resize).run_if(in_state(GameScene::MainMenu)),
         );
     }
 }
