@@ -7,7 +7,11 @@ use crate::{
     resources::scene::GameScene,
 };
 use bevy::{
-    input_focus::tab_navigation::{TabGroup, TabIndex},
+    input::keyboard::KeyboardInput,
+    input_focus::{
+        FocusedInput,
+        tab_navigation::{TabGroup, TabIndex},
+    },
     prelude::*,
     text::LineHeight,
     window::{PrimaryWindow, WindowResized},
@@ -92,6 +96,19 @@ pub fn init_main_menu(
                 scene.set(GameScene::InGame);
             },
         )
+        .observe(
+            |event: On<FocusedInput<KeyboardInput>>, mut scene: ResMut<NextState<GameScene>>| {
+                if ![KeyCode::Enter, KeyCode::NumpadEnter].contains(&event.input.key_code) {
+                    return;
+                }
+
+                if !event.input.state.is_pressed() {
+                    return;
+                }
+
+                scene.set(GameScene::InGame);
+            },
+        )
         .id();
 
     let quit_button = ButtonBuilder {
@@ -108,6 +125,19 @@ pub fn init_main_menu(
     let quit_button = commands
         .spawn(quit_button)
         .observe(|_: On<Pointer<Click>>| std::process::exit(0))
+        .observe(
+            |event: On<FocusedInput<KeyboardInput>>, mut scene: ResMut<NextState<GameScene>>| {
+                if ![KeyCode::Enter, KeyCode::NumpadEnter].contains(&event.input.key_code) {
+                    return;
+                }
+
+                if !event.input.state.is_pressed() {
+                    return;
+                }
+
+                std::process::exit(0);
+            },
+        )
         .id();
 
     let root = (
