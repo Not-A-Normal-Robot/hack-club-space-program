@@ -27,9 +27,8 @@ struct QuitButton;
 fn logo(font: &Handle<Font>) -> impl Bundle {
     (
         Text::new("hack club\nspace program"),
-        TextFont::from(font.clone())
-            .with_font_size(48.0)
-            .with_line_height(LineHeight::RelativeToFont(0.8)),
+        TextFont::from(font.clone()).with_font_size(48.0),
+        LineHeight::RelativeToFont(0.8),
         TextColor(PRIMARY_60),
         Node {
             align_self: AlignSelf::Center,
