@@ -24,6 +24,12 @@ impl SimCameraOffset {
     }
 }
 
+impl Default for SimCameraOffset {
+    fn default() -> Self {
+        Self::Detached(RootSpacePosition(DVec2::ZERO))
+    }
+}
+
 pub enum SimCameraOffsetReference<'a> {
     Mutable(&'a mut SimCameraOffset),
     Immutable(&'a SimCameraOffset),
@@ -98,6 +104,7 @@ impl Default for SimCameraZoom {
 }
 
 #[derive(Clone, Copy, Component)]
+#[require(SimCameraOffset, SimCameraZoom)]
 pub struct SimCamera;
 
 /// Component to mark an object as focusable by the camera.

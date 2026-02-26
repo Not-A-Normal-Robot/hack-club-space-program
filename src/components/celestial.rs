@@ -3,6 +3,7 @@ use bevy_rapier2d::prelude::RigidBody;
 
 /// The terrain parameters of a celestial body.
 #[derive(Clone, Copy, Component, Debug, Default)]
+#[require(CelestialBody)]
 pub struct Terrain {
     /// The seed given to the noise generator.
     pub seed: i32,
@@ -32,4 +33,10 @@ pub struct CelestialBody {
     /// To calculate the minimum or maximum radius,
     /// use this alongside the terrain multiplier.
     pub base_radius: f32,
+}
+
+impl Default for CelestialBody {
+    fn default() -> Self {
+        Self { base_radius: 1.0 }
+    }
 }

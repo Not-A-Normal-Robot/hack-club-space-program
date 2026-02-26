@@ -1,7 +1,7 @@
-use core::fmt::Display;
+use core::{error::Error, fmt::Display};
 
 use bevy::prelude::*;
-use derive_more::Deref;
+use derive_more::{Deref, IsVariant};
 use keplerian_sim::{Orbit2D, OrbitTrait2D};
 
 /// Marks this entity's relation with a parent celestial body.
@@ -25,7 +25,7 @@ impl CelestialChildren {
 }
 
 /// How this entity behaves on-rails.
-#[derive(Clone, Copy, Component, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Component, Debug, Default, PartialEq, IsVariant)]
 pub enum RailMode {
     /// When on-rails, the object should stay static in terms of root-space
     /// coordinates.
@@ -38,24 +38,6 @@ pub enum RailMode {
 }
 
 impl RailMode {
-    /// Checks whether or not this is the [`None`][RailMode::None] variant.
-    #[must_use]
-    pub const fn is_none(&self) -> bool {
-        matches!(self, Self::None)
-    }
-
-    /// Checks whether or not this is the [`Orbit`][RailMode::Orbit] variant.
-    #[must_use]
-    pub const fn is_orbit(&self) -> bool {
-        matches!(self, Self::Orbit(_))
-    }
-
-    /// Checks whether or not this is the [`Surface`][RailMode::Surface] variant.
-    #[must_use]
-    pub const fn is_surface(&self) -> bool {
-        matches!(self, Self::Surface(_))
-    }
-
     /// Gets the orbit in this rail, if any.
     #[must_use]
     pub const fn as_orbit(&self) -> Option<Orbit2D> {
@@ -75,7 +57,16 @@ impl RailMode {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct RailModeMismatch;
+
+impl Display for RailModeMismatch {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("RailModeMismatch")
+    }
+}
+
+impl Error for RailModeMismatch {}
 
 impl TryInto<Orbit2D> for RailMode {
     type Error = RailModeMismatch;
