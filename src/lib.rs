@@ -9,7 +9,7 @@ pub mod resources;
 pub(crate) mod systems;
 pub(crate) mod terrain;
 #[cfg(target_family = "wasm")]
-pub(crate) mod web;
+pub mod web;
 
 /// A wrapper around [`bevy::log::trace!`] that only
 /// gets considered when the `trace` feature is enabled.
