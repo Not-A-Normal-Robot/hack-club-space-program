@@ -4,14 +4,11 @@ use crate::{
     consts::colors::shades::{
         PRIMARY_50, PRIMARY_60, PRIMARY_80, TERTIARY_50, TERTIARY_60, TERTIARY_80,
     },
+    observe_activation,
     resources::scene::GameScene,
 };
 use bevy::{
-    input::keyboard::KeyboardInput,
-    input_focus::{
-        FocusedInput,
-        tab_navigation::{TabGroup, TabIndex},
-    },
+    input_focus::tab_navigation::{TabGroup, TabIndex},
     prelude::*,
     text::LineHeight,
     window::{PrimaryWindow, WindowResized},
@@ -89,27 +86,13 @@ pub fn init_main_menu(
     }
     .build();
 
-    let play_button = commands
-        .spawn(play_button)
-        .observe(
-            |_: On<Pointer<Click>>, mut scene: ResMut<NextState<GameScene>>| {
-                scene.set(GameScene::InGame);
-            },
-        )
-        .observe(
-            |event: On<FocusedInput<KeyboardInput>>, mut scene: ResMut<NextState<GameScene>>| {
-                if ![KeyCode::Enter, KeyCode::NumpadEnter].contains(&event.input.key_code) {
-                    return;
-                }
+    let mut play_button = commands.spawn(play_button);
 
-                if !event.input.state.is_pressed() {
-                    return;
-                }
+    observe_activation!(play_button, |mut scene: ResMut<NextState<GameScene>>| {
+        scene.set(GameScene::InGame);
+    });
 
-                scene.set(GameScene::InGame);
-            },
-        )
-        .id();
+    let play_button = play_button.id();
 
     let quit_button = ButtonBuilder {
         extra: (QuitButton, button_common),
@@ -122,23 +105,13 @@ pub fn init_main_menu(
     }
     .build();
 
-    let quit_button = commands
-        .spawn(quit_button)
-        .observe(|_: On<Pointer<Click>>| std::process::exit(0))
-        .observe(
-            |event: On<FocusedInput<KeyboardInput>>, mut scene: ResMut<NextState<GameScene>>| {
-                if ![KeyCode::Enter, KeyCode::NumpadEnter].contains(&event.input.key_code) {
-                    return;
-                }
+    let mut quit_button = commands.spawn(quit_button);
 
-                if !event.input.state.is_pressed() {
-                    return;
-                }
+    observe_activation!(quit_button, || {
+        std::process::exit(0);
+    });
 
-                std::process::exit(0);
-            },
-        )
-        .id();
+    let quit_button = quit_button.id();
 
     let root = (
         MainMenuRootNode,
