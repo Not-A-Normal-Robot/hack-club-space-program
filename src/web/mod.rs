@@ -1,1 +1,1 @@
-pub(crate) mod panic_handler;
+pub mod panic_handler;

@@ -120,7 +120,7 @@ enum StackTrace {
     },
 }
 
-pub(crate) fn init_panic_handler() {
+pub fn init_panic_handler() {
     let mut buf = match PANIC_BUFFER.lock() {
         Ok(b) => b,
         Err(e) => e.into_inner(),
