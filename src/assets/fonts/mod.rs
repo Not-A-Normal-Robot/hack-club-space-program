@@ -12,8 +12,6 @@ macro_rules! define_fonts {
 
         pub fn initialize_fonts(app: &mut ::bevy::app::App) {
             app.init_asset::<::bevy::text::Font>();
-            <::bevy::app::App as ::bevy::asset::io::embedded::GetAssetServer>::get_asset_server(app)
-                .register_loader(::bevy::text::FontLoader);
             $(
                 embedded_asset!(app, $rel_path);
             )*
@@ -32,7 +30,7 @@ define_fonts! {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bevy::asset::io::embedded::GetAssetServer;
+    use bevy::{asset::io::embedded::GetAssetServer, text::FontLoader};
 
     fn min_app() -> App {
         let mut app = App::new();
@@ -50,6 +48,7 @@ mod tests {
             URI_FONT_WDXL_LUBRIFONT_SC,
         ];
         let mut app = min_app();
+        app.get_asset_server().register_loader(FontLoader);
 
         initialize_fonts(&mut app);
 

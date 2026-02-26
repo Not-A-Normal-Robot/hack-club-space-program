@@ -7,6 +7,7 @@ use crate::{
             logic::GameLogicPlugin, transition::GameTransitionPlugin,
         },
         main_menu::MainMenuPlugin,
+        ui::MyUiPlugin,
     },
     resources::scene::GameScene,
 };
@@ -40,6 +41,7 @@ impl Plugin for GameSetupPlugin {
         app.init_state::<GameScene>();
         app.add_plugins((
             MainMenuPlugin,
+            MyUiPlugin,
             GameLogicPlugin,
             GameTransitionPlugin,
             GameDebugPlugin,
