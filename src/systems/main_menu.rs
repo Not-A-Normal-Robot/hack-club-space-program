@@ -1,12 +1,13 @@
 use crate::{
-    assets::fonts::{URI_FONT_DOTO_ROUNDED_BOLD, URI_FONT_WDXL_LUBRIFONT_SC},
+    assets::fonts::URI_FONT_DOTO_ROUNDED_BOLD,
     builders::button::ButtonBuilder,
     consts::colors::shades::{
-        PRIMARY_50, PRIMARY_60, PRIMARY_80, TERTIARY_30, TERTIARY_50, TERTIARY_60, TERTIARY_80,
+        PRIMARY_50, PRIMARY_60, PRIMARY_80, TERTIARY_50, TERTIARY_60, TERTIARY_80,
     },
     resources::scene::GameScene,
 };
 use bevy::{
+    input_focus::tab_navigation::{TabGroup, TabIndex},
     prelude::*,
     text::LineHeight,
     window::{PrimaryWindow, WindowResized},
@@ -51,7 +52,6 @@ pub fn init_main_menu(
     assets: Res<AssetServer>,
 ) {
     let doto_font = assets.load::<Font>(URI_FONT_DOTO_ROUNDED_BOLD);
-    // let wdxl_font = assets.load::<Font>(URI_FONT_WDXL_LUBRIFONT_SC);
 
     let logo = commands.spawn(logo(&doto_font)).id();
 
@@ -71,18 +71,11 @@ pub fn init_main_menu(
             justify: Justify::Center,
             linebreak: LineBreak::WordOrCharacter,
         },
+        TabIndex(0),
     );
 
     let play_button = ButtonBuilder {
-        extra: (
-            PlayButton,
-            button_common.clone(),
-            Outline {
-                color: TERTIARY_30,
-                width: Val::Px(2.0),
-                offset: Val::Px(0.0),
-            },
-        ),
+        extra: (PlayButton, button_common.clone()),
         text_extra: (),
         text: "Play",
         font: &doto_font,
@@ -102,15 +95,7 @@ pub fn init_main_menu(
         .id();
 
     let quit_button = ButtonBuilder {
-        extra: (
-            QuitButton,
-            button_common,
-            Outline {
-                color: TERTIARY_30,
-                width: Val::Px(2.0),
-                offset: Val::Px(0.0),
-            },
-        ),
+        extra: (QuitButton, button_common),
         text_extra: (),
         text: "Quit",
         font: &doto_font,
@@ -139,6 +124,7 @@ pub fn init_main_menu(
             row_gap: Val::Px(16.0),
             ..Default::default()
         },
+        TabGroup::new(0),
     );
 
     commands

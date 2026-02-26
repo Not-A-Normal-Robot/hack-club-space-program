@@ -13,7 +13,11 @@ use crate::{
 };
 #[cfg(feature = "trace")]
 use bevy::log::Level;
-use bevy::{log::LogPlugin, prelude::*};
+use bevy::{
+    input_focus::{InputDispatchPlugin, tab_navigation::TabNavigationPlugin},
+    log::LogPlugin,
+    prelude::*,
+};
 
 /// The entry point for the full game as a plugin.
 ///
@@ -37,6 +41,7 @@ impl Plugin for GameSetupPlugin {
                     ..Default::default()
                 }),
         );
+        app.add_plugins((InputDispatchPlugin, TabNavigationPlugin));
         initialize_fonts(app);
         app.init_state::<GameScene>();
         app.add_plugins((

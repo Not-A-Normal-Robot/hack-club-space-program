@@ -23,3 +23,9 @@ pub type FilterUnloadedVessels = (
     With<RigidBodyDisabled>,
     Without<CelestialBody>,
 );
+
+pub const TAB_FOCUS_OUTLINE: Outline = Outline {
+    color: Color::WHITE,
+    width: Val::Px(2.0),
+    offset: Val::Px(2.0),
+};

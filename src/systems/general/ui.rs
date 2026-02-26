@@ -1,6 +1,13 @@
-use bevy::{ecs::query::QueryData, prelude::*};
+use bevy::{
+    ecs::query::QueryData,
+    input_focus::{InputFocus, tab_navigation::TabIndex},
+    prelude::*,
+};
 
-use crate::components::ui::{ActiveTextColor, HoverTextColor, InactiveTextColor};
+use crate::{
+    components::ui::{ActiveTextColor, HoverTextColor, InactiveTextColor},
+    consts::TAB_FOCUS_OUTLINE,
+};
 
 #[derive(QueryData)]
 pub struct DynTextColorData {
@@ -45,6 +52,24 @@ pub fn update_interacted_text_colors(
             if new_color != color.0 {
                 color.0 = new_color;
             }
+        }
+    }
+}
+
+pub fn update_tab_focus(
+    mut commands: Commands,
+    focus: Res<InputFocus>,
+    query: Query<Entity, With<TabIndex>>,
+) {
+    if !focus.is_changed() {
+        return;
+    }
+
+    for entity in query.iter() {
+        if focus.0 == Some(entity) {
+            commands.entity(entity).insert(TAB_FOCUS_OUTLINE);
+        } else {
+            commands.entity(entity).try_remove::<Outline>();
         }
     }
 }
