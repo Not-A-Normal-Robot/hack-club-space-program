@@ -1,6 +1,4 @@
-pub mod controls;
-pub mod debug;
-pub mod gfx;
-pub mod logic;
-mod physics;
+pub mod main_game;
+pub mod main_menu;
 pub mod setup;
+pub mod ui;
