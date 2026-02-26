@@ -17,12 +17,12 @@ imprecise_flops = "warn"
 trace = []
 
 [dependencies]
-bevy = { version = "0.17.3", default-features = false, features = [
+bevy = { version = "0.18.0", default-features = false, features = [
     "std",
     "async_executor",
     "android-game-activity",
     "android_shared_stdcxx",
-    "animation",
+    "gltf_animation",
     "bevy_asset",
     "bevy_audio",
     "bevy_color",
@@ -34,7 +34,7 @@ bevy = { version = "0.17.3", default-features = false, features = [
     "bevy_gltf",
     "bevy_input_focus",
     "bevy_log",
-    "bevy_mesh_picking_backend",
+    "mesh_picking",
     "bevy_pbr",
     "bevy_picking",
     "bevy_render",
@@ -45,12 +45,12 @@ bevy = { version = "0.17.3", default-features = false, features = [
     "bevy_light",
     "bevy_shader",
     "bevy_sprite",
-    "bevy_sprite_picking_backend",
+    "sprite_picking",
     "bevy_sprite_render",
     "bevy_state",
     "bevy_text",
     "bevy_ui",
-    "bevy_ui_picking_backend",
+    "ui_picking",
     "bevy_ui_render",
     "bevy_window",
     "bevy_winit",
@@ -71,7 +71,7 @@ bevy = { version = "0.17.3", default-features = false, features = [
     "debug",
     "zstd_rust",
 ] }
-bevy_rapier2d = { version = "0.32.0", features = ["simd-stable"] }
+bevy_rapier2d = { version = "0.33.0", features = ["simd-stable"] }
 derive_more = { version = "2.1.1", features = ["is_variant"] }
 fastnoise-lite = { version = "1.1.1", features = ["std", "f64"] }
 keplerian_sim = "0.7.3"
