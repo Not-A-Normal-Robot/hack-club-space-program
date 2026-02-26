@@ -86,9 +86,9 @@ pub fn init_main_menu(
     }
     .build();
 
-    let mut play_button = commands.spawn(play_button);
-
-    observe_activation!(play_button, |mut scene: ResMut<NextState<GameScene>>| {
+    let play_button = observe_activation!(commands.spawn(play_button), |mut scene: ResMut<
+        NextState<GameScene>,
+    >| {
         scene.set(GameScene::InGame);
     });
 
@@ -105,13 +105,10 @@ pub fn init_main_menu(
     }
     .build();
 
-    let mut quit_button = commands.spawn(quit_button);
-
-    observe_activation!(quit_button, || {
+    let quit_button = observe_activation!(commands.spawn(quit_button), || {
         std::process::exit(0);
-    });
-
-    let quit_button = quit_button.id();
+    })
+    .id();
 
     let root = (
         MainMenuRootNode,

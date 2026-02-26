@@ -54,7 +54,9 @@ macro_rules! observe_activation {
                     ::bevy::input::keyboard::KeyboardInput
                 >,
             >;
-            $entity_commands.observe(
+
+            let mut entity_commands = $entity_commands;
+            entity_commands.observe(
                 |_: OnPointerClick, $(
                     observe_activation!(@mutability $mutability $var)
                     $(
@@ -62,7 +64,7 @@ macro_rules! observe_activation {
                     )?),* | {
                     $inner
                 });
-            $entity_commands.observe(
+            entity_commands.observe(
                 | _macro_var_input: OnFocusedKeyboardInput, $(
                     observe_activation!(@mutability $mutability $var)
                     $(
@@ -83,10 +85,11 @@ macro_rules! observe_activation {
 
                     $inner
                 });
+            entity_commands
         }
     };
     ($entity_commands:expr, || $inner:block) => {
-        observe_activation!($entity_commands, |,| $inner);
+        observe_activation!($entity_commands, |,| $inner)
     };
     (@mutability final $var:ident) => {
         $var
@@ -112,14 +115,16 @@ mod tests {
     };
 
     fn _test(mut entity_commands: EntityCommands) {
-        observe_activation!(entity_commands, || {
+        observe_activation!(entity_commands.reborrow(), || {
             eprintln!("Activated!");
         });
-        observe_activation!(entity_commands, |final query: Single<NameOrEntity>| {
+        observe_activation!(entity_commands.reborrow(), |final query: Single<NameOrEntity>| {
             let query = query.into_inner();
             eprintln!("{query}");
         });
-        observe_activation!(entity_commands, |mut vessel: ResMut<ActiveVessel>| {
+        observe_activation!(entity_commands.reborrow(), |mut vessel: ResMut<
+            ActiveVessel,
+        >| {
             vessel.prev_tick_position = RootSpacePosition(DVec2::ZERO);
         });
     }
