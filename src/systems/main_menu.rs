@@ -2,7 +2,7 @@ use crate::{
     assets::fonts::{URI_FONT_DOTO_ROUNDED_BOLD, URI_FONT_WDXL_LUBRIFONT_SC},
     builders::button::ButtonBuilder,
     consts::colors::shades::{
-        PRIMARY_50, PRIMARY_60, PRIMARY_70, TERTIARY_30, TERTIARY_50, TERTIARY_60, TERTIARY_70,
+        PRIMARY_50, PRIMARY_60, PRIMARY_80, TERTIARY_30, TERTIARY_50, TERTIARY_60, TERTIARY_80,
     },
     resources::scene::GameScene,
 };
@@ -60,6 +60,9 @@ pub fn init_main_menu(
     let button_common = (
         Node {
             display: Display::Flex,
+            flex_direction: FlexDirection::Column,
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
             min_width: Val::Px(48.0),
             min_height: Val::Px(48.0),
             ..Node::DEFAULT
@@ -80,10 +83,11 @@ pub fn init_main_menu(
                 offset: Val::Px(0.0),
             },
         ),
+        text_extra: (),
         text: "Play",
         font: &doto_font,
         color: TERTIARY_60,
-        hover_color: TERTIARY_70,
+        hover_color: TERTIARY_80,
         active_color: TERTIARY_50,
     }
     .build();
@@ -107,10 +111,11 @@ pub fn init_main_menu(
                 offset: Val::Px(0.0),
             },
         ),
+        text_extra: (),
         text: "Quit",
         font: &doto_font,
         color: PRIMARY_60,
-        hover_color: PRIMARY_70,
+        hover_color: PRIMARY_80,
         active_color: PRIMARY_50,
     }
     .build();
