@@ -19,6 +19,7 @@ impl SimCameraOffset {
         SimCameraOffsetReference::Immutable(self)
     }
 
+    #[must_use]
     pub fn mutably(&mut self) -> SimCameraOffsetReference<'_> {
         SimCameraOffsetReference::Mutable(self)
     }
@@ -48,7 +49,7 @@ impl Deref for SimCameraOffsetReference<'_> {
 impl SimCameraOffsetReference<'_> {
     /// Gets the current root position of the simulation camera.
     #[must_use]
-    pub fn get_root_position(self, query: Query<&RootSpacePosition>) -> RootSpacePosition {
+    pub(crate) fn get_root_position(self, query: Query<&RootSpacePosition>) -> RootSpacePosition {
         let (entity, last_known_pos) = match *self {
             SimCameraOffset::Attached {
                 entity,
@@ -105,8 +106,8 @@ impl Default for SimCameraZoom {
 
 #[derive(Clone, Copy, Component)]
 #[require(SimCameraOffset, SimCameraZoom)]
-pub struct SimCamera;
+pub(crate) struct SimCamera;
 
 /// Component to mark an object as focusable by the camera.
 #[derive(Clone, Copy, Component)]
-pub struct Focusable;
+pub(crate) struct Focusable;

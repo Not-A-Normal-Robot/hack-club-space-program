@@ -20,17 +20,17 @@ mod common;
 
 #[derive(Clone, Copy)]
 struct PostTickAssertions {
-    pub vessel: TransformAssertions,
-    pub body: TransformAssertions,
-    pub extra_assertions: Option<fn(&App, TestEntityRefs)>,
+    pub(crate) vessel: TransformAssertions,
+    pub(crate) body: TransformAssertions,
+    pub(crate) extra_assertions: Option<fn(&App, TestEntityRefs)>,
 }
 
 #[derive(Clone, Copy, Default)]
 struct TransformAssertions {
-    pub root_pos: Option<RootSpacePosition>,
-    pub root_vel: Option<RootSpaceLinearVelocity>,
-    pub rig_vel: Option<RigidSpaceVelocity>,
-    pub cam_tf: Option<CameraSpaceTransform>,
+    pub(crate) root_pos: Option<RootSpacePosition>,
+    pub(crate) root_vel: Option<RootSpaceLinearVelocity>,
+    pub(crate) rig_vel: Option<RigidSpaceVelocity>,
+    pub(crate) cam_tf: Option<CameraSpaceTransform>,
 }
 
 impl TransformAssertions {

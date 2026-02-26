@@ -15,7 +15,7 @@ const CELESTIAL_RADIUS: f32 = 6_378_137.0;
 const CELESTIAL_MASS: f32 = 5.972e24;
 const ALTITUDE: f32 = CELESTIAL_RADIUS - 2000.0;
 
-pub fn init_game(
+pub(crate) fn init_game(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
@@ -97,7 +97,7 @@ pub fn init_game(
 
 type FilterInGameObjects = Or<(With<RigidBody>, With<SimCamera>)>;
 
-pub fn exit_game(mut commands: Commands, sim_objects: Query<Entity, FilterInGameObjects>) {
+pub(crate) fn exit_game(mut commands: Commands, sim_objects: Query<Entity, FilterInGameObjects>) {
     // TODO: Save
 
     for obj in sim_objects {

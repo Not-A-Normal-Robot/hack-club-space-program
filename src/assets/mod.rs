@@ -1,1 +1,1 @@
-pub mod fonts;
+pub(crate) mod fonts;

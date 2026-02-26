@@ -16,7 +16,7 @@ pub struct SimCameraBuilder {
 
 impl SimCameraBuilder {
     #[must_use]
-    pub const fn base_bundle() -> impl Bundle {
+    pub(crate) const fn base_bundle() -> impl Bundle {
         (Camera2d, SimCamera)
     }
     #[must_use]

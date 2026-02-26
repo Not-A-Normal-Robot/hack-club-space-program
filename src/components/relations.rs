@@ -19,7 +19,7 @@ pub struct CelestialChildren(Vec<Entity>);
 
 impl CelestialChildren {
     #[must_use]
-    pub fn clone_to_box(&self) -> Box<[Entity]> {
+    pub(crate) fn clone_to_box(&self) -> Box<[Entity]> {
         Box::from(self.0.as_slice())
     }
 }

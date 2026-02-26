@@ -1,4 +1,4 @@
 pub mod main_game;
-pub mod main_menu;
+pub(crate) mod main_menu;
 pub mod setup;
-pub mod ui;
+pub(crate) mod ui;

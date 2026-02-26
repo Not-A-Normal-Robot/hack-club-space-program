@@ -21,7 +21,7 @@ pub struct CelestialBodyBuilder<M: Material2d> {
 
 impl<M: Material2d> CelestialBodyBuilder<M> {
     #[must_use]
-    pub const fn base_bundle() -> impl Bundle {
+    pub(crate) const fn base_bundle() -> impl Bundle {
         (
             RigidBody::KinematicPositionBased,
             RootSpacePosition(DVec2::ZERO),

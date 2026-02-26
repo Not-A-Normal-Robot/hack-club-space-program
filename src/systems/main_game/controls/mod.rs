@@ -1,4 +1,4 @@
-pub mod camera;
+pub(crate) mod camera;
 
 use crate::{
     consts::controls::{
@@ -9,11 +9,11 @@ use crate::{
 };
 use bevy::prelude::*;
 
-pub fn init_controls(mut commands: Commands) {
+pub(crate) fn init_controls(mut commands: Commands) {
     commands.init_resource::<FocusableData>();
 }
 
-pub fn cleanup_controls(mut commands: Commands) {
+pub(crate) fn cleanup_controls(mut commands: Commands) {
     commands.remove_resource::<FocusableData>();
 }
 
@@ -28,7 +28,7 @@ macro_rules! mode_switches {
     };
 }
 
-pub fn control_switching(
+pub(crate) fn control_switching(
     mode: Res<State<GameControlMode>>,
     mut next_mode: ResMut<NextState<GameControlMode>>,
     keyboard: Res<ButtonInput<KeyCode>>,

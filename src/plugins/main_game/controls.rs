@@ -11,7 +11,7 @@ use crate::{
     },
 };
 
-pub struct GameControlPlugin;
+pub(crate) struct GameControlPlugin;
 
 impl Plugin for GameControlPlugin {
     fn build(&self, app: &mut App) {

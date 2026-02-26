@@ -16,7 +16,7 @@ use bevy::{
 
 #[derive(Clone, Copy, Component)]
 #[require(DespawnOnExit::<GameScene>(GameScene::MainMenu))]
-pub struct MainMenuRootNode;
+pub(crate) struct MainMenuRootNode;
 
 #[derive(Clone, Copy, Component)]
 struct PlayButton;
@@ -47,7 +47,7 @@ fn root_margin(window_size: Vec2) -> UiRect {
     }
 }
 
-pub fn init_main_menu(
+pub(crate) fn init_main_menu(
     mut commands: Commands,
     window: Single<&Window, With<PrimaryWindow>>,
     assets: Res<AssetServer>,
@@ -143,7 +143,7 @@ pub fn init_main_menu(
     ));
 }
 
-pub fn handle_resize(
+pub(crate) fn handle_resize(
     mut root: Single<&mut Node, With<MainMenuRootNode>>,
     mut resize_reader: MessageReader<WindowResized>,
 ) {

@@ -21,7 +21,7 @@ use core::{cmp::Ordering, f64::consts::TAU};
 
 #[derive(QueryData)]
 #[query_data(mutable)]
-pub struct SimCameraInfo {
+pub(crate) struct SimCameraInfo {
     transform: &'static mut Transform,
     offset: &'static mut SimCameraOffset,
     zoom: &'static mut SimCameraZoom,
@@ -116,7 +116,7 @@ fn switch_focus(
 }
 
 #[expect(clippy::cast_possible_truncation)]
-pub fn control_camera(
+pub(crate) fn control_camera(
     mut camera: Single<SimCameraInfo, FilterSimCamera>,
     key: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
@@ -222,7 +222,7 @@ type FocusableDataQuery<'w, 's> = Query<
     Added<Focusable>,
 >;
 
-pub fn update_focusable_data(
+pub(crate) fn update_focusable_data(
     added: FocusableDataQuery,
     mut removed: RemovedComponents<Focusable>,
     mut resource: ResMut<FocusableData>,

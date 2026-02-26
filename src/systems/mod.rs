@@ -1,3 +1,3 @@
-pub mod general;
-pub mod main_game;
-pub mod main_menu;
+pub(crate) mod general;
+pub(crate) mod main_game;
+pub(crate) mod main_menu;

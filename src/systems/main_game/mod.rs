@@ -1,7 +1,7 @@
-pub mod controls;
-pub mod frame_sync;
-pub mod gravity;
-pub mod rail;
-pub mod terrain;
-pub mod transition;
-pub mod ui;
+pub(crate) mod controls;
+pub(crate) mod frame_sync;
+pub(crate) mod gravity;
+pub(crate) mod rail;
+pub(crate) mod terrain;
+pub(crate) mod transition;
+pub(crate) mod ui;

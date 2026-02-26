@@ -5,7 +5,7 @@ use crate::{
 use bevy::prelude::*;
 
 /// Handles transitions to and from the [`GameScene::InGame`] scene.
-pub struct GameTransitionPlugin;
+pub(crate) struct GameTransitionPlugin;
 impl Plugin for GameTransitionPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameScene::InGame), init_game);

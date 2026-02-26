@@ -34,7 +34,7 @@ pub struct RootSpacePosition(pub DVec2);
 
 impl RootSpacePosition {
     #[must_use]
-    pub fn to_rigid_space_position(
+    pub(crate) fn to_rigid_space_position(
         self,
         active_vessel_pos: RootSpacePosition,
     ) -> RigidSpacePosition {
@@ -74,7 +74,7 @@ pub struct RootSpaceLinearVelocity(pub DVec2);
 
 impl RootSpaceLinearVelocity {
     #[must_use]
-    pub fn to_rigid_space_linear_velocity(
+    pub(crate) fn to_rigid_space_linear_velocity(
         self,
         active_vessel_vel: RootSpaceLinearVelocity,
     ) -> RigidSpaceLinearVelocity {
@@ -93,28 +93,17 @@ impl Display for RootSpaceLinearVelocity {
 ///
 /// Single precision, and unscaled. Used to be transformed to [`RigidSpaceTransform`].
 #[derive(Clone, Copy, Component, Debug, PartialEq)]
-pub struct RigidSpacePosition(pub Vec2);
+pub(crate) struct RigidSpacePosition(pub(crate) Vec2);
 
 impl RigidSpacePosition {
-    pub const ZERO: Self = Self(Vec2::ZERO);
-
     #[must_use]
-    pub fn to_root_space_position(
-        &self,
+    pub(crate) fn to_root_space_position(
+        self,
         active_vessel_pos: RootSpacePosition,
     ) -> RootSpacePosition {
         let rigid = DVec2::new(f64::from(self.0.x), f64::from(self.0.y));
 
         RootSpacePosition(active_vessel_pos.0 + rigid)
-    }
-
-    #[must_use]
-    pub fn to_rigid_space_transform(&self, rotation: Quat, scale: Vec3) -> RigidSpaceTransform {
-        RigidSpaceTransform(Transform {
-            translation: self.0.extend(0.0),
-            rotation,
-            scale,
-        })
     }
 }
 
@@ -122,11 +111,11 @@ impl RigidSpacePosition {
 ///
 /// Single precision, and unscaled. Used for [`bevy_rapier2d`].
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct RigidSpaceTransform(pub Transform);
+pub(crate) struct RigidSpaceTransform(pub(crate) Transform);
 
 impl RigidSpaceTransform {
     #[must_use]
-    pub fn position(&self) -> RigidSpacePosition {
+    pub(crate) fn position(&self) -> RigidSpacePosition {
         RigidSpacePosition(self.0.translation.truncate())
     }
 }
@@ -135,11 +124,12 @@ impl RigidSpaceTransform {
 ///
 /// Single precision, and unscaled. Used as intermediary for [`bevy_rapier2d`].
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct RigidSpaceLinearVelocity(pub Vec2);
+pub(crate) struct RigidSpaceLinearVelocity(pub(crate) Vec2);
 
+#[allow(dead_code)]
 impl RigidSpaceLinearVelocity {
     #[must_use]
-    pub fn to_rigid_space_velocity(self, angvel: f32) -> RigidSpaceVelocity {
+    pub(crate) fn to_rigid_space_velocity(self, angvel: f32) -> RigidSpaceVelocity {
         RigidSpaceVelocity {
             linvel: self.0,
             angvel,
@@ -147,7 +137,7 @@ impl RigidSpaceLinearVelocity {
     }
 
     #[must_use]
-    pub fn to_root_space_linear_velocity(
+    pub(crate) fn to_root_space_linear_velocity(
         self,
         active_vessel_vel: RootSpaceLinearVelocity,
     ) -> RootSpaceLinearVelocity {

@@ -99,8 +99,6 @@ macro_rules! observe_activation {
     };
 }
 
-pub use observe_activation;
-
 #[cfg(test)]
 mod tests {
     //! All tests here are only for type checks and macro validation.

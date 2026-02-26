@@ -6,7 +6,7 @@ use bevy_rapier2d::{prelude::*, rapier::prelude::IntegrationParameters};
 /// frame, including physics.
 pub struct GameLogicPlugin;
 
-pub const RAPIER_CONFIGURATION: RapierConfiguration = RapierConfiguration {
+pub(crate) const RAPIER_CONFIGURATION: RapierConfiguration = RapierConfiguration {
     gravity: Vec2::ZERO,
     physics_pipeline_active: true,
     scaled_shape_subdivision: 10,

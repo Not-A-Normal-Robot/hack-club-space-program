@@ -4,7 +4,7 @@ use core::ops::Range;
 use crate::terrain::TerrainPoint;
 
 #[derive(Clone, Component, Debug, PartialEq, Eq)]
-pub struct PrevIndexRanges(pub Box<[Range<u32>]>);
+pub(crate) struct PrevIndexRanges(pub(crate) Box<[Range<u32>]>);
 
 #[derive(Clone, Component, Debug, PartialEq)]
-pub struct PrevColliderPoints(pub Vec<TerrainPoint>);
+pub(crate) struct PrevColliderPoints(pub(crate) Vec<TerrainPoint>);

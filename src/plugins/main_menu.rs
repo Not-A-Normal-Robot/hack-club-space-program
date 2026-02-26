@@ -5,7 +5,7 @@ use crate::{
     systems::main_menu::{handle_resize, init_main_menu},
 };
 
-pub struct MainMenuPlugin;
+pub(crate) struct MainMenuPlugin;
 
 impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {

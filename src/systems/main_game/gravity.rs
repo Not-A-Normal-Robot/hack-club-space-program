@@ -13,7 +13,7 @@ use crate::{
 
 #[derive(QueryData)]
 #[query_data(mutable)]
-pub struct VesselData {
+pub(crate) struct VesselData {
     name: NameOrEntity,
     pos: &'static RootSpacePosition,
     parent: &'static CelestialParent,
@@ -22,7 +22,7 @@ pub struct VesselData {
 }
 
 #[derive(QueryData)]
-pub struct ParentData {
+pub(crate) struct ParentData {
     pos: &'static RootSpacePosition,
     mass: &'static AdditionalMassProperties,
 }
@@ -57,7 +57,7 @@ fn apply_gravity_inner(
     vessel.force.force = force.as_vec2();
 }
 
-pub fn apply_gravity(
+pub(crate) fn apply_gravity(
     mut vessels: Query<VesselData, FilterLoadedVessels>,
     celestials: Query<ParentData, (With<CelestialBody>, Without<Vessel>)>,
 ) {
@@ -66,7 +66,7 @@ pub fn apply_gravity(
     });
 }
 
-pub fn unapply_gravity_to_unloaded(mut vessels: Query<&mut ExternalForce, FilterUnloadedVessels>) {
+pub(crate) fn unapply_gravity_to_unloaded(mut vessels: Query<&mut ExternalForce, FilterUnloadedVessels>) {
     vessels
         .iter_mut()
         .for_each(|mut force| *force = ExternalForce::default());

@@ -13,7 +13,7 @@ use crate::{
     },
 };
 
-pub struct GamePhysicsPlugin;
+pub(crate) struct GamePhysicsPlugin;
 
 impl Plugin for GamePhysicsPlugin {
     fn build(&self, app: &mut App) {

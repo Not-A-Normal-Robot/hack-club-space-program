@@ -23,7 +23,7 @@ fn setup_time(
     commands.insert_resource(TimeUpdateStrategy::ManualDuration(fixed_time.timestep()));
 }
 
-pub fn enable_backtrace() {
+pub(crate) fn enable_backtrace() {
     const BACKTRACE_KEY: &str = "RUST_BACKTRACE";
     unsafe {
         if std::env::var(BACKTRACE_KEY).is_err() {
@@ -33,16 +33,16 @@ pub fn enable_backtrace() {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct TestAppConfig {
+pub(crate) struct TestAppConfig {
     /// Whether or not the app's itme should increase
     /// every time `app.update()` is called.
-    pub forward_time_on_update: bool,
+    pub(crate) forward_time_on_update: bool,
     /// The log level for `bevy::log`
-    pub log_level: Option<bevy::log::Level>,
+    pub(crate) log_level: Option<bevy::log::Level>,
 }
 
 impl TestAppConfig {
-    pub const DEFAULT: Self = Self {
+    pub(crate) const DEFAULT: Self = Self {
         forward_time_on_update: true,
         log_level: None,
     };
@@ -54,7 +54,7 @@ impl Default for TestAppConfig {
     }
 }
 
-pub fn setup_default() -> App {
+pub(crate) fn setup_default() -> App {
     setup(TestAppConfig::DEFAULT)
 }
 
@@ -63,7 +63,7 @@ pub fn setup_default() -> App {
 ///
 /// The amount of time the time is increased is by the fixed timestep
 /// interval (default 64 Hz).
-pub fn setup(config: TestAppConfig) -> App {
+pub(crate) fn setup(config: TestAppConfig) -> App {
     enable_backtrace();
 
     let mut app = App::new();
@@ -83,7 +83,7 @@ pub fn setup(config: TestAppConfig) -> App {
     app
 }
 
-pub fn empty_mesh_material(app: &mut App) -> (Mesh2d, MeshMaterial2d<ColorMaterial>) {
+pub(crate) fn empty_mesh_material(app: &mut App) -> (Mesh2d, MeshMaterial2d<ColorMaterial>) {
     if !app.is_plugin_added::<AssetPlugin>() {
         app.add_plugins(AssetPlugin::default());
     }
@@ -98,7 +98,7 @@ pub fn empty_mesh_material(app: &mut App) -> (Mesh2d, MeshMaterial2d<ColorMateri
     (Mesh2d(mesh), MeshMaterial2d(material))
 }
 
-pub fn assert_sv(entity: EntityRef, pos: RootSpacePosition, vel: RootSpaceLinearVelocity) {
+pub(crate) fn assert_sv(entity: EntityRef, pos: RootSpacePosition, vel: RootSpaceLinearVelocity) {
     let name = entity
         .get::<Name>()
         .map(std::convert::Into::into)
@@ -150,7 +150,7 @@ macro_rules! assert_almost_eq {
 }
 
 /// Tolerance is a fractional error that can be tolerated.
-pub fn assert_sv_close(
+pub(crate) fn assert_sv_close(
     entity: EntityRef,
     pos: RootSpacePosition,
     vel: RootSpaceLinearVelocity,
@@ -198,7 +198,7 @@ pub fn assert_sv_close(
 }
 
 /// Trait for collection of assertions.
-pub trait Assertions {
+pub(crate) trait Assertions {
     type ExtraData: Copy;
     /// Checks the app's state and panics if something's amiss.
     fn check_assertions(&self, app: &App, extra: Self::ExtraData);
@@ -217,7 +217,7 @@ where
     }
 }
 
-pub trait AssertionsCollection<'a, A>
+pub(crate) trait AssertionsCollection<'a, A>
 where
     Self: IntoIterator<Item = &'a A> + Sized,
     A: Assertions + 'a,

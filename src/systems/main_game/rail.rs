@@ -20,7 +20,7 @@ type FilterUnloadedVesselOrCelestialBody = Or<(FilterUnloadedVessels, With<Celes
 
 #[derive(QueryData)]
 #[query_data(mutable)]
-pub struct NodeData {
+pub(crate) struct NodeData {
     rail_mode: &'static RailMode,
     pos: &'static mut RootSpacePosition,
     vel: &'static mut RootSpaceLinearVelocity,
@@ -28,21 +28,21 @@ pub struct NodeData {
 }
 
 #[derive(QueryData)]
-pub struct RootData {
+pub(crate) struct RootData {
     children: &'static CelestialChildren,
 }
 
 /// State vector query data
 #[derive(QueryData)]
 #[query_data(mutable)]
-pub struct SvData {
+pub(crate) struct SvData {
     pos: &'static mut RootSpacePosition,
     vel: &'static mut RootSpaceLinearVelocity,
 }
 
 #[derive(QueryData)]
 #[query_data(mutable)]
-pub struct ChildData {
+pub(crate) struct ChildData {
     entity: Entity,
     parent: &'static CelestialParent,
     rail_mode: &'static mut RailMode,
@@ -51,7 +51,7 @@ pub struct ChildData {
 }
 
 #[derive(QueryData)]
-pub struct ParentData {
+pub(crate) struct ParentData {
     entity: Entity,
     pos: &'static RootSpacePosition,
     vel: &'static RootSpaceLinearVelocity,
@@ -103,8 +103,7 @@ fn write_sv_to_rail_inner(
     *vessel.rail_mode = RailMode::Orbit(orbit);
 }
 
-#[expect(clippy::missing_panics_doc)]
-pub fn write_sv_to_rail(
+pub(crate) fn write_sv_to_rail(
     rapier_context: ReadRapierContext,
     mut vessels: Query<ChildData, FilterLoadedVessels>,
     cel_query: Query<ParentData, (With<CelestialBody>, Without<Vessel>)>,
@@ -245,7 +244,7 @@ fn write_rail_to_sv_inner(
     });
 }
 
-pub fn write_rail_to_sv(
+pub(crate) fn write_rail_to_sv(
     roots: Query<RootData, Without<CelestialParent>>,
     mut on_rails_query: Query<NodeData, FilterUnloadedVesselOrCelestialBody>,
     mut off_rails_query: Query<SvData, (With<CelestialParent>, FilterLoadedVessels)>,

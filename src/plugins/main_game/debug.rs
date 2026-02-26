@@ -9,7 +9,7 @@ use crate::{
     resources::scene::GameScene,
 };
 
-pub struct GameDebugPlugin;
+pub(crate) struct GameDebugPlugin;
 
 impl Plugin for GameDebugPlugin {
     fn build(&self, app: &mut App) {

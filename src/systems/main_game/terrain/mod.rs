@@ -1,2 +1,2 @@
-pub mod collider;
-pub mod gfx;
+pub(crate) mod collider;
+pub(crate) mod gfx;

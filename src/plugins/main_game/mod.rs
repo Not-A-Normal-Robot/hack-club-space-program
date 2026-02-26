@@ -1,6 +1,6 @@
-pub mod controls;
-pub mod debug;
-pub mod gfx;
+pub(crate) mod controls;
+pub(crate) mod debug;
+pub(crate) mod gfx;
 pub mod logic;
 mod physics;
-pub mod transition;
+pub(crate) mod transition;

@@ -1,16 +1,17 @@
 use bevy::{asset::embedded_asset, prelude::*};
 
-pub const LICENSE_DOTO: &str = include_str!("doto/OFL.txt");
-pub const LICENSE_WDXL: &str = include_str!("WDXL_Lubrifont_SC/OFL.txt");
+pub(crate) const LICENSE_DOTO: &str = include_str!("doto/OFL.txt");
+pub(crate) const LICENSE_WDXL: &str = include_str!("WDXL_Lubrifont_SC/OFL.txt");
 
 macro_rules! define_fonts {
     ($( $name: ident = $rel_path: literal ),* $(,)?) => {
         $(::pastey::paste! {
-            pub const [< URI_FONT_ $name >]: &str =
+            #[allow(dead_code)]
+            pub(crate) const [< URI_FONT_ $name >]: &str =
                 concat!("embedded://hack_club_space_program/assets/fonts/", $rel_path);
         })*
 
-        pub fn initialize_fonts(app: &mut ::bevy::app::App) {
+        pub(crate) fn initialize_fonts(app: &mut ::bevy::app::App) {
             app.init_asset::<::bevy::text::Font>();
             $(
                 embedded_asset!(app, $rel_path);

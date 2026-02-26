@@ -25,14 +25,14 @@ pub struct Terrain {
 
 #[derive(Clone, Copy, Component)]
 #[require(RigidBody::KinematicPositionBased)]
-pub struct CelestialBody {
+pub(crate) struct CelestialBody {
     /// The "base radius" of a celestial body.
     ///
     /// This is the "sea level" in most cases.
     ///
     /// To calculate the minimum or maximum radius,
     /// use this alongside the terrain multiplier.
-    pub base_radius: f32,
+    pub(crate) base_radius: f32,
 }
 
 impl Default for CelestialBody {

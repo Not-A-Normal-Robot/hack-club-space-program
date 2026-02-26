@@ -17,7 +17,7 @@ use crate::{
 /// Updates root-space position based on rigid-space transform (if any).
 ///  
 /// Assumes the current Transform is a rigid-space transform.
-pub fn write_rigid_pos_to_root(
+pub(crate) fn write_rigid_pos_to_root(
     mut commands: Commands,
     root_positionless: Query<
         (Entity, &Transform, &CelestialParent),
@@ -60,7 +60,7 @@ pub fn write_rigid_pos_to_root(
 }
 
 /// Updates root-space velocity based on rigid-space velocity (if any).
-pub fn write_rigid_vel_to_root(
+pub(crate) fn write_rigid_vel_to_root(
     mut commands: Commands,
     root_velless: Query<
         (Entity, &RigidSpaceVelocity, &CelestialParent),
@@ -100,7 +100,7 @@ pub fn write_rigid_vel_to_root(
 
 /// Shifts all entities' [`RootSpacePosition`] based on its [`RootSpaceLinearVelocity`]
 /// (if any).
-pub fn apply_root_velocity(
+pub(crate) fn apply_root_velocity(
     vels: Query<(&RootSpaceLinearVelocity, &mut RootSpacePosition), FilterLoadedVessels>,
     time: Res<Time>,
 ) {
@@ -109,7 +109,7 @@ pub fn apply_root_velocity(
 }
 
 /// Updates the last tick position and last parent body of the active vessel.
-pub fn update_active_vessel_resource(
+pub(crate) fn update_active_vessel_resource(
     query: Query<(
         &RootSpacePosition,
         &RootSpaceLinearVelocity,
@@ -145,7 +145,7 @@ fn pre_rapier_frame_switch_inner(
 }
 
 /// Sets transform into the rigid transform so that Rapier can process it
-pub fn pre_rapier_frame_switch(
+pub(crate) fn pre_rapier_frame_switch(
     query: Query<
         (
             &RootSpacePosition,
@@ -176,7 +176,7 @@ pub fn pre_rapier_frame_switch(
 }
 
 /// Sets transform into the camera transform so Bevy can render it
-pub fn post_rapier_frame_switch(
+pub(crate) fn post_rapier_frame_switch(
     query: Query<(&mut Transform, &RootSpacePosition), Without<Terrain>>,
     terrestrial_cels: Query<&mut Transform, With<Terrain>>,
     sim_camera: Query<(&mut SimCameraOffset, &SimCameraZoom, &Camera), With<SimCamera>>,

@@ -11,11 +11,11 @@ use core::{num::NonZeroU8, ops::Deref};
 
 /// The previous focus angle.
 #[derive(Clone, Copy, Component)]
-pub struct PrevFocus(pub f64);
+pub(crate) struct PrevFocus(pub(crate) f64);
 
 /// A list of LoD offsets.
 #[derive(Clone, Component, Debug, PartialEq)]
-pub struct LodVectors(
+pub(crate) struct LodVectors(
     /// Invariant: this vector must always have a length of at least 1
     Vec<[TerrainPoint; LOD_VERTS as usize]>,
 );
@@ -23,13 +23,13 @@ pub struct LodVectors(
 impl LodVectors {
     /// Generate a lowest-quality LoD vector list.
     #[must_use]
-    pub fn new(terrain_gen: &TerrainGen) -> Self {
+    pub(crate) fn new(terrain_gen: &TerrainGen) -> Self {
         Self(vec![terrain_gen.gen_lod(0, 0.0)])
     }
 
     /// Generate a fully-realized LoD vector list.
     #[must_use]
-    pub fn new_full(terrain_gen: &TerrainGen, ending_level: u8, focus: f64) -> Self {
+    pub(crate) fn new_full(terrain_gen: &TerrainGen, ending_level: u8, focus: f64) -> Self {
         let mut this = Self::new(terrain_gen);
         if let Some(ending_level) = NonZeroU8::new(ending_level) {
             this.update_lods(terrain_gen, ending_level, f64::NAN, focus);
@@ -38,8 +38,7 @@ impl LodVectors {
     }
 
     /// Updates the LoD vectors.
-    #[expect(clippy::missing_panics_doc)]
-    pub fn update_lods(
+    pub(crate) fn update_lods(
         &mut self,
         terrain_gen: &TerrainGen,
         ending_level: NonZeroU8,
@@ -339,8 +338,7 @@ impl LodVectors {
     /// # Unchecked Operation
     /// This function assumes you have updated the `LoD` vectors.
     #[must_use]
-    #[expect(clippy::missing_panics_doc)]
-    pub fn create_buffers(
+    pub(crate) fn create_buffers(
         &self,
         focus: f64,
         max_level: Option<u8>,

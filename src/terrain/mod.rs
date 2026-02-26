@@ -2,32 +2,32 @@ use crate::components::{camera::SimCameraZoom, celestial::Terrain};
 use bevy::{math::DVec2, prelude::*};
 use fastnoise_lite::{FastNoiseLite, FractalType};
 
-pub mod collider;
-pub mod gfx;
+pub(crate) mod collider;
+pub(crate) mod gfx;
 
 /// A vector relative to the celestial body's center,
 /// representing a point in the terrain/body boundary.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct TerrainPoint(pub DVec2);
+pub(crate) struct TerrainPoint(pub(crate) DVec2);
 
 impl TerrainPoint {
     /// Shifts this vector, then downcast it to 32-bit collider-ready vectors.
     ///
     /// For the shift, use a method similar to obtaining a `RigidSpacePosition`.
     #[must_use]
-    pub fn phys_downcast(self, shift: DVec2) -> Vec2 {
+    pub(crate) fn phys_downcast(self, shift: DVec2) -> Vec2 {
         (self.0 + shift).as_vec2()
     }
 
     /// Transforms this vector, then downcast it to 32-bit graphics-ready vectors.
     #[must_use]
-    pub fn gfx_tf_downcast(self, shift: DVec2, zoom: SimCameraZoom) -> Vec3 {
+    pub(crate) fn gfx_tf_downcast(self, shift: DVec2, zoom: SimCameraZoom) -> Vec3 {
         (zoom.0 * (self.0 + shift)).as_vec2().extend(0.0)
     }
 }
 
 /// A terrain generator wrapper around Terrain and `FastNoiseLite`.
-pub struct TerrainGen {
+pub(crate) struct TerrainGen {
     multiplier: f64,
     offset: f64,
     noisegen: FastNoiseLite,
@@ -35,7 +35,7 @@ pub struct TerrainGen {
 
 impl TerrainGen {
     #[must_use]
-    pub fn new(terrain: Terrain) -> Self {
+    pub(crate) fn new(terrain: Terrain) -> Self {
         let mut noisegen = FastNoiseLite::with_seed(terrain.seed);
         noisegen.fractal_type = FractalType::FBm;
         noisegen.octaves = terrain.octaves;

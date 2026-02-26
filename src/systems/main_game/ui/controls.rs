@@ -6,9 +6,9 @@ use bevy::prelude::*;
 
 #[derive(Component)]
 #[require(DespawnOnExit::<GameScene>(GameScene::InGame))]
-pub struct ControlsText;
+pub(crate) struct ControlsText;
 
-pub fn update_controls_text(
+pub(crate) fn update_controls_text(
     mut commands: Commands,
     mut text: Query<&mut Text, With<ControlsText>>,
     control_mode: Res<State<GameControlMode>>,

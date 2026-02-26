@@ -36,7 +36,7 @@ type VesselQuery<'w, 's> = Query<
 
 #[derive(QueryData)]
 #[query_data(mutable)]
-pub struct CelestialComponents {
+pub(crate) struct CelestialComponents {
     entity: Entity,
     position: &'static RootSpacePosition,
     collider: &'static mut Collider,
@@ -47,7 +47,7 @@ pub struct CelestialComponents {
 }
 
 #[derive(QueryData)]
-pub struct VesselData {
+pub(crate) struct VesselData {
     position: &'static RootSpacePosition,
     collider: &'static Collider,
 }
@@ -179,7 +179,7 @@ fn update_collider(
     *celestial.collider = decomp;
 }
 
-pub fn update_terrain_colliders(
+pub(crate) fn update_terrain_colliders(
     celestial_query: CelestialQuery,
     vessel_query: VesselQuery,
     mut commands: Commands,

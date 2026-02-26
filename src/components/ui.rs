@@ -3,16 +3,16 @@ use bevy::prelude::*;
 /// The text color for when this entity (or its direct child)
 /// is not being hovered upon.
 #[derive(Clone, Copy, Component, Default)]
-pub struct InactiveTextColor(pub Color);
+pub(crate) struct InactiveTextColor(pub(crate) Color);
 
 /// The text color for when this entity (or its direct child)
 /// is being hovered upon.
 #[derive(Clone, Copy, Component)]
 #[require(InactiveTextColor)]
-pub struct HoverTextColor(pub Color);
+pub(crate) struct HoverTextColor(pub(crate) Color);
 
 /// The text color for when this entity (or its direct child)
 /// is actively being pressed.
 #[derive(Clone, Copy, Component)]
 #[require(InactiveTextColor)]
-pub struct ActiveTextColor(pub Color);
+pub(crate) struct ActiveTextColor(pub(crate) Color);

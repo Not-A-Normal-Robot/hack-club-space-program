@@ -24,7 +24,7 @@ pub struct VesselBuilder<M: Material2d> {
 
 impl<M: Material2d> VesselBuilder<M> {
     #[must_use]
-    pub const fn base_bundle() -> impl Bundle {
+    pub(crate) const fn base_bundle() -> impl Bundle {
         (
             Vessel,
             RigidBody::Dynamic,

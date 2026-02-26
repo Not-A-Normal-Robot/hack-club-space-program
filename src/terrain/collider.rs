@@ -12,7 +12,7 @@ use core::{
 };
 
 #[must_use]
-pub const fn verts_at_lod_level(level: u8) -> u32 {
+pub(crate) const fn verts_at_lod_level(level: u8) -> u32 {
     // compiler explorer asm output showed that the compiler
     // wasn't able to optimize power-of-two powering as best it can
     // therefore this logic is for extra optimization
@@ -35,7 +35,7 @@ pub const fn verts_at_lod_level(level: u8) -> u32 {
 /// body center
 /// Aabb reference frame doesn't matter, only its size is used
 #[must_use]
-pub fn is_vessel_within_terrain_altitude(
+pub(crate) fn is_vessel_within_terrain_altitude(
     aabb: Aabb,
     vessel_distance: f64,
     terrain: &Terrain,
@@ -65,7 +65,7 @@ pub fn is_vessel_within_terrain_altitude(
 ///
 /// Aabb reference frame doesn't matter, only its size is used
 #[must_use]
-pub fn get_theta_range(
+pub(crate) fn get_theta_range(
     aabb: Aabb,
     vessel_rel_pos: DVec2,
     celestial_rotation: f64,
@@ -182,7 +182,7 @@ fn merge_ranges(mut ranges: Vec<Range<u32>>) -> Vec<Range<u32>> {
 /// based on a slice of theta ranges, as gotten through
 /// [`get_theta_range`].
 #[must_use]
-pub fn gen_idx_ranges(ranges: &[RangeInclusive<f64>], verts: u32) -> Vec<Range<u32>> {
+pub(crate) fn gen_idx_ranges(ranges: &[RangeInclusive<f64>], verts: u32) -> Vec<Range<u32>> {
     let idx_ranges: Box<[_]> = ranges
         .iter()
         .map(|range| theta_range_to_idx_range(range.clone(), verts))
@@ -208,7 +208,7 @@ fn index_to_theta(index: u32, verts: u32) -> f64 {
 /// Make sure the ranges has no overlaps.
 /// Note that it need not be sorted.
 #[must_use]
-pub fn gen_points(terrain: Terrain, ranges: &[Range<u32>]) -> Vec<TerrainPoint> {
+pub(crate) fn gen_points(terrain: Terrain, ranges: &[Range<u32>]) -> Vec<TerrainPoint> {
     let verts = verts_at_lod_level(terrain.subdivs);
     let terrain = TerrainGen::new(terrain);
 
@@ -229,7 +229,7 @@ pub fn gen_points(terrain: Terrain, ranges: &[Range<u32>]) -> Vec<TerrainPoint> 
 
 /// Creates an index buffer for the collision mesh, given the amount of points.
 #[must_use]
-pub fn create_index_buffer(len: u32) -> Vec<[u32; 2]> {
+pub(crate) fn create_index_buffer(len: u32) -> Vec<[u32; 2]> {
     if len == 0 {
         return Vec::new();
     }
@@ -241,7 +241,7 @@ pub fn create_index_buffer(len: u32) -> Vec<[u32; 2]> {
 }
 
 // #[must_use]
-// pub fn create_index_buffer(len: u32) -> Vec<[u32; 3]> {
+// pub(crate) fn create_index_buffer(len: u32) -> Vec<[u32; 3]> {
 //     if len < 3 {
 //         return Vec::new();
 //     }

@@ -10,7 +10,7 @@ use crate::{
 };
 
 #[derive(QueryData)]
-pub struct DynTextColorData {
+pub(crate) struct DynTextColorData {
     entity: Entity,
     inactive_color: &'static InactiveTextColor,
     hover_color: Option<&'static HoverTextColor>,
@@ -19,7 +19,7 @@ pub struct DynTextColorData {
     children: &'static Children,
 }
 
-pub fn update_interacted_text_colors(
+pub(crate) fn update_interacted_text_colors(
     dyn_query: Query<DynTextColorData, Changed<Interaction>>,
     mut cur_query: Query<(&mut TextColor, Option<&InactiveTextColor>)>,
 ) {
@@ -56,7 +56,7 @@ pub fn update_interacted_text_colors(
     }
 }
 
-pub fn update_tab_focus(
+pub(crate) fn update_tab_focus(
     mut commands: Commands,
     focus: Res<InputFocus>,
     query: Query<Entity, With<TabIndex>>,

@@ -1,1 +1,1 @@
-pub mod controls;
+pub(crate) mod controls;

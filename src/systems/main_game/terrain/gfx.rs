@@ -40,7 +40,7 @@ type Queries<'w, 's> = (
 
 #[derive(QueryData)]
 #[query_data(mutable)]
-pub struct CelestialComponents {
+pub(crate) struct CelestialComponents {
     entity: Entity,
     terrain: &'static Terrain,
     body: &'static CelestialBody,
@@ -176,7 +176,7 @@ fn update_gfx_mesh(
     }
 }
 
-pub fn update_terrain_gfx(
+pub(crate) fn update_terrain_gfx(
     mut queries: ParamSet<Queries>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut commands: Commands,

@@ -1,4 +1,4 @@
 use bevy::prelude::*;
 
 #[derive(Clone, Copy, Component)]
-pub struct Vessel;
+pub(crate) struct Vessel;

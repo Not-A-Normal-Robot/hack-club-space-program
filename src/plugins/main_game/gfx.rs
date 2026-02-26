@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::{resources::scene::GameScene, systems::main_game::terrain::gfx::update_terrain_gfx};
 
-pub struct GameGfxPlugin;
+pub(crate) struct GameGfxPlugin;
 
 impl Plugin for GameGfxPlugin {
     fn build(&self, app: &mut App) {

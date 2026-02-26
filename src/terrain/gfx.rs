@@ -14,14 +14,14 @@ use core::{f64::consts::TAU, num::NonZeroU8};
 /// Note: This assumes the [`PrimitiveTopology`][bevy::mesh::PrimitiveTopology]
 /// is [`TriangleList`][bevy::mesh::PrimitiveTopology::TriangleList]
 #[derive(Clone, Debug, PartialEq)]
-pub struct Buffers {
-    pub vertices: Vec<Vec3>,
-    pub indices: Indices,
+pub(crate) struct Buffers {
+    pub(crate) vertices: Vec<Vec3>,
+    pub(crate) indices: Indices,
 }
 
 impl Buffers {
     #[must_use]
-    pub fn empty() -> Self {
+    pub(crate) fn empty() -> Self {
         Self {
             vertices: Vec::new(),
             indices: Indices::U16(vec![]),
@@ -32,7 +32,7 @@ impl Buffers {
 impl TerrainGen {
     /// Gets the LoD vector array at a certain LoD level.
     #[must_use]
-    pub fn gen_lod(&self, lod_level: u8, focus: f64) -> [TerrainPoint; LOD_VERTS as usize] {
+    pub(crate) fn gen_lod(&self, lod_level: u8, focus: f64) -> [TerrainPoint; LOD_VERTS as usize] {
         // From Desmos graph:
         // point((tau / verts) (i ⋅ iter_scale + start))
 
@@ -54,7 +54,7 @@ impl TerrainGen {
 ///
 /// This is in revolutions. To get the theta in radians, multiply this by tau.
 #[must_use]
-pub fn lod_level_start(lod_level: NonZeroU8, focus: f64) -> f64 {
+pub(crate) fn lod_level_start(lod_level: NonZeroU8, focus: f64) -> f64 {
     // From Desmos graph:
     // start = divisions^(1 - level) ⋅
     //  round( (verts / 2pi) ⋅ divisions^(level - 1) ⋅ focus - verts/(2 ⋅ divisions))
@@ -81,7 +81,7 @@ pub fn lod_level_start(lod_level: NonZeroU8, focus: f64) -> f64 {
 #[must_use]
 #[expect(clippy::cast_possible_truncation)]
 #[expect(clippy::cast_possible_wrap)]
-pub fn lod_level_index(lod_level: NonZeroU8, focus: f64) -> usize {
+pub(crate) fn lod_level_index(lod_level: NonZeroU8, focus: f64) -> usize {
     // From Desmos graph:
     // indices = ((cur_start - prev_start) / prev_iter_scale).rem_euclid(verts)
     // prev_iter_scale = divisions^(1-o)
@@ -97,7 +97,15 @@ pub fn lod_level_index(lod_level: NonZeroU8, focus: f64) -> usize {
 
 /// Finds a maximum reasonable LoD level based on certain parameters.
 #[must_use]
-pub fn get_lod_level_cap(_cel_radius: f64, _zoom: SimCameraZoom, _distance_sq: f64) -> Option<u8> {
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "this function is kinda incomplete"
+)]
+pub(crate) fn get_lod_level_cap(
+    _cel_radius: f64,
+    _zoom: SimCameraZoom,
+    _distance_sq: f64,
+) -> Option<u8> {
     // TODO: lod level cap would be a small opt, low prio
     Some(u8::MAX)
 }
@@ -106,7 +114,7 @@ pub fn get_lod_level_cap(_cel_radius: f64, _zoom: SimCameraZoom, _distance_sq: f
 ///
 /// Assumes the `cel_rotation` is a pure rotation around the Z-axis.
 #[must_use]
-pub fn get_focus(
+pub(crate) fn get_focus(
     cel_position: RootSpacePosition,
     cel_rotation: f64,
     cam_pos: RootSpacePosition,
