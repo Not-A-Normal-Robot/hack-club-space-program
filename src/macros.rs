@@ -99,6 +99,12 @@ macro_rules! observe_activation {
     };
 }
 
+macro_rules! fl {
+    ($($inner:tt)*) => {
+        ::i18n_embed_fl::fl!(*$crate::consts::FLUENT_LANGUAGE_LOADER, $($inner)*)
+    };
+}
+
 #[cfg(test)]
 mod tests {
     //! All tests here are only for type checks and macro validation.
@@ -112,7 +118,8 @@ mod tests {
         math::DVec2,
     };
 
-    fn _test(mut entity_commands: EntityCommands) {
+    /// This only checks for type safety
+    fn _test_observe_activation(mut entity_commands: EntityCommands) {
         observe_activation!(entity_commands.reborrow(), || {
             eprintln!("Activated!");
         });
@@ -125,5 +132,15 @@ mod tests {
         >| {
             vessel.prev_tick_position = RootSpacePosition(DVec2::ZERO);
         });
+    }
+
+    #[test]
+    fn test_fl() {
+        let x = ::i18n_embed_fl::fl!(
+            crate::consts::FLUENT_LANGUAGE_LOADER,
+            "mainMenu__playButton__text"
+        );
+        let y = fl!("mainMenu__playButton__text");
+        assert_eq!(x, y);
     }
 }

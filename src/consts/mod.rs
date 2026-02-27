@@ -1,6 +1,9 @@
+use std::sync::LazyLock;
+
 use crate::components::{celestial::CelestialBody, vessel::Vessel};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
+use i18n_embed::fluent::{FluentLanguageLoader, fluent_language_loader};
 
 pub(crate) mod colors;
 pub(crate) mod controls;
@@ -29,3 +32,6 @@ pub(crate) const TAB_FOCUS_OUTLINE: Outline = Outline {
     width: Val::Px(2.0),
     offset: Val::Px(2.0),
 };
+
+pub(crate) static FLUENT_LANGUAGE_LOADER: LazyLock<FluentLanguageLoader> =
+    LazyLock::new(|| fluent_language_loader!());

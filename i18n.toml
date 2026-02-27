@@ -1,0 +1,4 @@
+fallback_language = "en_us"
+
+[fluent]
+assets_dir = "locales"

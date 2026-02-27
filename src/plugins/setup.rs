@@ -2,6 +2,7 @@ use crate::{
     assets::fonts::initialize_fonts,
     consts::WEB_CANVAS_SELECTOR,
     plugins::{
+        i18n::I18nPlugin,
         main_game::{
             controls::GameControlPlugin, debug::GameDebugPlugin, gfx::GameGfxPlugin,
             logic::GameLogicPlugin, transition::GameTransitionPlugin,
@@ -45,6 +46,7 @@ impl Plugin for GameSetupPlugin {
         initialize_fonts(app);
         app.init_state::<GameScene>();
         app.add_plugins((
+            I18nPlugin,
             MainMenuPlugin,
             MyUiPlugin,
             GameLogicPlugin,
