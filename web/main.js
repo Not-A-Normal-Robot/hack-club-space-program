@@ -92,7 +92,6 @@ function displayDlProgress(loaded)
         LOADING_TEXT.textContent =
             `Downloading WASM file: ${loadedMB} / ${totalMB} MB (${percentage}%)`;
     }
-    // TODO: Progress Screen
 }
 
 async function main()
