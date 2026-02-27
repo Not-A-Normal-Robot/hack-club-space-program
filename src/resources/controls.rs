@@ -35,6 +35,7 @@ impl Display for GameControlMode {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
 pub(crate) struct FocusableEntry {
     pub(crate) entity: Entity,
     pub(crate) is_celestial_body: bool,
@@ -42,6 +43,62 @@ pub(crate) struct FocusableEntry {
 
 #[derive(Default, Resource)]
 pub(crate) struct FocusableData {
-    pub(crate) index_map: HashMap<Entity, usize>,
-    pub(crate) list: Vec<FocusableEntry>,
+    index_map: HashMap<Entity, usize>,
+    focusable_list: Vec<FocusableEntry>,
+}
+
+impl FocusableData {
+    #[must_use]
+    pub(crate) fn new() -> Self {
+        Self {
+            index_map: HashMap::new(),
+            focusable_list: Vec::new(),
+        }
+    }
+
+    #[must_use]
+    pub(crate) const fn index_map(&self) -> &HashMap<Entity, usize> {
+        &self.index_map
+    }
+
+    #[must_use]
+    pub(crate) const fn focusable_list(&self) -> &Vec<FocusableEntry> {
+        &self.focusable_list
+    }
+
+    #[must_use]
+    pub(crate) const fn len(&self) -> usize {
+        self.focusable_list().len()
+    }
+
+    #[must_use]
+    pub(crate) const fn is_empty(&self) -> bool {
+        self.focusable_list().is_empty()
+    }
+
+    #[must_use]
+    pub(crate) fn get_index(&self, entity: Entity) -> Option<usize> {
+        self.index_map().get(&entity).copied()
+    }
+
+    #[must_use]
+    pub(crate) fn get_entry(&self, index: usize) -> Option<FocusableEntry> {
+        self.focusable_list().get(index).copied()
+    }
+
+    pub(crate) fn insert(&mut self, index: usize, entry: FocusableEntry) {
+        todo!("inserting data");
+    }
+
+    pub(crate) fn remove(&mut self, index: usize) {
+        todo!("removing data");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_focusable_data() {
+        todo!("test focusable data");
+    }
 }

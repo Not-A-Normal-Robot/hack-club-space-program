@@ -79,25 +79,26 @@ fn switch_focus(
         }
     };
 
-    let Some(index) = focusable_data.index_map.get(&current_attachment).copied() else {
+    let Some(index) = focusable_data.get_index(current_attachment) else {
         error!("Camera is attached to an unindexed entity; switching to closest focusable entity");
         focus_closest(offset, current_pos, focusables);
         return;
     };
 
-    if focusable_data.list.is_empty() {
+    if focusable_data.is_empty() {
         info!("Attempted to switch focus when there is nothing valid to switch to");
         return;
     }
 
     let new_index = match direction {
-        SwitchDirection::Next => (index + 1) % focusable_data.list.len(),
-        SwitchDirection::Prev => index
-            .checked_sub(1)
-            .unwrap_or(focusable_data.list.len() - 1),
+        SwitchDirection::Next => (index + 1) % focusable_data.len(),
+        SwitchDirection::Prev => index.checked_sub(1).unwrap_or(focusable_data.len() - 1),
     };
 
-    let new_entity = focusable_data.list[new_index].entity;
+    let new_entity = focusable_data
+        .get_entry(new_index)
+        .expect("new index should be within bounds")
+        .entity;
     let new_position = focusables.get(new_entity).map_or_else(
         |_| {
             error!(
@@ -227,44 +228,44 @@ pub(crate) fn update_focusable_data(
     mut removed: RemovedComponents<Focusable>,
     mut resource: ResMut<FocusableData>,
 ) {
-    for r in removed.read() {
-        let Some(index) = resource.index_map.get(&r).copied() else {
-            continue;
-        };
+    // for r in removed.read() {
+    //     let Some(index) = resource.index_map.get(&r).copied() else {
+    //         continue;
+    //     };
 
-        resource.index_map.remove(&r);
-        resource.list.remove(index);
-    }
+    //     resource.index_map.remove(&r);
+    //     resource.list.remove(index);
+    // }
 
-    for (entity, parent, body) in added {
-        let Some(parent_idx) = parent
-            .and_then(|p| resource.index_map.get(&p.entity))
-            .copied()
-        else {
-            let index = resource.list.len();
-            resource.list.push(FocusableEntry {
-                entity,
-                is_celestial_body: body.is_some(),
-            });
-            resource.index_map.insert(entity, index);
-            continue;
-        };
+    // for (entity, parent, body) in added {
+    //     let Some(parent_idx) = parent
+    //         .and_then(|p| resource.index_map.get(&p.entity))
+    //         .copied()
+    //     else {
+    //         let index = resource.list.len();
+    //         resource.list.push(FocusableEntry {
+    //             entity,
+    //             is_celestial_body: body.is_some(),
+    //         });
+    //         resource.index_map.insert(entity, index);
+    //         continue;
+    //     };
 
-        let mut new_index = resource.list.len();
+    //     let mut new_index = resource.list.len();
 
-        for i in parent_idx..resource.list.len() {
-            if resource.list[i].is_celestial_body {
-                new_index = i;
-                break;
-            }
-        }
+    //     for i in parent_idx..resource.list.len() {
+    //         if resource.list[i].is_celestial_body {
+    //             new_index = i;
+    //             break;
+    //         }
+    //     }
 
-        resource.list.insert(
-            new_index,
-            FocusableEntry {
-                entity,
-                is_celestial_body: body.is_some(),
-            },
-        );
-    }
+    //     resource.list.insert(
+    //         new_index,
+    //         FocusableEntry {
+    //             entity,
+    //             is_celestial_body: body.is_some(),
+    //         },
+    //     );
+    // }
 }
