@@ -4,7 +4,7 @@ use crate::{
     consts::colors::shades::{
         PRIMARY_50, PRIMARY_60, PRIMARY_80, TERTIARY_50, TERTIARY_60, TERTIARY_80,
     },
-    observe_activation,
+    fl, observe_activation,
     resources::scene::GameScene,
 };
 use bevy::{
@@ -77,7 +77,7 @@ pub(crate) fn init_main_menu(
     let play_button = ButtonBuilder {
         extra: (PlayButton, button_common.clone()),
         text_extra: (),
-        text: "Play",
+        text: fl!("mainMenu__playButton__text"),
         font: &doto_font,
         color: TERTIARY_60,
         hover_color: TERTIARY_80,
@@ -96,7 +96,7 @@ pub(crate) fn init_main_menu(
     let quit_button = ButtonBuilder {
         extra: (QuitButton, button_common),
         text_extra: (),
-        text: "Quit",
+        text: fl!("mainMenu__quitButton__text"),
         font: &doto_font,
         color: PRIMARY_60,
         hover_color: PRIMARY_80,

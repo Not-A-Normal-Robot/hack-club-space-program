@@ -99,6 +99,7 @@ macro_rules! observe_activation {
     };
 }
 
+#[macro_export]
 macro_rules! fl {
     ($($inner:tt)*) => {
         ::i18n_embed_fl::fl!(*$crate::consts::FLUENT_LANGUAGE_LOADER, $($inner)*)

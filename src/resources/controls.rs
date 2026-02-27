@@ -1,7 +1,9 @@
+use core::fmt::Display;
+
 use bevy::{platform::collections::HashMap, prelude::*};
 use derive_more::with_trait::IsVariant;
 
-use crate::resources::scene::GameScene;
+use crate::{fl, resources::scene::GameScene};
 
 /// An enum determining how to interpret inputs, akin to Vim's different modes.
 ///
@@ -22,14 +24,13 @@ pub(crate) enum GameControlMode {
     CameraControl,
 }
 
-impl GameControlMode {
-    #[must_use]
-    pub(crate) const fn to_str(self) -> &'static str {
+impl Display for GameControlMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Main => "main mode",
-            Self::Menu => "menu mode",
-            Self::VesselControl => "vessel control mode",
-            Self::CameraControl => "camera control mode",
+            Self::Main => f.write_str(&fl!("gameControlMode__mainMode")),
+            Self::Menu => f.write_str(&fl!("gameControlMode__menuMode")),
+            Self::VesselControl => f.write_str(&fl!("gameControlMode__vesselControlMode")),
+            Self::CameraControl => f.write_str(&fl!("gameControlMode__cameraControlMode")),
         }
     }
 }

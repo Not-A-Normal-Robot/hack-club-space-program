@@ -21,7 +21,8 @@ impl Plugin for GameControlPlugin {
         app.add_systems(
             Update,
             (
-                (control_switching, update_controls_text),
+                control_switching,
+                update_controls_text.run_if(state_changed::<GameControlMode>),
                 (control_camera, update_focusable_data)
                     .run_if(in_state(GameControlMode::CameraControl)),
             )
