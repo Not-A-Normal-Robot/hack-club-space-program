@@ -178,7 +178,7 @@ pub(crate) fn pre_rapier_frame_switch(
 /// Sets transform into the camera transform so Bevy can render it
 pub(crate) fn post_rapier_frame_switch(
     query: Query<(&mut Transform, &RootSpacePosition), Without<Terrain>>,
-    terrestrial_cels: Query<&mut Transform, With<Terrain>>,
+    terrestrial_cels: Option<Query<&mut Transform, With<Terrain>>>,
     sim_camera: Query<(&mut SimCameraOffset, &SimCameraZoom, &Camera), With<SimCamera>>,
     camera_offset_query: Query<&RootSpacePosition>,
 ) {
@@ -197,9 +197,11 @@ pub(crate) fn post_rapier_frame_switch(
             .0;
     });
 
-    terrestrial_cels.into_iter().for_each(|mut transform| {
-        // Translation and scaling is done at the mesh level
-        transform.translation = Vec3::ZERO;
-        transform.scale = Vec3::ONE;
-    });
+    if let Some(terrestrial_cels) = terrestrial_cels {
+        terrestrial_cels.into_iter().for_each(|mut transform| {
+            // Translation and scaling is done at the mesh level
+            transform.translation = Vec3::ZERO;
+            transform.scale = Vec3::ONE;
+        });
+    }
 }

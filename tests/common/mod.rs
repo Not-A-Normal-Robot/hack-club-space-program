@@ -7,11 +7,13 @@ use bevy::{
     log::LogPlugin,
     mesh::PrimitiveTopology,
     prelude::*,
+    state::app::StatesPlugin,
     time::TimeUpdateStrategy,
 };
 use hack_club_space_program::{
     components::frames::{RootSpaceLinearVelocity, RootSpacePosition},
     plugins::main_game::logic::GameLogicPlugin,
+    resources::scene::GameScene,
 };
 
 fn setup_time(
@@ -39,12 +41,16 @@ pub(crate) struct TestAppConfig {
     pub(crate) forward_time_on_update: bool,
     /// The log level for `bevy::log`
     pub(crate) log_level: Option<bevy::log::Level>,
+    /// What to set the app's current game scene to
+    /// (for logic purposes).
+    pub(crate) game_scene: Option<GameScene>,
 }
 
 impl TestAppConfig {
     pub(crate) const DEFAULT: Self = Self {
         forward_time_on_update: true,
         log_level: None,
+        game_scene: Some(GameScene::InGame),
     };
 }
 
@@ -79,6 +85,12 @@ pub(crate) fn setup(config: TestAppConfig) -> App {
     if config.forward_time_on_update {
         app.add_systems(Startup, setup_time);
     }
+
+    if let Some(game_scene) = config.game_scene {
+        app.add_plugins(StatesPlugin);
+        app.insert_state(game_scene);
+    }
+
     app.update();
     app
 }

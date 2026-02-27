@@ -35,6 +35,7 @@ impl Plugin for GameLogicPlugin {
                 },
             );
 
+        app.insert_resource(StaticTransformOptimizations::from_threshold(0.3));
         app.add_plugins((physics, GamePhysicsPlugin));
     }
 }

@@ -3,7 +3,6 @@ use bevy::{math::DVec2, prelude::*};
 use core::ops::Deref;
 
 #[derive(Clone, Copy, Component)]
-#[require(SimCameraZoom)]
 pub enum SimCameraOffset {
     Attached {
         entity: Entity,

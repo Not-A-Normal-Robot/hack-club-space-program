@@ -285,10 +285,7 @@ fn reference_frames() {
                 transform: Transform::IDENTITY,
                 zoom: SimCameraZoom(1.0),
             }
-            .with_camera(Camera {
-                is_active: true,
-                ..Default::default()
-            }),
+            .build(true),
         )
         .id();
 
@@ -394,10 +391,7 @@ fn reference_frame_fixed_cam() {
                 transform: Transform::IDENTITY,
                 zoom: SimCameraZoom(1.0),
             }
-            .with_camera(Camera {
-                is_active: true,
-                ..Default::default()
-            }),
+            .build(true),
         )
         .id();
 
