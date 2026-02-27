@@ -11,7 +11,7 @@
 /// # Examples
 /// ```
 /// # use bevy::prelude::*;
-/// # use hack_club_space_program::macros::observe_activation;
+/// # use hack_club_space_program::observe_activation;
 /// # fn f(get_entity_commands: impl FnOnce() -> EntityCommands<'static>) {
 /// let entity_commands: EntityCommands = get_entity_commands();
 ///
@@ -24,14 +24,14 @@
 ///
 /// ```
 /// # use bevy::prelude::*;
-/// # use hack_club_space_program::macros::observe_activation;
+/// # use hack_club_space_program::observe_activation;
 /// # fn f(get_entity_commands: impl FnOnce() -> EntityCommands<'static>) {
 /// # let entity_commands: EntityCommands = get_entity_commands();
 ///
 /// observe_activation!(
 ///     entity_commands,
-///     |final name: Single<Name, With<Camera>>| {
-///         eprintln!("{name}");
+///     |final name: Single<&Name, With<Camera>>| {
+///         eprintln!("{}", name.as_str());
 ///     }
 /// );
 /// # }

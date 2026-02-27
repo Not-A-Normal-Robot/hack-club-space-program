@@ -2,7 +2,7 @@ pub(crate) mod assets;
 pub mod builders;
 pub mod components;
 pub mod consts;
-pub(crate) mod macros;
+pub mod macros;
 pub(crate) mod math;
 pub mod plugins;
 pub mod resources;
