@@ -9,6 +9,11 @@ Downloads are available in
 [GitHub Releases](https://github.com/Not-A-Normal-Robot/hack-club-space-program/releases),
 if I don't forget to add it.
 
+## Localization
+Localization files are stored in `locales/{language}/hack_club_space_program.ftl` and uses the [Fluent Translation List](https://github.com/projectfluent/fluent) format.
+
+Note that the `{language}` in this case has to be a valid [Unicode Language Identifier](https://unicode.org/reports/tr35/tr35.html#Unicode_language_identifier), such as `en-US`.
+
 ## Building for Native
 
 You'll need Cargo to build this:
