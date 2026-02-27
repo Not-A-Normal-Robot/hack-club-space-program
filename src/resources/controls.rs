@@ -158,8 +158,16 @@ impl FocusableData {
 
     /// Removes an entry at a given index, shifting the entries after that index
     /// to the left.
-    pub(crate) fn remove(&mut self, index: usize) {
-        todo!("removing data");
+    ///
+    /// # Panics
+    /// Panics if `index >= len`.
+    pub(crate) fn remove(&mut self, index: usize) -> FocusableEntry {
+        let entry = self.focusable_list.remove(index);
+        self.index_map.remove(&entry.entity);
+
+        self.update_index_maps(index..self.focusable_list().len());
+
+        entry
     }
 }
 
@@ -346,6 +354,53 @@ mod tests {
 
     #[test]
     fn foc_data_removal() {
-        todo!();
+        let mut data = FocusableData::default();
+
+        for i in 0..4 {
+            data.insert(i, int_to_entry(i as u64));
+            data.integrity_check();
+        }
+
+        let old_data = data.clone();
+
+        let removed = data.remove(data.len() - 1);
+        data.integrity_check();
+
+        assert_eq!(
+            data.focusable_list(),
+            [0, 1, 2].map(int_to_entry).as_slice()
+        );
+        assert_eq!(removed, int_to_entry(3));
+
+        let removed = data.remove(0);
+        data.integrity_check();
+
+        assert_eq!(data.focusable_list(), [1, 2].map(int_to_entry).as_slice());
+        assert_eq!(removed, int_to_entry(0));
+
+        data.insert(0, int_to_entry(0));
+        data.integrity_check();
+
+        data.insert(data.len(), int_to_entry(data.len() as u64));
+        data.integrity_check();
+
+        assert_eq!(old_data, data);
+        drop(old_data);
+
+        let removed = data.remove(1);
+        data.integrity_check();
+
+        assert_eq!(
+            data.focusable_list(),
+            [0, 2, 3].map(int_to_entry).as_slice()
+        );
+        assert_eq!(removed, int_to_entry(1));
+
+        for _ in 0..3 {
+            data.remove(0);
+            data.integrity_check();
+        }
+
+        assert!(data.is_empty());
     }
 }
