@@ -1,6 +1,7 @@
 use core::f32::consts::PI;
 
 use bevy::{
+    input::mouse::MouseScrollUnit,
     input_focus::tab_navigation::{TabGroup, TabIndex},
     prelude::*,
     window::{PrimaryWindow, WindowResized},
@@ -18,10 +19,6 @@ use crate::{
     systems::general::ui_activation::ActivationEvent,
 };
 
-#[derive(Component)]
-#[require(DespawnOnExit::<GameScene>(GameScene::AboutMenu), TabGroup)]
-pub(crate) struct AboutMenuRootNode;
-
 type ResponsiveQuery<'w, 's, 'qw, 'qs> = ParamSet<
     'w,
     's,
@@ -33,6 +30,13 @@ type ResponsiveQuery<'w, 's, 'qw, 'qs> = ParamSet<
         Query<'qw, 'qs, &'static mut Node, With<AsideElement>>,
     ),
 >;
+
+const ASIDE_FONT_SIZE: f32 = 24.0;
+const MAIN_FONT_SIZE: f32 = 21.0;
+
+#[derive(Component)]
+#[require(DespawnOnExit::<GameScene>(GameScene::AboutMenu), TabGroup)]
+pub(crate) struct AboutMenuRootNode;
 
 #[derive(Component)]
 pub(crate) struct AboutMenuBackButton;
@@ -210,6 +214,71 @@ fn top_separator(commands: &mut Commands) -> Entity {
         .id()
 }
 
+// TODO: Remove
+fn text_elements(font: &TextFont, amount: usize, commands: &mut Commands) -> Box<[Entity]> {
+    (0..amount)
+        .map(|i| {
+            commands
+                .spawn((
+                    Text::new(i.to_string()),
+                    font.clone(),
+                    TextColor(Color::WHITE),
+                ))
+                .id()
+        })
+        .collect()
+}
+
+fn handle_scroll(
+    mut scroll_position: Mut<ScrollPosition>,
+    node: &Node,
+    computed: &ComputedNode,
+    delta: Vec2,
+) {
+    let max_offset = (computed.content_size() - computed.size()) * computed.inverse_scale_factor();
+
+    if node.overflow.x == OverflowAxis::Scroll && delta.x != 0.0 {
+        let at_scroll_limit = if delta.x > 0.0 {
+            scroll_position.x >= max_offset.x
+        } else {
+            scroll_position.x <= 0.0
+        };
+
+        if !at_scroll_limit {
+            scroll_position.x += delta.x;
+        }
+    }
+
+    if node.overflow.y == OverflowAxis::Scroll && delta.y != 0.0 {
+        let at_scroll_limit = if delta.y > 0.0 {
+            scroll_position.y >= max_offset.y
+        } else {
+            scroll_position.y <= 0.0
+        };
+
+        if !at_scroll_limit {
+            scroll_position.y += delta.y;
+        }
+    }
+}
+
+fn handle_pointer_scroll(
+    scroll_position: Mut<ScrollPosition>,
+    node: &Node,
+    computed: &ComputedNode,
+    scroll: &Scroll,
+    font_size: f32,
+) {
+    let mut delta = Vec2::new(scroll.x, scroll.y);
+
+    match scroll.unit {
+        MouseScrollUnit::Line => delta *= font_size,
+        MouseScrollUnit::Pixel => (),
+    }
+
+    handle_scroll(scroll_position, node, computed, delta);
+}
+
 fn aside_node(
     responsive_data: ResponsiveData,
     children: &[Entity],
@@ -223,11 +292,34 @@ fn aside_node(
                 min_width: Val::Px(48.0),
                 min_height: Val::Px(48.0),
                 width: responsive_data.aside_width,
+                max_height: Val::Vh(100.0),
+                overflow: Overflow {
+                    x: OverflowAxis::Hidden,
+                    y: OverflowAxis::Scroll,
+                },
                 ..Default::default()
             },
-            BackgroundColor(TERTIARY_30), // DEBUG
             AsideElement,
         ))
+        .observe(
+            |event: On<Pointer<Scroll>>,
+             mut query: Query<(&mut ScrollPosition, &Node, &ComputedNode)>| {
+                if let Ok((scroll_position, node, computed)) = query.get_mut(event.entity) {
+                    handle_pointer_scroll(
+                        scroll_position,
+                        node,
+                        computed,
+                        event.event(),
+                        ASIDE_FONT_SIZE,
+                    );
+                }
+            },
+        )
+        .observe(|event: On<Pointer<Click>>, query: Query<&ComputedNode>| {
+            if let Ok(aside) = query.get(event.entity) {
+                dbg!(aside.content_size(), aside.size());
+            }
+        })
         .add_children(children)
         .id()
 }
@@ -257,11 +349,16 @@ fn main_node(
                 flex_direction: FlexDirection::Column,
                 flex_grow: 1.0,
                 padding: responsive_data.main_padding,
+                max_height: Val::Percent(100.0),
                 ..Default::default()
             },
-            BackgroundColor(PRIMARY_15), // DEBUG
             MainElement,
         ))
+        .observe(|event: On<Pointer<Click>>, query: Query<&ComputedNode>| {
+            if let Ok(main) = query.get(event.entity) {
+                dbg!(main.content_size(), main.size());
+            }
+        })
         .add_children(children)
         .id()
 }
@@ -311,6 +408,9 @@ pub(crate) fn init_about_menu(
     let doto_font = server.load::<Font>(URI_FONT_DOTO_ROUNDED_BOLD);
     let wdxl_font = server.load::<Font>(URI_FONT_WDXL_LUBRIFONT_SC);
 
+    let main_font = TextFont::from(wdxl_font.clone()).with_font_size(MAIN_FONT_SIZE);
+    let tab_font = TextFont::from(wdxl_font).with_font_size(ASIDE_FONT_SIZE);
+
     let responsive_data =
         ResponsiveData::from_resolution(window.map(|w| w.size()).unwrap_or_default());
 
@@ -322,9 +422,17 @@ pub(crate) fn init_about_menu(
 
     let header_separator = top_separator(&mut commands);
 
-    let main = main_node(responsive_data, &[], &mut commands);
+    let main = main_node(
+        responsive_data,
+        &text_elements(&main_font, 40, &mut commands),
+        &mut commands,
+    );
     let main_aside_separator = main_aside_separator(&mut commands);
-    let aside = aside_node(responsive_data, &[], &mut commands);
+    let aside = aside_node(
+        responsive_data,
+        &text_elements(&tab_font, 40, &mut commands),
+        &mut commands,
+    );
     let main_aside_wrapper = main_aside_wrapper(
         responsive_data,
         &[aside, main_aside_separator, main],
