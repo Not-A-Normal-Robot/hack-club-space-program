@@ -14,7 +14,7 @@ use crate::{
         SLOW_SPEED_MODIFIER, ZOOM_SPEED_MULT,
     },
     math::quat_to_rot,
-    resources::controls::{FocusableData, FocusableEntry},
+    resources::controls::FocusableData,
 };
 use bevy::{ecs::query::QueryData, math::DVec2, prelude::*};
 use core::{cmp::Ordering, f64::consts::TAU};
@@ -222,50 +222,3 @@ type FocusableDataQuery<'w, 's> = Query<
     ),
     Added<Focusable>,
 >;
-
-pub(crate) fn update_focusable_data(
-    added: FocusableDataQuery,
-    mut removed: RemovedComponents<Focusable>,
-    mut resource: ResMut<FocusableData>,
-) {
-    // for r in removed.read() {
-    //     let Some(index) = resource.index_map.get(&r).copied() else {
-    //         continue;
-    //     };
-
-    //     resource.index_map.remove(&r);
-    //     resource.list.remove(index);
-    // }
-
-    // for (entity, parent, body) in added {
-    //     let Some(parent_idx) = parent
-    //         .and_then(|p| resource.index_map.get(&p.entity))
-    //         .copied()
-    //     else {
-    //         let index = resource.list.len();
-    //         resource.list.push(FocusableEntry {
-    //             entity,
-    //             is_celestial_body: body.is_some(),
-    //         });
-    //         resource.index_map.insert(entity, index);
-    //         continue;
-    //     };
-
-    //     let mut new_index = resource.list.len();
-
-    //     for i in parent_idx..resource.list.len() {
-    //         if resource.list[i].is_celestial_body {
-    //             new_index = i;
-    //             break;
-    //         }
-    //     }
-
-    //     resource.list.insert(
-    //         new_index,
-    //         FocusableEntry {
-    //             entity,
-    //             is_celestial_body: body.is_some(),
-    //         },
-    //     );
-    // }
-}
