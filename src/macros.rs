@@ -21,6 +21,7 @@ macro_rules! fl {
 #[macro_export]
 macro_rules! checked_assign {
     ($lhs:expr, $rhs:expr) => {
+        #[allow(clippy::float_cmp)]
         if $lhs != $rhs {
             $lhs = $rhs;
         }
