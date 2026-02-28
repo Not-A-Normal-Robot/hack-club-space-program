@@ -65,13 +65,9 @@ impl ResponsiveData {
     }
 }
 
-pub(crate) fn init_about_menu(mut commands: Commands, server: Res<AssetServer>) {
-    let doto_font = server.load::<Font>(URI_FONT_DOTO_ROUNDED_BOLD);
-    let wdxl_font = server.load::<Font>(URI_FONT_WDXL_LUBRIFONT_SC);
-
-    let doto_font = TextFont::from(doto_font).with_font_size(32.0);
-
-    let button_common = (
+#[inline]
+fn button_common() -> impl Bundle {
+    (
         Node {
             display: Display::Flex,
             flex_direction: FlexDirection::Column,
@@ -86,29 +82,33 @@ pub(crate) fn init_about_menu(mut commands: Commands, server: Res<AssetServer>) 
             linebreak: LineBreak::WordOrCharacter,
         },
         TabIndex(0),
-    );
+    )
+}
 
-    let back_button = ButtonBuilder {
-        extra: (AboutMenuBackButton, button_common.clone()),
+fn back_button(font: &TextFont, commands: &mut Commands) -> Entity {
+    let bundle = ButtonBuilder {
+        extra: (AboutMenuBackButton, button_common()),
         text_extra: (),
         text: fl!("aboutMenu__backButton__text"),
-        font: &doto_font,
+        font,
         color: PRIMARY_60,
         hover_color: PRIMARY_80,
         active_color: PRIMARY_50,
     }
     .build();
 
-    let back_button = commands
-        .spawn(back_button)
+    commands
+        .spawn(bundle)
         .observe(
             |_: On<ActivationEvent>, mut scene: ResMut<NextState<GameScene>>| {
                 scene.set(GameScene::MainMenu);
             },
         )
-        .id();
+        .id()
+}
 
-    let title = commands
+fn title(font: &TextFont, commands: &mut Commands) -> Entity {
+    commands
         .spawn((
             Node {
                 flex_grow: 1.0,
@@ -118,23 +118,28 @@ pub(crate) fn init_about_menu(mut commands: Commands, server: Res<AssetServer>) 
             },
             children![(
                 Text::new(fl!("aboutMenu__title__text")),
-                doto_font.clone(),
+                font.clone(),
                 TextColor(PRIMARY_98),
             )],
         ))
-        .id();
+        .id()
+}
 
-    let top_row = commands
+fn top_row(children: &[Entity], commands: &mut Commands) -> Entity {
+    commands
         .spawn((Node {
             display: Display::Flex,
             flex_direction: FlexDirection::Row,
             padding: UiRect::all(Val::VMin(2.0)).with_bottom(Val::ZERO),
             ..Default::default()
         },))
-        .add_children([back_button, title].as_slice())
-        .id();
+        // .add_children([back_button, title].as_slice())
+        .add_children(children)
+        .id()
+}
 
-    let top_separator = commands
+fn top_separator(commands: &mut Commands) -> Entity {
+    commands
         .spawn((
             Node {
                 height: Val::Px(2.0),
@@ -150,7 +155,20 @@ pub(crate) fn init_about_menu(mut commands: Commands, server: Res<AssetServer>) 
                 ],
             })]),
         ))
-        .id();
+        .id()
+}
+
+pub(crate) fn init_about_menu(mut commands: Commands, server: Res<AssetServer>) {
+    let doto_font = server.load::<Font>(URI_FONT_DOTO_ROUNDED_BOLD);
+    let wdxl_font = server.load::<Font>(URI_FONT_WDXL_LUBRIFONT_SC);
+
+    let doto_font = TextFont::from(doto_font).with_font_size(32.0);
+
+    let back_button = back_button(&doto_font, &mut commands);
+    let title = title(&doto_font, &mut commands);
+    let top_row = top_row([back_button, title].as_slice(), &mut commands);
+
+    let top_separator = top_separator(&mut commands);
 
     commands
         .spawn((
