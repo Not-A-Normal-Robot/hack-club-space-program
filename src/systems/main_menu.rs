@@ -19,12 +19,6 @@ use bevy::{
 #[require(DespawnOnExit::<GameScene>(GameScene::MainMenu))]
 pub(crate) struct MainMenuRootNode;
 
-#[derive(Clone, Copy, Component)]
-struct PlayButton;
-
-#[derive(Clone, Copy, Component)]
-struct QuitButton;
-
 fn logo(font: &Handle<Font>) -> impl Bundle {
     (
         Text::new("hack club\nspace program"),
@@ -76,7 +70,7 @@ pub(crate) fn init_main_menu(
     );
 
     let play_button = ButtonBuilder {
-        extra: (PlayButton, button_common.clone()),
+        extra: button_common.clone(),
         text_extra: (),
         text: fl!("mainMenu__playButton__text"),
         font: &doto_font,
@@ -95,8 +89,28 @@ pub(crate) fn init_main_menu(
         )
         .id();
 
+    let about_button = ButtonBuilder {
+        extra: button_common.clone(),
+        text_extra: (),
+        text: fl!("mainMenu__aboutButton__text"),
+        font: &doto_font,
+        color: PRIMARY_60,
+        hover_color: PRIMARY_80,
+        active_color: PRIMARY_50,
+    }
+    .build();
+
+    let about_button = commands
+        .spawn(about_button)
+        .observe(
+            |_: On<ActivationEvent>, mut scene: ResMut<NextState<GameScene>>| {
+                scene.set(GameScene::AboutMenu);
+            },
+        )
+        .id();
+
     let quit_button = ButtonBuilder {
-        extra: (QuitButton, button_common),
+        extra: button_common,
         text_extra: (),
         text: fl!("mainMenu__quitButton__text"),
         font: &doto_font,
@@ -132,7 +146,7 @@ pub(crate) fn init_main_menu(
 
     commands
         .spawn(root)
-        .add_children([logo, play_button, quit_button].as_slice());
+        .add_children([logo, play_button, about_button, quit_button].as_slice());
 
     commands.spawn((
         DespawnOnExit(GameScene::MainMenu),

@@ -26,6 +26,7 @@ fn switch_game_scenes(
         next_scene.set(match *scene.get() {
             GameScene::MainMenu => GameScene::InGame,
             GameScene::InGame => GameScene::MainMenu,
+            _ => GameScene::MainMenu,
         });
     }
 }

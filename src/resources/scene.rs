@@ -5,5 +5,6 @@ use derive_more::IsVariant;
 pub enum GameScene {
     #[default]
     MainMenu,
+    AboutMenu,
     InGame,
 }
