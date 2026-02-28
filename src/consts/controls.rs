@@ -1,5 +1,9 @@
 use bevy::input::keyboard::KeyCode;
 
+/// The keys a user can press to activate a selected button.
+pub(crate) const ACTIVATION_KEYCODES: [KeyCode; 3] =
+    [KeyCode::Enter, KeyCode::NumpadEnter, KeyCode::Space];
+
 /// The min zoom for the simulation camera.
 pub(crate) const MIN_ZOOM: f64 = 1e-20;
 

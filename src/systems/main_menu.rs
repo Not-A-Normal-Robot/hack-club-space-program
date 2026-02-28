@@ -4,8 +4,9 @@ use crate::{
     consts::colors::shades::{
         PRIMARY_50, PRIMARY_60, PRIMARY_80, TERTIARY_50, TERTIARY_60, TERTIARY_80,
     },
-    fl, observe_activation,
+    fl,
     resources::scene::GameScene,
+    systems::general::ui_activation::ActivationEvent,
 };
 use bevy::{
     input_focus::tab_navigation::{TabGroup, TabIndex},
@@ -85,13 +86,14 @@ pub(crate) fn init_main_menu(
     }
     .build();
 
-    let play_button = observe_activation!(commands.spawn(play_button), |mut scene: ResMut<
-        NextState<GameScene>,
-    >| {
-        scene.set(GameScene::InGame);
-    });
-
-    let play_button = play_button.id();
+    let play_button = commands
+        .spawn(play_button)
+        .observe(
+            |_: On<ActivationEvent>, mut scene: ResMut<NextState<GameScene>>| {
+                scene.set(GameScene::InGame);
+            },
+        )
+        .id();
 
     let quit_button = ButtonBuilder {
         extra: (QuitButton, button_common),
@@ -104,10 +106,12 @@ pub(crate) fn init_main_menu(
     }
     .build();
 
-    let quit_button = observe_activation!(commands.spawn(quit_button), || {
-        std::process::exit(0);
-    })
-    .id();
+    let quit_button = commands
+        .spawn(quit_button)
+        .observe(|_: On<ActivationEvent>| {
+            std::process::exit(0);
+        })
+        .id();
 
     let root = (
         MainMenuRootNode,

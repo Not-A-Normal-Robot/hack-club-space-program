@@ -1,1 +1,2 @@
-pub(crate) mod ui;
+pub(crate) mod tab_focus;
+pub(crate) mod ui_activation;
