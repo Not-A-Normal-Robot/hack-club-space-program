@@ -3,7 +3,6 @@ use crate::{
         camera::{Focusable, SimCamera, SimCameraOffset, SimCameraZoom},
         celestial::CelestialBody,
         frames::RootSpacePosition,
-        relations::CelestialParent,
         vessel::Vessel,
     },
     consts::controls::{
@@ -211,14 +210,3 @@ pub(crate) fn control_camera(
         );
     }
 }
-
-type FocusableDataQuery<'w, 's> = Query<
-    'w,
-    's,
-    (
-        Entity,
-        Option<&'static CelestialParent>,
-        Option<&'static CelestialBody>,
-    ),
-    Added<Focusable>,
->;

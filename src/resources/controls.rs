@@ -78,14 +78,6 @@ impl FocusableData {
         self.focusable_list().get(index).copied()
     }
 
-    /// Insert an entry at the end of the list.
-    ///
-    /// If the entry is already in the list, it will instead
-    /// be moved to the new index.
-    pub(crate) fn push(&mut self, entry: FocusableEntry) {
-        self.insert(self.len(), entry);
-    }
-
     /// Updates the index map for the selected index range.
     ///
     /// # Panics
@@ -228,16 +220,6 @@ mod tests {
         assert!(!data_insert.is_empty());
         assert_eq!(data_insert.len(), 1);
         data_insert.integrity_check();
-
-        let mut data_push = FocusableData::default();
-
-        data_push.push(int_to_entry(0));
-
-        assert!(!data_push.is_empty());
-        assert_eq!(data_push.len(), 1);
-        data_push.integrity_check();
-
-        assert_eq!(data_insert, data_push);
     }
 
     #[test]
