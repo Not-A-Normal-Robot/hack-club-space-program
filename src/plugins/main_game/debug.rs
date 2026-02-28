@@ -25,7 +25,6 @@ fn switch_game_scenes(
     if input.just_pressed(KeyCode::Delete) {
         next_scene.set(match *scene.get() {
             GameScene::MainMenu => GameScene::InGame,
-            GameScene::InGame => GameScene::MainMenu,
             _ => GameScene::MainMenu,
         });
     }
