@@ -10,7 +10,10 @@ use crate::{
     assets::fonts::{URI_FONT_DOTO_ROUNDED_BOLD, URI_FONT_WDXL_LUBRIFONT_SC},
     builders::button::ButtonBuilder,
     checked_assign,
-    consts::colors::shades::{PRIMARY_15, PRIMARY_50, PRIMARY_60, PRIMARY_80, PRIMARY_98},
+    consts::colors::shades::{
+        NEUTRAL_50, PRIMARY_15, PRIMARY_50, PRIMARY_60, PRIMARY_80, PRIMARY_98, SECONDARY_80,
+        TERTIARY_30,
+    },
     fl,
     resources::scene::GameScene,
     systems::general::ui_activation::ActivationEvent,
@@ -26,6 +29,7 @@ type ResponsiveQuery<'w, 's, 'qw, 'qs> = ParamSet<
     (
         Query<'qw, 'qs, &'static mut Node, With<AboutMenuTitle>>,
         Query<'qw, 'qs, &'static mut Node, With<AboutMenuBackButton>>,
+        Query<'qw, 'qs, &'static mut Node, With<MainAsideWrapper>>,
     ),
 >;
 
@@ -35,15 +39,22 @@ pub(crate) struct AboutMenuBackButton;
 #[derive(Component)]
 pub(crate) struct AboutMenuTitle;
 
+#[derive(Component)]
+pub(crate) struct MainAsideWrapper;
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct ResponsiveData {
     title_display: Display,
     back_button_flex_grow: f32,
+    main_aside_wrapper_direction: FlexDirection,
 }
 
 impl ResponsiveData {
+    const SHOW_TITLE_THRESHOLD: f32 = 450.0;
+    const MAIN_ASIDE_DIRECTION_THRESHOLD: f32 = 500.0;
+
     fn from_resolution(window_size: Vec2) -> Self {
-        let show_title = window_size.x > 350.0;
+        let show_title = window_size.x > Self::SHOW_TITLE_THRESHOLD;
 
         Self {
             title_display: if show_title {
@@ -52,6 +63,11 @@ impl ResponsiveData {
                 Display::None
             },
             back_button_flex_grow: if show_title { 0.0 } else { 1.0 },
+            main_aside_wrapper_direction: if window_size.x > Self::MAIN_ASIDE_DIRECTION_THRESHOLD {
+                FlexDirection::Row
+            } else {
+                FlexDirection::ColumnReverse
+            },
         }
     }
 
@@ -62,6 +78,10 @@ impl ResponsiveData {
 
         for mut back_button in &mut query.p1() {
             checked_assign!(back_button.flex_grow, self.back_button_flex_grow);
+        }
+
+        for mut main_aside in &mut query.p2() {
+            checked_assign!(main_aside.flex_direction, self.main_aside_wrapper_direction);
         }
     }
 }
@@ -129,7 +149,7 @@ fn title(font: &TextFont, responsive_data: ResponsiveData, commands: &mut Comman
         .id()
 }
 
-fn top_row(children: &[Entity], commands: &mut Commands) -> Entity {
+fn header(children: &[Entity], commands: &mut Commands) -> Entity {
     commands
         .spawn((Node {
             display: Display::Flex,
@@ -137,7 +157,6 @@ fn top_row(children: &[Entity], commands: &mut Commands) -> Entity {
             padding: UiRect::all(Val::VMin(2.0)).with_bottom(Val::ZERO),
             ..Default::default()
         },))
-        // .add_children([back_button, title].as_slice())
         .add_children(children)
         .id()
 }
@@ -159,6 +178,70 @@ fn top_separator(commands: &mut Commands) -> Entity {
                 ],
             })]),
         ))
+        .id()
+}
+
+fn aside_node(children: &[Entity], commands: &mut Commands) -> Entity {
+    commands
+        .spawn((
+            Node {
+                display: Display::Flex,
+                flex_direction: FlexDirection::Column,
+                min_width: Val::Px(48.0),
+                min_height: Val::Px(48.0),
+                ..Default::default()
+            },
+            BackgroundColor(TERTIARY_30), // DEBUG
+        ))
+        .add_children(children)
+        .id()
+}
+
+fn main_aside_separator(responsive_data: ResponsiveData, commands: &mut Commands) -> Entity {
+    commands
+        .spawn((
+            Node {
+                min_width: Val::Px(2.0),
+                min_height: Val::Px(2.0),
+                ..Default::default()
+            },
+            BackgroundColor(NEUTRAL_50),
+        ))
+        .id()
+}
+
+fn main_node(children: &[Entity], commands: &mut Commands) -> Entity {
+    commands
+        .spawn((
+            Node {
+                display: Display::Flex,
+                flex_direction: FlexDirection::Column,
+                flex_grow: 1.0,
+                ..Default::default()
+            },
+            BackgroundColor(PRIMARY_15), // DEBUG
+        ))
+        .add_children(children)
+        .id()
+}
+
+fn main_aside_wrapper(
+    responsive_data: ResponsiveData,
+    children: &[Entity],
+    commands: &mut Commands,
+) -> Entity {
+    commands
+        .spawn((
+            MainAsideWrapper,
+            Node {
+                display: Display::Flex,
+                flex_direction: responsive_data.main_aside_wrapper_direction,
+                align_items: AlignItems::Stretch,
+                flex_grow: 1.0,
+                ..Default::default()
+            },
+        ))
+        .add_children(children)
         .id()
 }
 
@@ -194,10 +277,23 @@ pub(crate) fn init_about_menu(
 
     let back_button = back_button(&doto_font, responsive_data, &mut commands);
     let title = title(&doto_font, responsive_data, &mut commands);
-    let top_row = top_row([back_button, title].as_slice(), &mut commands);
+    let header = header(&[back_button, title], &mut commands);
 
-    let top_separator = top_separator(&mut commands);
-    root_node([top_row, top_separator].as_slice(), &mut commands);
+    let header_separator = top_separator(&mut commands);
+
+    let main = main_node(&[], &mut commands);
+    let main_aside_separator = main_aside_separator(responsive_data, &mut commands);
+    let aside = aside_node(&[], &mut commands);
+    let main_aside_wrapper = main_aside_wrapper(
+        responsive_data,
+        &[aside, main_aside_separator, main],
+        &mut commands,
+    );
+
+    root_node(
+        &[header, header_separator, main_aside_wrapper],
+        &mut commands,
+    );
 
     commands.spawn((
         DespawnOnExit(GameScene::AboutMenu),
