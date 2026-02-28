@@ -11,8 +11,7 @@ use crate::{
     builders::button::ButtonBuilder,
     checked_assign,
     consts::colors::shades::{
-        NEUTRAL_50, PRIMARY_15, PRIMARY_50, PRIMARY_60, PRIMARY_80, PRIMARY_98, SECONDARY_80,
-        TERTIARY_30,
+        NEUTRAL_50, PRIMARY_15, PRIMARY_50, PRIMARY_60, PRIMARY_80, PRIMARY_98, TERTIARY_30,
     },
     fl,
     resources::scene::GameScene,
@@ -30,6 +29,8 @@ type ResponsiveQuery<'w, 's, 'qw, 'qs> = ParamSet<
         Query<'qw, 'qs, &'static mut Node, With<AboutMenuTitle>>,
         Query<'qw, 'qs, &'static mut Node, With<AboutMenuBackButton>>,
         Query<'qw, 'qs, &'static mut Node, With<MainAsideWrapper>>,
+        Query<'qw, 'qs, &'static mut Node, With<MainElement>>,
+        Query<'qw, 'qs, &'static mut Node, With<AsideElement>>,
     ),
 >;
 
@@ -42,19 +43,29 @@ pub(crate) struct AboutMenuTitle;
 #[derive(Component)]
 pub(crate) struct MainAsideWrapper;
 
+#[derive(Component)]
+pub(crate) struct MainElement;
+
+#[derive(Component)]
+pub(crate) struct AsideElement;
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct ResponsiveData {
     title_display: Display,
     back_button_flex_grow: f32,
     main_aside_wrapper_direction: FlexDirection,
+    main_padding: UiRect,
+    aside_width: Val,
 }
 
 impl ResponsiveData {
     const SHOW_TITLE_THRESHOLD: f32 = 450.0;
-    const MAIN_ASIDE_DIRECTION_THRESHOLD: f32 = 500.0;
+    const MAIN_ASIDE_DIRECTION_THRESHOLD: f32 = 800.0;
+    const ASIDE_BIG_WIDTH: Val = Val::Px(240.0);
 
     fn from_resolution(window_size: Vec2) -> Self {
         let show_title = window_size.x > Self::SHOW_TITLE_THRESHOLD;
+        let main_aside_in_row = window_size.x > Self::MAIN_ASIDE_DIRECTION_THRESHOLD;
 
         Self {
             title_display: if show_title {
@@ -63,10 +74,20 @@ impl ResponsiveData {
                 Display::None
             },
             back_button_flex_grow: if show_title { 0.0 } else { 1.0 },
-            main_aside_wrapper_direction: if window_size.x > Self::MAIN_ASIDE_DIRECTION_THRESHOLD {
+            main_aside_wrapper_direction: if main_aside_in_row {
                 FlexDirection::Row
             } else {
                 FlexDirection::ColumnReverse
+            },
+            main_padding: if main_aside_in_row {
+                UiRect::right(Val::VMin(2.0))
+            } else {
+                UiRect::ZERO
+            },
+            aside_width: if main_aside_in_row {
+                Self::ASIDE_BIG_WIDTH
+            } else {
+                Val::Percent(100.0)
             },
         }
     }
@@ -82,6 +103,14 @@ impl ResponsiveData {
 
         for mut main_aside in &mut query.p2() {
             checked_assign!(main_aside.flex_direction, self.main_aside_wrapper_direction);
+        }
+
+        for mut main in &mut query.p3() {
+            checked_assign!(main.padding, self.main_padding);
+        }
+
+        for mut aside in &mut query.p4() {
+            checked_assign!(aside.width, self.aside_width);
         }
     }
 }
@@ -181,7 +210,11 @@ fn top_separator(commands: &mut Commands) -> Entity {
         .id()
 }
 
-fn aside_node(children: &[Entity], commands: &mut Commands) -> Entity {
+fn aside_node(
+    responsive_data: ResponsiveData,
+    children: &[Entity],
+    commands: &mut Commands,
+) -> Entity {
     commands
         .spawn((
             Node {
@@ -189,15 +222,17 @@ fn aside_node(children: &[Entity], commands: &mut Commands) -> Entity {
                 flex_direction: FlexDirection::Column,
                 min_width: Val::Px(48.0),
                 min_height: Val::Px(48.0),
+                width: responsive_data.aside_width,
                 ..Default::default()
             },
             BackgroundColor(TERTIARY_30), // DEBUG
+            AsideElement,
         ))
         .add_children(children)
         .id()
 }
 
-fn main_aside_separator(responsive_data: ResponsiveData, commands: &mut Commands) -> Entity {
+fn main_aside_separator(commands: &mut Commands) -> Entity {
     commands
         .spawn((
             Node {
@@ -210,16 +245,22 @@ fn main_aside_separator(responsive_data: ResponsiveData, commands: &mut Commands
         .id()
 }
 
-fn main_node(children: &[Entity], commands: &mut Commands) -> Entity {
+fn main_node(
+    responsive_data: ResponsiveData,
+    children: &[Entity],
+    commands: &mut Commands,
+) -> Entity {
     commands
         .spawn((
             Node {
                 display: Display::Flex,
                 flex_direction: FlexDirection::Column,
                 flex_grow: 1.0,
+                padding: responsive_data.main_padding,
                 ..Default::default()
             },
             BackgroundColor(PRIMARY_15), // DEBUG
+            MainElement,
         ))
         .add_children(children)
         .id()
@@ -281,9 +322,9 @@ pub(crate) fn init_about_menu(
 
     let header_separator = top_separator(&mut commands);
 
-    let main = main_node(&[], &mut commands);
-    let main_aside_separator = main_aside_separator(responsive_data, &mut commands);
-    let aside = aside_node(&[], &mut commands);
+    let main = main_node(responsive_data, &[], &mut commands);
+    let main_aside_separator = main_aside_separator(&mut commands);
+    let aside = aside_node(responsive_data, &[], &mut commands);
     let main_aside_wrapper = main_aside_wrapper(
         responsive_data,
         &[aside, main_aside_separator, main],
