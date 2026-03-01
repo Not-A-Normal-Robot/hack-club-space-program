@@ -12,9 +12,16 @@ use crate::{
     assets::fonts::{URI_FONT_DOTO_ROUNDED_BOLD, URI_FONT_WDXL_LUBRIFONT_SC},
     builders::button::ButtonBuilder,
     checked_assign,
+    components::ui::{ActiveTextColor, HoverTextColor, InactiveTextColor},
     consts::{
         about::{ABOUT_ENTRY_COUNT, load_article, load_article_title},
-        colors::shades::{NEUTRAL_50, PRIMARY_15, PRIMARY_50, PRIMARY_60, PRIMARY_80, PRIMARY_98},
+        colors::{
+            scheme::{ON_TERTIARY, SURFACE, TERTIARY},
+            shades::{
+                NEUTRAL_50, PRIMARY_15, PRIMARY_50, PRIMARY_60, PRIMARY_80, PRIMARY_98,
+                TERTIARY_40, TERTIARY_95,
+            },
+        },
         controls::MOUSE_WHEEL_ALT_DIR,
     },
     fl,
@@ -55,11 +62,41 @@ pub(crate) struct MainAsideSeparator;
 pub(crate) struct MainElement;
 
 #[derive(Component)]
+pub(crate) struct ArticleElement;
+
+#[derive(Component)]
 pub(crate) struct AsideElement;
+
+#[derive(Component)]
+pub(crate) struct TabElement(usize);
 
 #[derive(Clone, Copy, Debug, Default, SubStates, PartialEq, Eq, Hash)]
 #[source(GameScene = GameScene::AboutMenu)]
 pub(crate) struct AboutTab(usize);
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct TabStyle {
+    bg_color: BackgroundColor,
+    color: InactiveTextColor,
+    hover_color: HoverTextColor,
+    active_color: ActiveTextColor,
+}
+
+impl TabStyle {
+    const UNSELECTED: Self = Self {
+        bg_color: BackgroundColor(Color::NONE),
+        color: InactiveTextColor(TERTIARY),
+        hover_color: HoverTextColor(TERTIARY_95),
+        active_color: ActiveTextColor(TERTIARY_40),
+    };
+
+    const SELECTED: Self = Self {
+        bg_color: BackgroundColor(TERTIARY),
+        color: InactiveTextColor(ON_TERTIARY),
+        hover_color: HoverTextColor(ON_TERTIARY),
+        active_color: ActiveTextColor(ON_TERTIARY),
+    };
+}
 
 #[derive(Clone, Debug, PartialEq)]
 struct ResponsiveData {
@@ -361,20 +398,53 @@ fn main_node(
         .id()
 }
 
-fn article_tab(index: usize, font: &TextFont, commands: &mut Commands) -> Entity {
-    commands
-        .spawn((
+fn article_tab(
+    index: usize,
+    selected_index: usize,
+    font: &TextFont,
+    commands: &mut Commands,
+) -> Entity {
+    let style = if index == selected_index {
+        TabStyle::SELECTED
+    } else {
+        TabStyle::UNSELECTED
+    };
+
+    let bundle = ButtonBuilder {
+        extra: (
+            style.bg_color,
+            TabIndex(0),
+            TabElement(index),
             Node {
                 ..Default::default()
             },
-            Text(load_article_title(index)),
-            font.clone(),
-        ))
+            TextLayout::new_with_no_wrap(),
+        ),
+        text_extra: (),
+        text: load_article_title(index),
+        font,
+        color: style.color.0,
+        hover_color: style.hover_color.0,
+        active_color: style.active_color.0,
+    }
+    .build();
+
+    commands
+        .spawn(bundle)
+        .observe(
+            move |_: On<ActivationEvent>, mut cur_idx: ResMut<NextState<AboutTab>>| {
+                cur_idx.set(AboutTab(dbg!(index)));
+            },
+        )
         .id()
 }
 
-fn article_tabs(font: &TextFont, commands: &mut Commands) -> [Entity; ABOUT_ENTRY_COUNT] {
-    core::array::from_fn(|i| article_tab(i, font, commands))
+fn article_tabs(
+    selected_index: usize,
+    font: &TextFont,
+    commands: &mut Commands,
+) -> [Entity; ABOUT_ENTRY_COUNT] {
+    core::array::from_fn(|i| article_tab(i, selected_index, font, commands))
 }
 
 fn aside_node(
@@ -427,6 +497,7 @@ fn root_node(
 pub(crate) fn init_about_menu(
     window: Option<Single<&Window, With<PrimaryWindow>>>,
     mut commands: Commands,
+    selected_tab: Res<State<AboutTab>>,
     server: Res<AssetServer>,
 ) {
     let doto_font = server.load::<Font>(URI_FONT_DOTO_ROUNDED_BOLD);
@@ -448,13 +519,13 @@ pub(crate) fn init_about_menu(
 
     let main = main_node(
         &responsive_data,
-        &[article(0, &main_font, &mut commands)],
+        &[article(selected_tab.get().0, &main_font, &mut commands)],
         &mut commands,
     );
     let main_aside_separator = main_aside_separator(&responsive_data, &mut commands);
     let aside = aside_node(
         &responsive_data,
-        &article_tabs(&tab_font, &mut commands),
+        &article_tabs(selected_tab.get().0, &tab_font, &mut commands),
         &mut commands,
     );
 
@@ -468,7 +539,7 @@ pub(crate) fn init_about_menu(
         DespawnOnExit(GameScene::AboutMenu),
         Camera2d,
         Camera {
-            clear_color: ClearColorConfig::Custom(Color::BLACK),
+            clear_color: ClearColorConfig::Custom(SURFACE),
             is_active: true,
             ..Default::default()
         },
@@ -564,5 +635,41 @@ fn pointer_scroll_observer_system(
         if let Ok(data) = query.get_mut(event.entity) {
             handle_pointer_scroll(data, &keyboard_input, event.event(), font_size);
         }
+    }
+}
+
+#[derive(QueryData)]
+#[query_data(mutable)]
+pub(crate) struct TabStyleComponents {
+    bg_color: &'static mut BackgroundColor,
+    current_color: &'static mut TextColor,
+    inactive_color: &'static mut InactiveTextColor,
+    hover_color: &'static mut HoverTextColor,
+    active_color: &'static mut ActiveTextColor,
+    tab_index: &'static TabElement,
+}
+
+pub(crate) fn handle_tab_switch(
+    mut article: Query<&mut Text, With<ArticleElement>>,
+    mut tabs: Query<TabStyleComponents>,
+    cur_tab: Res<State<AboutTab>>,
+) {
+    for mut text in &mut article {
+        text.0 = load_article(cur_tab.get().0).to_string();
+    }
+
+    for mut tab in &mut tabs {
+        let selected = tab.tab_index.0 == cur_tab.get().0;
+        let style = if selected {
+            TabStyle::SELECTED
+        } else {
+            TabStyle::UNSELECTED
+        };
+
+        checked_assign!(*tab.bg_color, style.bg_color);
+        checked_assign!(tab.current_color.0, style.color.0);
+        checked_assign!(*tab.inactive_color, style.color);
+        checked_assign!(*tab.hover_color, style.hover_color);
+        checked_assign!(*tab.active_color, style.active_color);
     }
 }
