@@ -39,6 +39,7 @@ type ResponsiveQuery<'w, 's, 'qw, 'qs> = ParamSet<
         Query<'qw, 'qs, &'static mut Node, With<MainElement>>,
         Query<'qw, 'qs, &'static mut Node, With<AsideElement>>,
         Query<'qw, 'qs, &'static mut Node, With<MainAsideSeparator>>,
+        Query<'qw, 'qs, &'static mut TextLayout, With<TabText>>,
     ),
 >;
 
@@ -70,6 +71,9 @@ pub(crate) struct AsideElement;
 #[derive(Component)]
 pub(crate) struct TabElement(usize);
 
+#[derive(Component)]
+pub(crate) struct TabText;
+
 #[derive(Clone, Copy, Debug, Default, SubStates, PartialEq, Eq, Hash)]
 #[source(GameScene = GameScene::AboutMenu)]
 pub(crate) struct AboutTab(usize);
@@ -98,7 +102,7 @@ impl TabStyle {
     };
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 struct ResponsiveData {
     root_template_cols: Vec<RepeatedGridTrack>,
     root_template_rows: Vec<RepeatedGridTrack>,
@@ -114,6 +118,7 @@ struct ResponsiveData {
     aside_overflow: Overflow,
     main_aside_separator_rows: GridPlacement,
     main_aside_separator_cols: GridPlacement,
+    tab_text_layout: TextLayout,
 }
 
 impl ResponsiveData {
@@ -200,6 +205,11 @@ impl ResponsiveData {
             } else {
                 GridPlacement::start(1)
             },
+            tab_text_layout: if aside_at_left {
+                TextLayout::new_with_linebreak(LineBreak::WordOrCharacter)
+            } else {
+                TextLayout::new_with_no_wrap()
+            },
         }
     }
 
@@ -248,6 +258,10 @@ impl ResponsiveData {
                 main_aside_separator.grid_column,
                 self.main_aside_separator_cols
             );
+        }
+
+        for mut tab_text_layout in query.p6() {
+            *tab_text_layout = self.tab_text_layout;
         }
     }
 }
@@ -403,6 +417,7 @@ fn main_node(
 }
 
 fn article_tab(
+    responsive_data: &ResponsiveData,
     index: usize,
     selected_index: usize,
     font: &TextFont,
@@ -420,11 +435,12 @@ fn article_tab(
             TabIndex(0),
             TabElement(index),
             Node {
+                padding: UiRect::axes(Val::Px(12.0), Val::Px(4.0)),
+                border_radius: BorderRadius::all(Val::Px(4.0)),
                 ..Default::default()
             },
-            TextLayout::new_with_no_wrap(),
         ),
-        text_extra: (),
+        text_extra: (TabText, responsive_data.tab_text_layout),
         text: load_article_title(index),
         font,
         color: style.color.0,
@@ -444,11 +460,12 @@ fn article_tab(
 }
 
 fn article_tabs(
+    responsive_data: &ResponsiveData,
     selected_index: usize,
     font: &TextFont,
     commands: &mut Commands,
 ) -> [Entity; ABOUT_ENTRY_COUNT] {
-    core::array::from_fn(|i| article_tab(i, selected_index, font, commands))
+    core::array::from_fn(|i| article_tab(responsive_data, i, selected_index, font, commands))
 }
 
 fn aside_node(
@@ -529,7 +546,12 @@ pub(crate) fn init_about_menu(
     let main_aside_separator = main_aside_separator(&responsive_data, &mut commands);
     let aside = aside_node(
         &responsive_data,
-        &article_tabs(selected_tab.get().0, &tab_font, &mut commands),
+        &article_tabs(
+            &responsive_data,
+            selected_tab.get().0,
+            &tab_font,
+            &mut commands,
+        ),
         &mut commands,
     );
 
@@ -660,11 +682,16 @@ pub(crate) struct TabTextColorComponents {
 }
 
 pub(crate) fn handle_tab_switch(
+    mut main: Query<&mut ScrollPosition, With<MainElement>>,
     mut article: Query<&mut Text, With<ArticleElement>>,
     mut tabs: Query<TabComponents>,
     mut tab_texts: Query<TabTextColorComponents>,
     cur_tab: Res<State<AboutTab>>,
 ) {
+    for mut pos in &mut main {
+        pos.0 = Vec2::ZERO;
+    }
+
     for mut text in &mut article {
         text.0 = load_article(cur_tab.get().0).to_string();
     }
