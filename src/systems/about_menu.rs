@@ -1,6 +1,7 @@
 use core::f32::consts::PI;
 
 use bevy::{
+    ecs::query::QueryData,
     input::mouse::MouseScrollUnit,
     input_focus::tab_navigation::{TabGroup, TabIndex},
     prelude::*,
@@ -11,8 +12,9 @@ use crate::{
     assets::fonts::{URI_FONT_DOTO_ROUNDED_BOLD, URI_FONT_WDXL_LUBRIFONT_SC},
     builders::button::ButtonBuilder,
     checked_assign,
-    consts::colors::shades::{
-        NEUTRAL_50, PRIMARY_15, PRIMARY_50, PRIMARY_60, PRIMARY_80, PRIMARY_98, TERTIARY_30,
+    consts::{
+        colors::shades::{NEUTRAL_50, PRIMARY_15, PRIMARY_50, PRIMARY_60, PRIMARY_80, PRIMARY_98},
+        controls::MOUSE_WHEEL_ALT_DIR,
     },
     fl,
     resources::scene::GameScene,
@@ -112,11 +114,7 @@ impl ResponsiveData {
                 Display::None
             },
             back_button_flex_grow: if show_title { 0.0 } else { 1.0 },
-            main_padding: if aside_at_left {
-                UiRect::right(Val::VMin(2.0))
-            } else {
-                UiRect::ZERO
-            },
+            main_padding: UiRect::horizontal(Val::VMin(2.0)),
             aside_rows: if aside_at_left {
                 GridPlacement::start(3)
             } else {
@@ -124,9 +122,9 @@ impl ResponsiveData {
             },
             aside_cols: GridPlacement::start(1),
             aside_padding: if aside_at_left {
-                UiRect::left(Val::VMin(2.0))
+                UiRect::horizontal(Val::VMin(2.0))
             } else {
-                UiRect::ZERO
+                UiRect::vertical(Val::VMin(2.0))
             },
             aside_direction: if aside_at_left {
                 FlexDirection::Column
@@ -339,11 +337,15 @@ fn main_node(
                 padding: responsive_data.main_padding,
                 grid_row: responsive_data.main_rows,
                 grid_column: responsive_data.main_cols,
-                max_height: Val::Vh(100.0),
+                overflow: Overflow {
+                    x: OverflowAxis::Hidden,
+                    y: OverflowAxis::Scroll,
+                },
                 ..Default::default()
             },
             MainElement,
         ))
+        .observe(pointer_scroll_observer_system(MAIN_FONT_SIZE))
         .add_children(children)
         .id()
 }
@@ -405,20 +407,7 @@ fn aside_node(
             },
             AsideElement,
         ))
-        .observe(
-            |event: On<Pointer<Scroll>>,
-             mut query: Query<(&mut ScrollPosition, &Node, &ComputedNode)>| {
-                if let Ok((scroll_position, node, computed)) = query.get_mut(event.entity) {
-                    handle_pointer_scroll(
-                        scroll_position,
-                        node,
-                        computed,
-                        event.event(),
-                        ASIDE_FONT_SIZE,
-                    );
-                }
-            },
-        )
+        .observe(pointer_scroll_observer_system(ASIDE_FONT_SIZE))
         .add_children(children)
         .id()
 }
@@ -519,10 +508,19 @@ fn handle_scroll(
     }
 }
 
+#[derive(QueryData)]
+#[query_data(mutable)]
+struct PointerScrollQueryData {
+    scroll_position: &'static mut ScrollPosition,
+    node: &'static Node,
+    computed: &'static ComputedNode,
+}
+
+type ScrollQuery<'w, 's> = Query<'w, 's, PointerScrollQueryData>;
+
 fn handle_pointer_scroll(
-    scroll_position: Mut<ScrollPosition>,
-    node: &Node,
-    computed: &ComputedNode,
+    scroll_data: PointerScrollQueryDataItem,
+    keyboard_input: &ButtonInput<KeyCode>,
     scroll: &Scroll,
     font_size: f32,
 ) {
@@ -533,5 +531,26 @@ fn handle_pointer_scroll(
         MouseScrollUnit::Pixel => (),
     }
 
-    handle_scroll(scroll_position, node, computed, delta);
+    if keyboard_input.any_pressed(MOUSE_WHEEL_ALT_DIR) {
+        core::mem::swap(&mut delta.x, &mut delta.y);
+    }
+
+    handle_scroll(
+        scroll_data.scroll_position,
+        scroll_data.node,
+        scroll_data.computed,
+        delta,
+    );
+}
+
+fn pointer_scroll_observer_system(
+    font_size: f32,
+) -> impl Fn(On<Pointer<Scroll>>, ScrollQuery, Res<ButtonInput<KeyCode>>) {
+    move |event: On<Pointer<Scroll>>,
+          mut query: ScrollQuery,
+          keyboard_input: Res<ButtonInput<KeyCode>>| {
+        if let Ok(data) = query.get_mut(event.entity) {
+            handle_pointer_scroll(data, &keyboard_input, event.event(), font_size);
+        }
+    }
 }

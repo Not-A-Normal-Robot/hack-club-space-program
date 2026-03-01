@@ -8,10 +8,6 @@ pub(crate) const ACTIVATION_KEYCODES: [KeyCode; 3] =
 /// scrolling direction.
 pub(crate) const MOUSE_WHEEL_ALT_DIR: [KeyCode; 2] = [KeyCode::ControlLeft, KeyCode::ControlRight];
 
-/// The amount of pixels in a line for mouse wheel
-/// delta calculations.
-pub(crate) const MOUSE_WHEEL_LINE_MULT: f32 = 21.0;
-
 /// The min zoom for the simulation camera.
 pub(crate) const MIN_ZOOM: f64 = 1e-20;
 
