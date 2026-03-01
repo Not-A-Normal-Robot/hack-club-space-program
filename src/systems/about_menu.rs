@@ -13,6 +13,7 @@ use crate::{
     builders::button::ButtonBuilder,
     checked_assign,
     consts::{
+        about::{ABOUT_ENTRY_COUNT, load_article, load_article_title},
         colors::shades::{NEUTRAL_50, PRIMARY_15, PRIMARY_50, PRIMARY_60, PRIMARY_80, PRIMARY_98},
         controls::MOUSE_WHEEL_ALT_DIR,
     },
@@ -55,6 +56,10 @@ pub(crate) struct MainElement;
 
 #[derive(Component)]
 pub(crate) struct AsideElement;
+
+#[derive(Clone, Copy, Debug, Default, SubStates, PartialEq, Eq, Hash)]
+#[source(GameScene = GameScene::AboutMenu)]
+pub(crate) struct AboutTab(usize);
 
 #[derive(Clone, Debug, PartialEq)]
 struct ResponsiveData {
@@ -323,6 +328,12 @@ fn main_aside_separator(responsive_data: &ResponsiveData, commands: &mut Command
         .id()
 }
 
+fn article(index: usize, font: &TextFont, commands: &mut Commands) -> Entity {
+    commands
+        .spawn((Text(load_article(index).into()), font.clone()))
+        .id()
+}
+
 fn main_node(
     responsive_data: &ResponsiveData,
     children: &[Entity],
@@ -350,40 +361,20 @@ fn main_node(
         .id()
 }
 
-fn root_node(
-    responsive_data: &ResponsiveData,
-    children: &[Entity],
-    commands: &mut Commands,
-) -> Entity {
+fn article_tab(index: usize, font: &TextFont, commands: &mut Commands) -> Entity {
     commands
         .spawn((
-            RootNode,
             Node {
-                display: Display::Grid,
-                grid_template_rows: responsive_data.root_template_rows.clone(),
-                grid_template_columns: responsive_data.root_template_cols.clone(),
-                width: Val::Vw(100.0),
-                height: Val::Vh(100.0),
                 ..Default::default()
             },
+            Text(load_article_title(index)),
+            font.clone(),
         ))
-        .add_children(children)
         .id()
 }
 
-// TODO: Remove
-fn text_elements(font: &TextFont, amount: usize, commands: &mut Commands) -> Box<[Entity]> {
-    (0..amount)
-        .map(|i| {
-            commands
-                .spawn((
-                    Text::new(i.to_string()),
-                    font.clone(),
-                    TextColor(Color::WHITE),
-                ))
-                .id()
-        })
-        .collect()
+fn article_tabs(font: &TextFont, commands: &mut Commands) -> [Entity; ABOUT_ENTRY_COUNT] {
+    core::array::from_fn(|i| article_tab(i, font, commands))
 }
 
 fn aside_node(
@@ -412,6 +403,27 @@ fn aside_node(
         .id()
 }
 
+fn root_node(
+    responsive_data: &ResponsiveData,
+    children: &[Entity],
+    commands: &mut Commands,
+) -> Entity {
+    commands
+        .spawn((
+            RootNode,
+            Node {
+                display: Display::Grid,
+                grid_template_rows: responsive_data.root_template_rows.clone(),
+                grid_template_columns: responsive_data.root_template_cols.clone(),
+                width: Val::Vw(100.0),
+                height: Val::Vh(100.0),
+                ..Default::default()
+            },
+        ))
+        .add_children(children)
+        .id()
+}
+
 pub(crate) fn init_about_menu(
     window: Option<Single<&Window, With<PrimaryWindow>>>,
     mut commands: Commands,
@@ -436,13 +448,13 @@ pub(crate) fn init_about_menu(
 
     let main = main_node(
         &responsive_data,
-        &text_elements(&main_font, 40, &mut commands),
+        &[article(0, &main_font, &mut commands)],
         &mut commands,
     );
     let main_aside_separator = main_aside_separator(&responsive_data, &mut commands);
     let aside = aside_node(
         &responsive_data,
-        &text_elements(&tab_font, 40, &mut commands),
+        &article_tabs(&tab_font, &mut commands),
         &mut commands,
     );
 

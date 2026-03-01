@@ -5,6 +5,7 @@ use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use i18n_embed::fluent::{FluentLanguageLoader, fluent_language_loader};
 
+pub(crate) mod about;
 pub(crate) mod colors;
 pub(crate) mod controls;
 pub(crate) mod terrain;
