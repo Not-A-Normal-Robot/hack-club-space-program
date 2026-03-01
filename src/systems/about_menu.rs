@@ -367,7 +367,11 @@ fn main_aside_separator(responsive_data: &ResponsiveData, commands: &mut Command
 
 fn article(index: usize, font: &TextFont, commands: &mut Commands) -> Entity {
     commands
-        .spawn((Text(load_article(index).into()), font.clone()))
+        .spawn((
+            Text(load_article(index).into()),
+            font.clone(),
+            ArticleElement,
+        ))
         .id()
 }
 
@@ -433,7 +437,7 @@ fn article_tab(
         .spawn(bundle)
         .observe(
             move |_: On<ActivationEvent>, mut cur_idx: ResMut<NextState<AboutTab>>| {
-                cur_idx.set(AboutTab(dbg!(index)));
+                cur_idx.set(AboutTab(index));
             },
         )
         .id()
@@ -640,18 +644,25 @@ fn pointer_scroll_observer_system(
 
 #[derive(QueryData)]
 #[query_data(mutable)]
-pub(crate) struct TabStyleComponents {
+pub(crate) struct TabComponents {
     bg_color: &'static mut BackgroundColor,
-    current_color: &'static mut TextColor,
+    tab_index: &'static TabElement,
+    children: &'static Children,
     inactive_color: &'static mut InactiveTextColor,
     hover_color: &'static mut HoverTextColor,
     active_color: &'static mut ActiveTextColor,
-    tab_index: &'static TabElement,
+}
+
+#[derive(QueryData)]
+#[query_data(mutable)]
+pub(crate) struct TabTextColorComponents {
+    current: &'static mut TextColor,
 }
 
 pub(crate) fn handle_tab_switch(
     mut article: Query<&mut Text, With<ArticleElement>>,
-    mut tabs: Query<TabStyleComponents>,
+    mut tabs: Query<TabComponents>,
+    mut tab_texts: Query<TabTextColorComponents>,
     cur_tab: Res<State<AboutTab>>,
 ) {
     for mut text in &mut article {
@@ -667,9 +678,16 @@ pub(crate) fn handle_tab_switch(
         };
 
         checked_assign!(*tab.bg_color, style.bg_color);
-        checked_assign!(tab.current_color.0, style.color.0);
         checked_assign!(*tab.inactive_color, style.color);
         checked_assign!(*tab.hover_color, style.hover_color);
         checked_assign!(*tab.active_color, style.active_color);
+
+        for entity in tab.children {
+            let Ok(mut text) = tab_texts.get_mut(*entity) else {
+                continue;
+            };
+
+            checked_assign!(text.current.0, style.color.0);
+        }
     }
 }
