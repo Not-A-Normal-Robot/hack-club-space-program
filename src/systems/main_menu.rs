@@ -1,8 +1,9 @@
 use crate::{
     assets::fonts::URI_FONT_DOTO_ROUNDED_BOLD,
     builders::button::TextButtonBuilder,
-    consts::colors::shades::{
-        PRIMARY_50, PRIMARY_60, PRIMARY_80, TERTIARY_50, TERTIARY_60, TERTIARY_80,
+    consts::colors::{
+        scheme::SURFACE,
+        shades::{PRIMARY_50, PRIMARY_60, PRIMARY_80, TERTIARY_50, TERTIARY_60, TERTIARY_80},
     },
     fl,
     resources::scene::GameScene,
@@ -148,7 +149,7 @@ pub(crate) fn init_main_menu(
         DespawnOnExit(GameScene::MainMenu),
         Camera2d,
         Camera {
-            clear_color: ClearColorConfig::Custom(Color::BLACK),
+            clear_color: ClearColorConfig::Custom(SURFACE),
             is_active: true,
             ..Default::default()
         },
