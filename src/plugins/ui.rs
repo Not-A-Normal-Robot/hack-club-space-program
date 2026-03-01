@@ -1,5 +1,5 @@
 use crate::systems::general::{
-    tab_focus::{update_interacted_text_colors, update_tab_focus},
+    dynamic_text_color::update_interacted_text_colors, tab_focus::update_tab_focus,
     ui_activation::activation_observer_adder,
 };
 use bevy::prelude::*;

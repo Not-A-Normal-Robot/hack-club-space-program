@@ -10,9 +10,6 @@ pub(crate) struct MainMenuPlugin;
 impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameScene::MainMenu), init_main_menu);
-        app.add_systems(
-            Update,
-            (handle_resize).run_if(in_state(GameScene::MainMenu)),
-        );
+        app.add_systems(Update, handle_resize.run_if(in_state(GameScene::MainMenu)));
     }
 }

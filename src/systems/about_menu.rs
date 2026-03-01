@@ -10,7 +10,7 @@ use bevy::{
 
 use crate::{
     assets::fonts::{URI_FONT_DOTO_ROUNDED_BOLD, URI_FONT_WDXL_LUBRIFONT_SC},
-    builders::button::ButtonBuilder,
+    builders::button::TextButtonBuilder,
     checked_assign,
     components::ui::{ActiveTextColor, HoverTextColor, InactiveTextColor},
     consts::{
@@ -271,7 +271,7 @@ fn back_button(
     responsive_data: &ResponsiveData,
     commands: &mut Commands,
 ) -> Entity {
-    let bundle = ButtonBuilder {
+    let bundle = TextButtonBuilder {
         extra: (
             BackButton,
             Node {
@@ -425,7 +425,7 @@ fn article_tab(
         TabStyle::UNSELECTED
     };
 
-    let bundle = ButtonBuilder {
+    let bundle = TextButtonBuilder {
         extra: (
             style.bg_color,
             TabIndex(0),

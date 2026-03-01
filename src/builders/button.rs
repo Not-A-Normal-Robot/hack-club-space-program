@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::components::ui::{ActiveTextColor, HoverTextColor, InactiveTextColor};
 
-pub(crate) struct ButtonBuilder<'f, E, F, T>
+pub(crate) struct TextButtonBuilder<'f, E, F, T>
 where
     E: Bundle,
     F: Bundle,
@@ -17,7 +17,7 @@ where
     pub(crate) active_color: Color,
 }
 
-impl<E, F, T> ButtonBuilder<'_, E, F, T>
+impl<E, F, T> TextButtonBuilder<'_, E, F, T>
 where
     E: Bundle,
     F: Bundle,

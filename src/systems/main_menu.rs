@@ -1,6 +1,6 @@
 use crate::{
     assets::fonts::URI_FONT_DOTO_ROUNDED_BOLD,
-    builders::button::ButtonBuilder,
+    builders::button::TextButtonBuilder,
     consts::colors::shades::{
         PRIMARY_50, PRIMARY_60, PRIMARY_80, TERTIARY_50, TERTIARY_60, TERTIARY_80,
     },
@@ -65,7 +65,7 @@ pub(crate) fn init_main_menu(
         TabIndex(0),
     );
 
-    let play_button = ButtonBuilder {
+    let play_button = TextButtonBuilder {
         extra: button_common.clone(),
         text_extra: (),
         text: fl!("mainMenu__playButton__text"),
@@ -85,7 +85,7 @@ pub(crate) fn init_main_menu(
         )
         .id();
 
-    let about_button = ButtonBuilder {
+    let about_button = TextButtonBuilder {
         extra: button_common.clone(),
         text_extra: (),
         text: fl!("mainMenu__aboutButton__text"),
@@ -105,7 +105,7 @@ pub(crate) fn init_main_menu(
         )
         .id();
 
-    let quit_button = ButtonBuilder {
+    let quit_button = TextButtonBuilder {
         extra: button_common,
         text_extra: (),
         text: fl!("mainMenu__quitButton__text"),
