@@ -106,6 +106,7 @@ pub(crate) fn init_main_menu(
         )
         .id();
 
+    #[cfg(not(target_family = "wasm"))]
     let quit_button = TextButtonBuilder {
         extra: button_common,
         text_extra: (),
@@ -117,6 +118,7 @@ pub(crate) fn init_main_menu(
     }
     .build();
 
+    #[cfg(not(target_family = "wasm"))]
     let quit_button = commands
         .spawn(quit_button)
         .observe(|_: On<ActivationEvent>| {
@@ -141,9 +143,15 @@ pub(crate) fn init_main_menu(
         TabGroup::new(0),
     );
 
-    commands
-        .spawn(root)
-        .add_children([logo, play_button, about_button, quit_button].as_slice());
+    let root_children = [
+        logo,
+        play_button,
+        about_button,
+        #[cfg(not(target_family = "wasm"))]
+        quit_button,
+    ];
+
+    commands.spawn(root).add_children(root_children.as_slice());
 
     commands.spawn((
         DespawnOnExit(GameScene::MainMenu),
