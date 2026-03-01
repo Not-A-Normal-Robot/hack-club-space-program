@@ -18,12 +18,30 @@ macro_rules! fl {
 ///
 /// This is useful for things that track mutable assignments
 /// but don't check equality.
+///
+/// Alternate form includes a third element, which goes like
+/// `(lhs, checked, inserted)`, useful for assigning non-`Copy`
+/// values:
+/// ```
+/// # let mut lhs = 1;
+/// # let checked = 2;
+/// # let inserted = 2;
+/// if lhs != checked {
+///     lhs = inserted;
+/// }
+/// ```
 #[macro_export]
 macro_rules! checked_assign {
-    ($lhs:expr, $rhs:expr) => {
+    ($lhs:expr, $rhs:expr $(,)?) => {
         #[allow(clippy::float_cmp)]
         if $lhs != $rhs {
             $lhs = $rhs;
+        }
+    };
+    ($lhs:expr, $checked:expr, $inserted:expr $(,)?) => {
+        #[allow(clippy::float_cmp)]
+        if $lhs != $checked {
+            $lhs = $inserted;
         }
     };
 }

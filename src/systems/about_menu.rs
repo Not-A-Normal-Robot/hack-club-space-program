@@ -23,11 +23,12 @@ type ResponsiveQuery<'w, 's, 'qw, 'qs> = ParamSet<
     'w,
     's,
     (
-        Query<'qw, 'qs, &'static mut Node, With<AboutMenuTitle>>,
-        Query<'qw, 'qs, &'static mut Node, With<AboutMenuBackButton>>,
-        Query<'qw, 'qs, &'static mut Node, With<MainAsideWrapper>>,
+        Query<'qw, 'qs, &'static mut Node, With<RootNode>>,
+        Query<'qw, 'qs, &'static mut Node, With<HeaderTitle>>,
+        Query<'qw, 'qs, &'static mut Node, With<BackButton>>,
         Query<'qw, 'qs, &'static mut Node, With<MainElement>>,
         Query<'qw, 'qs, &'static mut Node, With<AsideElement>>,
+        Query<'qw, 'qs, &'static mut Node, With<MainAsideSeparator>>,
     ),
 >;
 
@@ -36,16 +37,16 @@ const MAIN_FONT_SIZE: f32 = 21.0;
 
 #[derive(Component)]
 #[require(DespawnOnExit::<GameScene>(GameScene::AboutMenu), TabGroup)]
-pub(crate) struct AboutMenuRootNode;
+pub(crate) struct RootNode;
 
 #[derive(Component)]
-pub(crate) struct AboutMenuBackButton;
+pub(crate) struct BackButton;
 
 #[derive(Component)]
-pub(crate) struct AboutMenuTitle;
+pub(crate) struct HeaderTitle;
 
 #[derive(Component)]
-pub(crate) struct MainAsideWrapper;
+pub(crate) struct MainAsideSeparator;
 
 #[derive(Component)]
 pub(crate) struct MainElement;
@@ -53,80 +54,172 @@ pub(crate) struct MainElement;
 #[derive(Component)]
 pub(crate) struct AsideElement;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 struct ResponsiveData {
+    root_template_cols: Vec<RepeatedGridTrack>,
+    root_template_rows: Vec<RepeatedGridTrack>,
     title_display: Display,
     back_button_flex_grow: f32,
-    main_aside_wrapper_direction: FlexDirection,
+    main_rows: GridPlacement,
+    main_cols: GridPlacement,
     main_padding: UiRect,
-    aside_width: Val,
+    aside_rows: GridPlacement,
+    aside_cols: GridPlacement,
+    aside_padding: UiRect,
+    aside_direction: FlexDirection,
+    aside_overflow: Overflow,
+    main_aside_separator_rows: GridPlacement,
+    main_aside_separator_cols: GridPlacement,
 }
 
 impl ResponsiveData {
     const SHOW_TITLE_THRESHOLD: f32 = 450.0;
-    const MAIN_ASIDE_DIRECTION_THRESHOLD: f32 = 800.0;
-    const ASIDE_BIG_WIDTH: Val = Val::Px(240.0);
+    const MAIN_ASIDE_BOTTOM_THRESHOLD: f32 = 800.0;
+    const ASIDE_BIG_WIDTH: f32 = 240.0;
 
     fn from_resolution(window_size: Vec2) -> Self {
         let show_title = window_size.x > Self::SHOW_TITLE_THRESHOLD;
-        let main_aside_in_row = window_size.x > Self::MAIN_ASIDE_DIRECTION_THRESHOLD;
+        let aside_at_left = window_size.x > Self::MAIN_ASIDE_BOTTOM_THRESHOLD;
 
         Self {
+            root_template_rows: if aside_at_left {
+                vec![
+                    RepeatedGridTrack::auto(1),
+                    RepeatedGridTrack::px(1, 2.0),
+                    RepeatedGridTrack::flex(1, 1.0),
+                ]
+            } else {
+                vec![
+                    RepeatedGridTrack::auto(1),
+                    RepeatedGridTrack::px(1, 2.0),
+                    RepeatedGridTrack::flex(1, 1.0),
+                    RepeatedGridTrack::px(1, 2.0),
+                    RepeatedGridTrack::auto(1),
+                ]
+            },
+            root_template_cols: if aside_at_left {
+                vec![
+                    RepeatedGridTrack::px(1, Self::ASIDE_BIG_WIDTH),
+                    RepeatedGridTrack::px(1, 2.0),
+                    RepeatedGridTrack::flex(1, 1.0),
+                ]
+            } else {
+                vec![RepeatedGridTrack::fr(1, 1.0)]
+            },
             title_display: if show_title {
                 Display::Flex
             } else {
                 Display::None
             },
             back_button_flex_grow: if show_title { 0.0 } else { 1.0 },
-            main_aside_wrapper_direction: if main_aside_in_row {
-                FlexDirection::Row
-            } else {
-                FlexDirection::ColumnReverse
-            },
-            main_padding: if main_aside_in_row {
+            main_padding: if aside_at_left {
                 UiRect::right(Val::VMin(2.0))
             } else {
                 UiRect::ZERO
             },
-            aside_width: if main_aside_in_row {
-                Self::ASIDE_BIG_WIDTH
+            aside_rows: if aside_at_left {
+                GridPlacement::start(3)
             } else {
-                Val::Percent(100.0)
+                GridPlacement::start(5)
+            },
+            aside_cols: GridPlacement::start(1),
+            aside_padding: if aside_at_left {
+                UiRect::left(Val::VMin(2.0))
+            } else {
+                UiRect::ZERO
+            },
+            aside_direction: if aside_at_left {
+                FlexDirection::Column
+            } else {
+                FlexDirection::Row
+            },
+            aside_overflow: if aside_at_left {
+                Overflow {
+                    x: OverflowAxis::Hidden,
+                    y: OverflowAxis::Scroll,
+                }
+            } else {
+                Overflow {
+                    x: OverflowAxis::Scroll,
+                    y: OverflowAxis::Hidden,
+                }
+            },
+            main_rows: GridPlacement::start(3),
+            main_cols: if aside_at_left {
+                GridPlacement::start(3)
+            } else {
+                GridPlacement::start(1)
+            },
+            main_aside_separator_rows: if aside_at_left {
+                GridPlacement::start(3)
+            } else {
+                GridPlacement::start(4)
+            },
+            main_aside_separator_cols: if aside_at_left {
+                GridPlacement::start(2)
+            } else {
+                GridPlacement::start(1)
             },
         }
     }
 
     fn apply(self, mut query: ResponsiveQuery) {
-        for mut title in &mut query.p0() {
+        for mut root in query.p0() {
+            checked_assign!(
+                root.grid_template_columns,
+                self.root_template_cols,
+                self.root_template_cols.clone(),
+            );
+            checked_assign!(
+                root.grid_template_rows,
+                self.root_template_rows,
+                self.root_template_rows.clone(),
+            );
+        }
+
+        for mut title in query.p1() {
             checked_assign!(title.display, self.title_display);
         }
 
-        for mut back_button in &mut query.p1() {
+        for mut back_button in query.p2() {
             checked_assign!(back_button.flex_grow, self.back_button_flex_grow);
         }
 
-        for mut main_aside in &mut query.p2() {
-            checked_assign!(main_aside.flex_direction, self.main_aside_wrapper_direction);
-        }
-
-        for mut main in &mut query.p3() {
+        for mut main in query.p3() {
+            checked_assign!(main.grid_row, self.main_rows);
+            checked_assign!(main.grid_column, self.main_cols);
             checked_assign!(main.padding, self.main_padding);
         }
 
-        for mut aside in &mut query.p4() {
-            checked_assign!(aside.width, self.aside_width);
+        for mut aside in query.p4() {
+            checked_assign!(aside.grid_row, self.aside_rows);
+            checked_assign!(aside.grid_column, self.aside_cols);
+            checked_assign!(aside.padding, self.aside_padding);
+            checked_assign!(aside.flex_direction, self.aside_direction);
+            checked_assign!(aside.overflow, self.aside_overflow);
+        }
+
+        for mut main_aside_separator in query.p5() {
+            checked_assign!(
+                main_aside_separator.grid_row,
+                self.main_aside_separator_rows
+            );
+            checked_assign!(
+                main_aside_separator.grid_column,
+                self.main_aside_separator_cols
+            );
         }
     }
 }
 
 fn back_button(
     font: &TextFont,
-    responsive_data: ResponsiveData,
+    responsive_data: &ResponsiveData,
     commands: &mut Commands,
 ) -> Entity {
     let bundle = ButtonBuilder {
         extra: (
-            AboutMenuBackButton,
+            BackButton,
             Node {
                 display: Display::Flex,
                 flex_direction: FlexDirection::Column,
@@ -162,7 +255,7 @@ fn back_button(
         .id()
 }
 
-fn title(font: &TextFont, responsive_data: ResponsiveData, commands: &mut Commands) -> Entity {
+fn title(font: &TextFont, responsive_data: &ResponsiveData, commands: &mut Commands) -> Entity {
     commands
         .spawn((
             Node {
@@ -172,7 +265,7 @@ fn title(font: &TextFont, responsive_data: ResponsiveData, commands: &mut Comman
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            AboutMenuTitle,
+            HeaderTitle,
             children![(
                 Text::new(fl!("aboutMenu__title__text")),
                 font.clone(),
@@ -188,6 +281,7 @@ fn header(children: &[Entity], commands: &mut Commands) -> Entity {
             display: Display::Flex,
             flex_direction: FlexDirection::Row,
             padding: UiRect::all(Val::VMin(2.0)).with_bottom(Val::ZERO),
+            grid_column: GridPlacement::start_span(1, 3),
             ..Default::default()
         },))
         .add_children(children)
@@ -200,6 +294,7 @@ fn top_separator(commands: &mut Commands) -> Entity {
             Node {
                 height: Val::Px(2.0),
                 margin: UiRect::horizontal(Val::VMin(2.0)),
+                grid_column: GridPlacement::start_span(1, 3),
                 ..Default::default()
             },
             BackgroundGradient(vec![Gradient::Linear(LinearGradient {
@@ -211,6 +306,66 @@ fn top_separator(commands: &mut Commands) -> Entity {
                 ],
             })]),
         ))
+        .id()
+}
+
+fn main_aside_separator(responsive_data: &ResponsiveData, commands: &mut Commands) -> Entity {
+    commands
+        .spawn((
+            Node {
+                min_width: Val::Px(2.0),
+                min_height: Val::Px(2.0),
+                grid_row: responsive_data.main_aside_separator_rows,
+                grid_column: responsive_data.main_aside_separator_cols,
+                ..Default::default()
+            },
+            BackgroundColor(NEUTRAL_50),
+            MainAsideSeparator,
+        ))
+        .id()
+}
+
+fn main_node(
+    responsive_data: &ResponsiveData,
+    children: &[Entity],
+    commands: &mut Commands,
+) -> Entity {
+    commands
+        .spawn((
+            Node {
+                display: Display::Flex,
+                flex_direction: FlexDirection::Column,
+                flex_grow: 1.0,
+                padding: responsive_data.main_padding,
+                grid_row: responsive_data.main_rows,
+                grid_column: responsive_data.main_cols,
+                max_height: Val::Vh(100.0),
+                ..Default::default()
+            },
+            MainElement,
+        ))
+        .add_children(children)
+        .id()
+}
+
+fn root_node(
+    responsive_data: &ResponsiveData,
+    children: &[Entity],
+    commands: &mut Commands,
+) -> Entity {
+    commands
+        .spawn((
+            RootNode,
+            Node {
+                display: Display::Grid,
+                grid_template_rows: responsive_data.root_template_rows.clone(),
+                grid_template_columns: responsive_data.root_template_cols.clone(),
+                width: Val::Vw(100.0),
+                height: Val::Vh(100.0),
+                ..Default::default()
+            },
+        ))
+        .add_children(children)
         .id()
 }
 
@@ -227,6 +382,108 @@ fn text_elements(font: &TextFont, amount: usize, commands: &mut Commands) -> Box
                 .id()
         })
         .collect()
+}
+
+fn aside_node(
+    responsive_data: &ResponsiveData,
+    children: &[Entity],
+    commands: &mut Commands,
+) -> Entity {
+    commands
+        .spawn((
+            Node {
+                display: Display::Flex,
+                flex_direction: responsive_data.aside_direction,
+                grid_row: responsive_data.aside_rows,
+                grid_column: responsive_data.aside_cols,
+                padding: responsive_data.aside_padding,
+                min_width: Val::Px(48.0),
+                min_height: Val::Px(48.0),
+                max_height: Val::Vh(100.0),
+                overflow: responsive_data.aside_overflow,
+                ..Default::default()
+            },
+            AsideElement,
+        ))
+        .observe(
+            |event: On<Pointer<Scroll>>,
+             mut query: Query<(&mut ScrollPosition, &Node, &ComputedNode)>| {
+                if let Ok((scroll_position, node, computed)) = query.get_mut(event.entity) {
+                    handle_pointer_scroll(
+                        scroll_position,
+                        node,
+                        computed,
+                        event.event(),
+                        ASIDE_FONT_SIZE,
+                    );
+                }
+            },
+        )
+        .add_children(children)
+        .id()
+}
+
+pub(crate) fn init_about_menu(
+    window: Option<Single<&Window, With<PrimaryWindow>>>,
+    mut commands: Commands,
+    server: Res<AssetServer>,
+) {
+    let doto_font = server.load::<Font>(URI_FONT_DOTO_ROUNDED_BOLD);
+    let wdxl_font = server.load::<Font>(URI_FONT_WDXL_LUBRIFONT_SC);
+
+    let main_font = TextFont::from(wdxl_font.clone()).with_font_size(MAIN_FONT_SIZE);
+    let tab_font = TextFont::from(wdxl_font).with_font_size(ASIDE_FONT_SIZE);
+
+    let responsive_data =
+        ResponsiveData::from_resolution(window.map(|w| w.size()).unwrap_or_default());
+
+    let doto_font = TextFont::from(doto_font).with_font_size(32.0);
+
+    let back_button = back_button(&doto_font, &responsive_data, &mut commands);
+    let title = title(&doto_font, &responsive_data, &mut commands);
+    let header = header(&[back_button, title], &mut commands);
+
+    let header_separator = top_separator(&mut commands);
+
+    let main = main_node(
+        &responsive_data,
+        &text_elements(&main_font, 40, &mut commands),
+        &mut commands,
+    );
+    let main_aside_separator = main_aside_separator(&responsive_data, &mut commands);
+    let aside = aside_node(
+        &responsive_data,
+        &text_elements(&tab_font, 40, &mut commands),
+        &mut commands,
+    );
+
+    root_node(
+        &responsive_data,
+        &[header, header_separator, main, main_aside_separator, aside],
+        &mut commands,
+    );
+
+    commands.spawn((
+        DespawnOnExit(GameScene::AboutMenu),
+        Camera2d,
+        Camera {
+            clear_color: ClearColorConfig::Custom(Color::BLACK),
+            is_active: true,
+            ..Default::default()
+        },
+        IsDefaultUiCamera,
+    ));
+}
+
+pub(crate) fn handle_resize(
+    query: ResponsiveQuery,
+    mut resize_reader: MessageReader<WindowResized>,
+) {
+    let Some(resize) = resize_reader.read().last() else {
+        return;
+    };
+
+    ResponsiveData::from_resolution(Vec2::new(resize.width, resize.height)).apply(query);
 }
 
 fn handle_scroll(
@@ -269,7 +526,7 @@ fn handle_pointer_scroll(
     scroll: &Scroll,
     font_size: f32,
 ) {
-    let mut delta = Vec2::new(scroll.x, scroll.y);
+    let mut delta = -Vec2::new(scroll.x, scroll.y);
 
     match scroll.unit {
         MouseScrollUnit::Line => delta *= font_size,
@@ -277,192 +534,4 @@ fn handle_pointer_scroll(
     }
 
     handle_scroll(scroll_position, node, computed, delta);
-}
-
-fn aside_node(
-    responsive_data: ResponsiveData,
-    children: &[Entity],
-    commands: &mut Commands,
-) -> Entity {
-    commands
-        .spawn((
-            Node {
-                display: Display::Flex,
-                flex_direction: FlexDirection::Column,
-                min_width: Val::Px(48.0),
-                min_height: Val::Px(48.0),
-                width: responsive_data.aside_width,
-                max_height: Val::Vh(100.0),
-                overflow: Overflow {
-                    x: OverflowAxis::Hidden,
-                    y: OverflowAxis::Scroll,
-                },
-                ..Default::default()
-            },
-            AsideElement,
-        ))
-        .observe(
-            |event: On<Pointer<Scroll>>,
-             mut query: Query<(&mut ScrollPosition, &Node, &ComputedNode)>| {
-                if let Ok((scroll_position, node, computed)) = query.get_mut(event.entity) {
-                    handle_pointer_scroll(
-                        scroll_position,
-                        node,
-                        computed,
-                        event.event(),
-                        ASIDE_FONT_SIZE,
-                    );
-                }
-            },
-        )
-        .observe(|event: On<Pointer<Click>>, query: Query<&ComputedNode>| {
-            if let Ok(aside) = query.get(event.entity) {
-                dbg!(aside.content_size(), aside.size());
-            }
-        })
-        .add_children(children)
-        .id()
-}
-
-fn main_aside_separator(commands: &mut Commands) -> Entity {
-    commands
-        .spawn((
-            Node {
-                min_width: Val::Px(2.0),
-                min_height: Val::Px(2.0),
-                ..Default::default()
-            },
-            BackgroundColor(NEUTRAL_50),
-        ))
-        .id()
-}
-
-fn main_node(
-    responsive_data: ResponsiveData,
-    children: &[Entity],
-    commands: &mut Commands,
-) -> Entity {
-    commands
-        .spawn((
-            Node {
-                display: Display::Flex,
-                flex_direction: FlexDirection::Column,
-                flex_grow: 1.0,
-                padding: responsive_data.main_padding,
-                max_height: Val::Percent(100.0),
-                ..Default::default()
-            },
-            MainElement,
-        ))
-        .observe(|event: On<Pointer<Click>>, query: Query<&ComputedNode>| {
-            if let Ok(main) = query.get(event.entity) {
-                dbg!(main.content_size(), main.size());
-            }
-        })
-        .add_children(children)
-        .id()
-}
-
-fn main_aside_wrapper(
-    responsive_data: ResponsiveData,
-    children: &[Entity],
-    commands: &mut Commands,
-) -> Entity {
-    commands
-        .spawn((
-            MainAsideWrapper,
-            Node {
-                display: Display::Flex,
-                flex_direction: responsive_data.main_aside_wrapper_direction,
-                align_items: AlignItems::Stretch,
-                flex_grow: 1.0,
-                ..Default::default()
-            },
-        ))
-        .add_children(children)
-        .id()
-}
-
-fn root_node(children: &[Entity], commands: &mut Commands) -> Entity {
-    commands
-        .spawn((
-            AboutMenuRootNode,
-            Node {
-                display: Display::Flex,
-                flex_direction: FlexDirection::Column,
-                align_items: AlignItems::Stretch,
-                width: Val::Vw(100.0),
-                height: Val::Vh(100.0),
-                ..Default::default()
-            },
-        ))
-        .add_children(children)
-        .id()
-}
-
-pub(crate) fn init_about_menu(
-    window: Option<Single<&Window, With<PrimaryWindow>>>,
-    mut commands: Commands,
-    server: Res<AssetServer>,
-) {
-    let doto_font = server.load::<Font>(URI_FONT_DOTO_ROUNDED_BOLD);
-    let wdxl_font = server.load::<Font>(URI_FONT_WDXL_LUBRIFONT_SC);
-
-    let main_font = TextFont::from(wdxl_font.clone()).with_font_size(MAIN_FONT_SIZE);
-    let tab_font = TextFont::from(wdxl_font).with_font_size(ASIDE_FONT_SIZE);
-
-    let responsive_data =
-        ResponsiveData::from_resolution(window.map(|w| w.size()).unwrap_or_default());
-
-    let doto_font = TextFont::from(doto_font).with_font_size(32.0);
-
-    let back_button = back_button(&doto_font, responsive_data, &mut commands);
-    let title = title(&doto_font, responsive_data, &mut commands);
-    let header = header(&[back_button, title], &mut commands);
-
-    let header_separator = top_separator(&mut commands);
-
-    let main = main_node(
-        responsive_data,
-        &text_elements(&main_font, 40, &mut commands),
-        &mut commands,
-    );
-    let main_aside_separator = main_aside_separator(&mut commands);
-    let aside = aside_node(
-        responsive_data,
-        &text_elements(&tab_font, 40, &mut commands),
-        &mut commands,
-    );
-    let main_aside_wrapper = main_aside_wrapper(
-        responsive_data,
-        &[aside, main_aside_separator, main],
-        &mut commands,
-    );
-
-    root_node(
-        &[header, header_separator, main_aside_wrapper],
-        &mut commands,
-    );
-
-    commands.spawn((
-        DespawnOnExit(GameScene::AboutMenu),
-        Camera2d,
-        Camera {
-            clear_color: ClearColorConfig::Custom(Color::BLACK),
-            is_active: true,
-            ..Default::default()
-        },
-        IsDefaultUiCamera,
-    ));
-}
-
-pub(crate) fn handle_resize(
-    query: ResponsiveQuery,
-    mut resize_reader: MessageReader<WindowResized>,
-) {
-    let Some(resize) = resize_reader.read().last() else {
-        return;
-    };
-
-    ResponsiveData::from_resolution(Vec2::new(resize.width, resize.height)).apply(query);
 }
