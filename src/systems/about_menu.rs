@@ -284,10 +284,6 @@ fn back_button(
                 flex_grow: responsive_data.back_button_flex_grow,
                 ..Node::DEFAULT
             },
-            TextLayout {
-                justify: Justify::Center,
-                linebreak: LineBreak::WordOrCharacter,
-            },
             TabIndex(0),
         ),
         text_extra: (),

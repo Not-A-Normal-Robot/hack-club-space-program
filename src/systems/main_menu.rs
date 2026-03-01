@@ -62,10 +62,6 @@ pub(crate) fn init_main_menu(
             min_height: Val::Px(48.0),
             ..Node::DEFAULT
         },
-        TextLayout {
-            justify: Justify::Center,
-            linebreak: LineBreak::WordOrCharacter,
-        },
         TabIndex(0),
     );
 
