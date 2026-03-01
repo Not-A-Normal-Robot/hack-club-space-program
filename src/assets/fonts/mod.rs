@@ -1,7 +1,7 @@
 use bevy::{asset::embedded_asset, prelude::*};
 
-pub(crate) const LICENSE_DOTO: &str = include_str!("doto/OFL.txt");
-pub(crate) const LICENSE_WDXL: &str = include_str!("WDXL_Lubrifont_SC/OFL.txt");
+pub(crate) static LICENSE_DOTO: &str = include_str!("doto/OFL.txt");
+pub(crate) static LICENSE_WDXL: &str = include_str!("WDXL_Lubrifont_SC/OFL.txt");
 
 macro_rules! define_fonts {
     ($( $name: ident = $rel_path: literal ),* $(,)?) => {
