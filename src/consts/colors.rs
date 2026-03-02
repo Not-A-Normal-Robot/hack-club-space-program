@@ -50,6 +50,8 @@ const fn hex_to_color(hex: &[u8; 7]) -> Color {
     Color::Srgba(Srgba::rgb(r, g, b))
 }
 
+pub(crate) const ORIBAR_BACKGROUND: Color = Color::Srgba(Srgba::new(0.25, 0.25, 0.25, 0.55));
+
 #[allow(dead_code)]
 pub(crate) mod scheme {
     use crate::consts::colors::hex_to_color;

@@ -1,12 +1,8 @@
 use crate::{
-    assets::fonts::URI_FONT_WDXL_LUBRIFONT_SC,
-    resources::{controls::GameControlMode, scene::GameScene},
+    assets::fonts::URI_FONT_WDXL_LUBRIFONT_SC, components::main_game::ui::controls::ControlsText,
+    resources::controls::GameControlMode,
 };
 use bevy::prelude::*;
-
-#[derive(Component)]
-#[require(DespawnOnExit::<GameScene>(GameScene::InGame))]
-pub(crate) struct ControlsText;
 
 pub(crate) fn update_controls_text(
     mut commands: Commands,

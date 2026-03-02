@@ -6,7 +6,7 @@ use crate::{
         i18n::I18nPlugin,
         main_game::{
             controls::GameControlPlugin, debug::GameDebugPlugin, gfx::GameGfxPlugin,
-            logic::GameLogicPlugin, transition::GameTransitionPlugin,
+            logic::GameLogicPlugin, transition::GameTransitionPlugin, ui::GameUiPlugin,
         },
         main_menu::MainMenuPlugin,
         ui::MyUiPlugin,
@@ -55,6 +55,7 @@ impl Plugin for GameSetupPlugin {
             GameTransitionPlugin,
             GameDebugPlugin,
             GameControlPlugin,
+            GameUiPlugin,
             GameGfxPlugin,
         ));
     }
