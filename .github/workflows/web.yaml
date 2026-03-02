@@ -33,7 +33,7 @@ jobs:
           deno-version: v2.x
 
       - name: Setup Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           target: wasm32-unknown-unknown
           rustflags: ""
