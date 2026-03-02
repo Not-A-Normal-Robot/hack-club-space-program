@@ -42,6 +42,92 @@ fn root_margin(window_size: Vec2) -> UiRect {
     }
 }
 
+fn play_button(extra: impl Bundle, font: &TextFont, commands: &mut Commands) -> Entity {
+    let play_button = TextButtonBuilder {
+        extra,
+        text_extra: (),
+        text: fl!("mainMenu__playButton__text"),
+        font,
+        color: TERTIARY_60,
+        hover_color: TERTIARY_80,
+        active_color: TERTIARY_50,
+    }
+    .build();
+
+    commands
+        .spawn(play_button)
+        .observe(
+            |_: On<ActivationEvent>, mut scene: ResMut<NextState<GameScene>>| {
+                scene.set(GameScene::InGame);
+            },
+        )
+        .id()
+}
+
+fn about_button(extra: impl Bundle, font: &TextFont, commands: &mut Commands) -> Entity {
+    let about_button = TextButtonBuilder {
+        extra,
+        text_extra: (),
+        text: fl!("mainMenu__aboutButton__text"),
+        font,
+        color: PRIMARY_60,
+        hover_color: PRIMARY_80,
+        active_color: PRIMARY_50,
+    }
+    .build();
+
+    commands
+        .spawn(about_button)
+        .observe(
+            |_: On<ActivationEvent>, mut scene: ResMut<NextState<GameScene>>| {
+                scene.set(GameScene::AboutMenu);
+            },
+        )
+        .id()
+}
+
+#[cfg(not(target_family = "wasm"))]
+fn quit_button(extra: impl Bundle, font: &TextFont, commands: &mut Commands) -> Entity {
+    let quit_button = TextButtonBuilder {
+        extra,
+        text_extra: (),
+        text: fl!("mainMenu__quitButton__text"),
+        font,
+        color: PRIMARY_60,
+        hover_color: PRIMARY_80,
+        active_color: PRIMARY_50,
+    }
+    .build();
+
+    commands
+        .spawn(quit_button)
+        .observe(|_: On<ActivationEvent>| {
+            std::process::exit(0);
+        })
+        .id()
+}
+
+fn root_node(window: &Window, children: &[Entity], commands: &mut Commands) -> Entity {
+    let root = (
+        MainMenuRootNode,
+        Node {
+            display: Display::Flex,
+            flex_direction: FlexDirection::Column,
+            justify_content: JustifyContent::Center,
+            max_width: Val::Px(480.0),
+            margin: root_margin(window.size()),
+            padding: UiRect::horizontal(Val::Px(16.0)),
+            width: Val::Vw(100.0),
+            height: Val::Vh(100.0),
+            row_gap: Val::Px(16.0),
+            ..Default::default()
+        },
+        TabGroup::new(0),
+    );
+
+    commands.spawn(root).add_children(children).id()
+}
+
 pub(crate) fn init_main_menu(
     mut commands: Commands,
     window: Single<&Window, With<PrimaryWindow>>,
@@ -66,82 +152,21 @@ pub(crate) fn init_main_menu(
         TabIndex(0),
     );
 
-    let play_button = TextButtonBuilder {
-        extra: button_common.clone(),
-        text_extra: (),
-        text: fl!("mainMenu__playButton__text"),
-        font: &doto_font,
-        color: TERTIARY_60,
-        hover_color: TERTIARY_80,
-        active_color: TERTIARY_50,
-    }
-    .build();
-
-    let play_button = commands
-        .spawn(play_button)
-        .observe(
-            |_: On<ActivationEvent>, mut scene: ResMut<NextState<GameScene>>| {
-                scene.set(GameScene::InGame);
-            },
-        )
-        .id();
-
-    let about_button = TextButtonBuilder {
-        extra: button_common.clone(),
-        text_extra: (),
-        text: fl!("mainMenu__aboutButton__text"),
-        font: &doto_font,
-        color: PRIMARY_60,
-        hover_color: PRIMARY_80,
-        active_color: PRIMARY_50,
-    }
-    .build();
-
-    let about_button = commands
-        .spawn(about_button)
-        .observe(
-            |_: On<ActivationEvent>, mut scene: ResMut<NextState<GameScene>>| {
-                scene.set(GameScene::AboutMenu);
-            },
-        )
-        .id();
-
-    #[cfg(not(target_family = "wasm"))]
-    let quit_button = TextButtonBuilder {
-        extra: button_common,
-        text_extra: (),
-        text: fl!("mainMenu__quitButton__text"),
-        font: &doto_font,
-        color: PRIMARY_60,
-        hover_color: PRIMARY_80,
-        active_color: PRIMARY_50,
-    }
-    .build();
-
-    #[cfg(not(target_family = "wasm"))]
-    let quit_button = commands
-        .spawn(quit_button)
-        .observe(|_: On<ActivationEvent>| {
-            std::process::exit(0);
-        })
-        .id();
-
-    let root = (
-        MainMenuRootNode,
-        Node {
-            display: Display::Flex,
-            flex_direction: FlexDirection::Column,
-            justify_content: JustifyContent::Center,
-            max_width: Val::Px(480.0),
-            margin: root_margin(window.size()),
-            padding: UiRect::horizontal(Val::Px(16.0)),
-            width: Val::Vw(100.0),
-            height: Val::Vh(100.0),
-            row_gap: Val::Px(16.0),
-            ..Default::default()
+    let play_button = play_button(button_common.clone(), &doto_font, &mut commands);
+    let about_button = about_button(
+        {
+            #[cfg(target_family = "wasm")]
+            let x = button_common;
+            #[cfg(not(target_family = "wasm"))]
+            let x = button_common.clone();
+            x
         },
-        TabGroup::new(0),
+        &doto_font,
+        &mut commands,
     );
+
+    #[cfg(not(target_family = "wasm"))]
+    let quit_button = quit_button(button_common.clone(), &doto_font, &mut commands);
 
     let root_children = [
         logo,
@@ -151,7 +176,7 @@ pub(crate) fn init_main_menu(
         quit_button,
     ];
 
-    commands.spawn(root).add_children(root_children.as_slice());
+    root_node(*window, root_children.as_slice(), &mut commands);
 
     commands.spawn((
         DespawnOnExit(GameScene::MainMenu),
