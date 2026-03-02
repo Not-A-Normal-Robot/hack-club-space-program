@@ -80,16 +80,16 @@ function execError(
     action: string,
     cmd: string,
     code: number,
-    stdout: Uint8Array,
-    stderr: Uint8Array,
+    stdout: Uint8Array | null,
+    stderr: Uint8Array | null,
 ): Error
 {
     const decoder = new TextDecoder("utf-8");
     return new Error(
         `An error occurred while ${action}:\n` +
         `'${cmd}' returned with exit code ${code}\n\n` +
-        `===== ${cmd} stdout =====\n\n${decoder.decode(stdout)}` +
-        `===== ${cmd} stderr =====\n\n${decoder.decode(stderr)}`
+        (stdout ? `===== ${cmd} stdout =====\n\n${decoder.decode(stdout)}` : "") +
+        (stderr ? `===== ${cmd} stderr =====\n\n${decoder.decode(stderr)}` : "")
     );
 }
 
@@ -216,7 +216,8 @@ async function buildWasm()
     const command = new Deno.Command("cargo", {
         args,
         stdin: "null",
-        stdout: "piped",
+        stdout: "inherit",
+        stderr: "inherit",
     });
 
     const output = await command.output();
@@ -227,8 +228,8 @@ async function buildWasm()
             "compiling Rust to WASM",
             "cargo",
             output.code,
-            output.stdout,
-            output.stderr,
+            null,
+            null,
         );
     }
 
@@ -241,7 +242,8 @@ async function bindWasm()
     const command = new Deno.Command("wasm-bindgen", {
         args: ["--target", "web", "--out-dir", OUT_DIR, "--out-name", GAME_NAME, UNBOUND_WASM_PATH],
         stdin: "null",
-        stdout: "piped",
+        stdout: "inherit",
+        stderr: "inherit"
     });
 
     const output = await command.output();
@@ -252,8 +254,8 @@ async function bindWasm()
             "running wasm-bindgen",
             "wasm-bindgen",
             output.code,
-            output.stdout,
-            output.stderr,
+            null,
+            null,
         );
     }
 }
@@ -277,7 +279,8 @@ async function optimizeWasm()
         const command = new Deno.Command("wasm-opt", {
             args: [BOUND_WASM_PATH, WASM_OPT_LEVEL, "-o", tempFile],
             stdin: "null",
-            stdout: "piped",
+            stdout: "inherit",
+            stderr: "inherit",
         });
         const output = await command.output();
 
@@ -287,8 +290,8 @@ async function optimizeWasm()
                 "optimizing the WASM",
                 "wasm-opt",
                 output.code,
-                output.stdout,
-                output.stderr,
+                null,
+                null,
             );
         }
 
