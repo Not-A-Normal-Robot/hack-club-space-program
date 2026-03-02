@@ -88,8 +88,8 @@ opt-level = 0
 opt-level = 3
 
 [profile.release]
-opt-level = "z"
-lto = "thin"
+opt-level = 3
+lto = "fat"
 strip = "debuginfo"
 
 [target.'cfg(target_family = "wasm")'.dependencies]
