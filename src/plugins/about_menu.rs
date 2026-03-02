@@ -1,6 +1,7 @@
 use crate::{
+    components::about_menu::AboutTab,
     resources::scene::GameScene,
-    systems::about_menu::{AboutTab, handle_resize, handle_tab_switch, init_about_menu},
+    systems::about_menu::{handle_resize, handle_tab_switch, init_about_menu},
 };
 use bevy::prelude::*;
 

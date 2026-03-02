@@ -1,9 +1,12 @@
-use std::borrow::Cow;
-
 use crate::{
     assets::fonts::{LICENSE_DOTO, LICENSE_WDXL},
+    components::about_menu::{
+        AsideElement, BackButton, HeaderTitle, MainAsideSeparator, MainElement, RootNode, TabText,
+    },
     fl,
 };
+use bevy::prelude::*;
+use std::borrow::Cow;
 
 pub(crate) const ABOUT_ENTRY_COUNT: usize = 4;
 
@@ -34,3 +37,20 @@ pub(crate) fn load_article(index: usize) -> Cow<'static, str> {
         ABOUT_ENTRY_COUNT.. => unreachable!("index {index} should not be >= {ABOUT_ENTRY_COUNT}"),
     }
 }
+
+pub(crate) type ResponsiveQuery<'w, 's, 'qw, 'qs> = ParamSet<
+    'w,
+    's,
+    (
+        Query<'qw, 'qs, &'static mut Node, With<RootNode>>,
+        Query<'qw, 'qs, &'static mut Node, With<HeaderTitle>>,
+        Query<'qw, 'qs, &'static mut Node, With<BackButton>>,
+        Query<'qw, 'qs, &'static mut Node, With<MainElement>>,
+        Query<'qw, 'qs, &'static mut Node, With<AsideElement>>,
+        Query<'qw, 'qs, &'static mut Node, With<MainAsideSeparator>>,
+        Query<'qw, 'qs, &'static mut TextLayout, With<TabText>>,
+    ),
+>;
+
+pub(crate) const ASIDE_FONT_SIZE: f32 = 24.0;
+pub(crate) const MAIN_FONT_SIZE: f32 = 21.0;

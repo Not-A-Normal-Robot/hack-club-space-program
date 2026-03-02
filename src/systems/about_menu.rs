@@ -1,20 +1,19 @@
-use core::f32::consts::PI;
-
-use bevy::{
-    ecs::query::QueryData,
-    input::mouse::MouseScrollUnit,
-    input_focus::tab_navigation::{TabGroup, TabIndex},
-    prelude::*,
-    window::{PrimaryWindow, WindowResized},
-};
-
 use crate::{
     assets::fonts::{URI_FONT_DOTO_ROUNDED_BOLD, URI_FONT_WDXL_LUBRIFONT_SC},
     builders::button::TextButtonBuilder,
     checked_assign,
-    components::ui::{ActiveTextColor, HoverTextColor, InactiveTextColor},
+    components::{
+        about_menu::{
+            AboutTab, ArticleElement, AsideElement, BackButton, HeaderTitle, MainAsideSeparator,
+            MainElement, RootNode, TabElement, TabText,
+        },
+        ui::{ActiveTextColor, HoverTextColor, InactiveTextColor},
+    },
     consts::{
-        about::{ABOUT_ENTRY_COUNT, load_article, load_article_title},
+        about::{
+            ABOUT_ENTRY_COUNT, ASIDE_FONT_SIZE, MAIN_FONT_SIZE, ResponsiveQuery, load_article,
+            load_article_title,
+        },
         colors::{
             scheme::{ON_TERTIARY, SURFACE, TERTIARY},
             shades::{
@@ -28,55 +27,14 @@ use crate::{
     resources::scene::GameScene,
     systems::general::ui_activation::ActivationEvent,
 };
-
-type ResponsiveQuery<'w, 's, 'qw, 'qs> = ParamSet<
-    'w,
-    's,
-    (
-        Query<'qw, 'qs, &'static mut Node, With<RootNode>>,
-        Query<'qw, 'qs, &'static mut Node, With<HeaderTitle>>,
-        Query<'qw, 'qs, &'static mut Node, With<BackButton>>,
-        Query<'qw, 'qs, &'static mut Node, With<MainElement>>,
-        Query<'qw, 'qs, &'static mut Node, With<AsideElement>>,
-        Query<'qw, 'qs, &'static mut Node, With<MainAsideSeparator>>,
-        Query<'qw, 'qs, &'static mut TextLayout, With<TabText>>,
-    ),
->;
-
-const ASIDE_FONT_SIZE: f32 = 24.0;
-const MAIN_FONT_SIZE: f32 = 21.0;
-
-#[derive(Component)]
-#[require(DespawnOnExit::<GameScene>(GameScene::AboutMenu), TabGroup)]
-pub(crate) struct RootNode;
-
-#[derive(Component)]
-pub(crate) struct BackButton;
-
-#[derive(Component)]
-pub(crate) struct HeaderTitle;
-
-#[derive(Component)]
-pub(crate) struct MainAsideSeparator;
-
-#[derive(Component)]
-pub(crate) struct MainElement;
-
-#[derive(Component)]
-pub(crate) struct ArticleElement;
-
-#[derive(Component)]
-pub(crate) struct AsideElement;
-
-#[derive(Component)]
-pub(crate) struct TabElement(usize);
-
-#[derive(Component)]
-pub(crate) struct TabText;
-
-#[derive(Clone, Copy, Debug, Default, SubStates, PartialEq, Eq, Hash)]
-#[source(GameScene = GameScene::AboutMenu)]
-pub(crate) struct AboutTab(usize);
+use bevy::{
+    ecs::query::QueryData,
+    input::mouse::MouseScrollUnit,
+    input_focus::tab_navigation::TabIndex,
+    prelude::*,
+    window::{PrimaryWindow, WindowResized},
+};
+use core::f32::consts::PI;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct TabStyle {
