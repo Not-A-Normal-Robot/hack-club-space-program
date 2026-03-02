@@ -7,6 +7,8 @@
 //! Degrees to percentage: theta / 720.0 + 0.5
 //! Radians to percentage: theta / (4 * PI) + 0.5
 
+use core::f32::consts::PI;
+
 use bevy::{
     prelude::*,
     window::{PrimaryWindow, WindowResized},
@@ -16,101 +18,12 @@ use crate::{
     checked_assign,
     components::main_game::ui::oribar::Oribar,
     consts::{
-        colors::{
-            ORIBAR_BACKGROUND,
-            scheme::{PRIMARY, SECONDARY, TERTIARY},
-            shades::{NEUTRAL_50, NEUTRAL_70, NEUTRAL_90},
-        },
-        ui::{ORIBAR_MARK_PER_REV, get_oribar_vw},
+        colors::ORIBAR_BACKGROUND,
+        ui::oribar::{INDEX_TO_PERCENT, MarkIntensity, ORIBAR_MARK_PER_REV, get_oribar_vw},
     },
+    math::quat_to_rot,
     resources::simulation::ActiveVessel,
 };
-
-/// Categories for the intensities of marks.
-/// The higher the discriminant, the lesser the intensity.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-enum MarkIntensity {
-    /// -360°, 0°, or +360°
-    ///
-    /// At indices that are a multiple of [`ORIBAR_MARK_PER_REV`].
-    North,
-    /// 180°, +180°
-    ///
-    /// At indices that are a multiple of [`ORIBAR_MARK_PER_REV`] / 2,
-    /// but not [`ORIBAR_MARK_PER_REV`] itself.
-    South,
-    /// -270°, -90°, +90°, +270°
-    ///
-    /// At indices that are a multiple of [`ORIBAR_MARK_PER_REV`] / 4,
-    /// but not [`ORIBAR_MARK_PER_REV`] / 2.
-    Horizontal,
-    /// -315°, -225°, -135°, -45°, +45°, +135°, +225°, +315°
-    ///
-    /// At indices that are a multiple of [`ORIBAR_MARK_PER_REV`] / 8,
-    /// but not [`ORIBAR_MARK_PER_REV`] / 4.
-    Eighths,
-    /// At even indices.
-    Even,
-    /// At odd indices.
-    Odd,
-}
-
-impl MarkIntensity {
-    const fn from_index(index: u16) -> Self {
-        if index.is_multiple_of(ORIBAR_MARK_PER_REV) {
-            Self::North
-        } else if index.is_multiple_of(ORIBAR_MARK_PER_REV / 2) {
-            Self::South
-        } else if index.is_multiple_of(ORIBAR_MARK_PER_REV / 4) {
-            Self::Horizontal
-        } else if index.is_multiple_of(ORIBAR_MARK_PER_REV / 8) {
-            Self::Eighths
-        } else if index.is_multiple_of(2) {
-            Self::Even
-        } else {
-            Self::Odd
-        }
-    }
-
-    /// Returns the width in percentage of the mark at this intensity.
-    const fn width(self) -> f32 {
-        match self {
-            Self::North | Self::South | Self::Horizontal => 0.15,
-            Self::Eighths => 0.125,
-            Self::Even | Self::Odd => 0.1,
-        }
-    }
-
-    /// Returns the height in percentage of the mark at this intensity.
-    const fn height(self) -> f32 {
-        match self {
-            Self::North => 100.0,
-            Self::South => 87.5,
-            Self::Horizontal => 75.0,
-            Self::Eighths => 50.0,
-            Self::Even => 30.0,
-            Self::Odd => 25.0,
-        }
-    }
-
-    /// Returns the size in percentage of the mark at this intensity.
-    const fn size(self) -> Vec2 {
-        Vec2::new(self.width(), self.height())
-    }
-
-    /// Returns the color of the mark at this intensity.
-    const fn color(self) -> Color {
-        match self {
-            Self::North => PRIMARY,
-            Self::South => SECONDARY,
-            Self::Horizontal => TERTIARY,
-            Self::Eighths => NEUTRAL_90,
-            Self::Even | Self::Odd => NEUTRAL_70,
-        }
-    }
-}
-
-const INDEX_TO_PERCENT: f32 = 50.0 / ORIBAR_MARK_PER_REV as f32;
 
 fn create_mark(index: u16, commands: &mut Commands) -> Entity {
     // The percentage of the position at the middle of the line.
@@ -166,6 +79,8 @@ pub(crate) fn init_oribar(screen: Single<&Window, With<PrimaryWindow>>, mut comm
 
     let marks = (0..=ORIBAR_MARK_PER_REV * 2).map(|i| create_mark(i, &mut commands));
 
+    // TODO: Texts i.e. "NESW"
+
     let children: Box<[Entity]> = core::iter::once(rect).chain(marks).collect();
 
     commands.spawn(bundle).add_children(&children);
@@ -173,9 +88,27 @@ pub(crate) fn init_oribar(screen: Single<&Window, With<PrimaryWindow>>, mut comm
 
 pub(crate) fn update_oribar(
     mut oribar: Single<&mut Node, With<Oribar>>,
+    screen: Single<&Window, With<PrimaryWindow>>,
+    query: Query<&Transform>,
     active_vessel: Res<ActiveVessel>,
 ) {
-    // TODO: Save active vessel prev orientation
+    if let Ok(transform) = query.get(active_vessel.entity) {
+        // TODO: Consider rotations relative to planet center (not world-space)
+
+        #[expect(clippy::cast_possible_truncation)]
+        let rotation = quat_to_rot(transform.rotation) as f32;
+
+        // We need to shift it by +50vw
+        let total_vw = get_oribar_vw(screen.size());
+
+        let selected_vw = total_vw * rotation / (4.0 * PI);
+
+        let left_vw = selected_vw + 50.0;
+
+        let left_percent = left_vw.rem_euclid(total_vw / 2.0) - total_vw / 2.0;
+
+        checked_assign!(oribar.left, Val::Vw(left_percent));
+    }
 }
 
 pub(crate) fn handle_resize(
