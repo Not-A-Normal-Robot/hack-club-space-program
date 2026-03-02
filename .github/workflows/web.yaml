@@ -1,0 +1,66 @@
+name: WASM Build
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  BINARYEN_VERSION: "version_126"
+
+jobs:
+  build:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Deno
+        with:
+          deno-version: v2.x
+
+      - name: Setup Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain
+        with:
+          target: wasm32-unknown-unknown
+          rustflags: ""
+
+      - name: Install wasm-bindgen-cli
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-bindgen-cli
+
+      - name: Install binaryen for wasm-opt
+        run: |
+          wget https://github.com/WebAssembly/binaryen/releases/download/${{ env.BINARYEN_VERSION }}/binaryen-${{ env.BINARYEN_VERSION }}-x86_64-linux.tar.gz
+          tar -xzf binaryen-${{ env.BINARYEN_VERSION }}-x86_64-linux.tar.gz
+          echo "${{ github.workspace }}/binaryen-${{ env.BINARYEN_VERSION }}/bin" >> "$GITHUB_PATH"
+
+      - name: Install Java
+        uses: actions/setup-java@v5
+        with:
+          java-version: "25"
+          distribution: "temurin"
+
+      - name: Run build script
+        run: ${{ github.workspace }}/scripts/build-web.ts
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "./target/wasm32-unknown-unknown/web"
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
