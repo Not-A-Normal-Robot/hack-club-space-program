@@ -210,7 +210,16 @@ async function main()
         LOADING_TEXT.textContent = "Instantiating WASM module...";
     }
 
-    await wbg({ module_or_path: module });
+    try
+    {
+        await wbg({ module_or_path: module });
+    } catch (e)
+    {
+        displayLoadError(
+            "WBG instantiation",
+            /** @type {Error} *//** @type {*} */(e)
+        );
+    }
 
     if (LOADING_OVERLAY)
     {
