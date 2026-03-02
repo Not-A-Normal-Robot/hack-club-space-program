@@ -408,6 +408,7 @@ fn main_node(
             MainElement,
         ))
         .observe(pointer_scroll_observer_system(MAIN_FONT_SIZE))
+        .observe(drag_scroll_observer_system(MAIN_FONT_SIZE))
         .add_children(children)
         .id()
 }
@@ -486,6 +487,7 @@ fn aside_node(
             AsideElement,
         ))
         .observe(pointer_scroll_observer_system(ASIDE_FONT_SIZE))
+        .observe(drag_scroll_observer_system(ASIDE_FONT_SIZE))
         .add_children(children)
         .id()
 }
@@ -615,16 +617,16 @@ fn handle_scroll(
 
 #[derive(QueryData)]
 #[query_data(mutable)]
-struct PointerScrollQueryData {
+struct ScrollQueryData {
     scroll_position: &'static mut ScrollPosition,
     node: &'static Node,
     computed: &'static ComputedNode,
 }
 
-type ScrollQuery<'w, 's> = Query<'w, 's, PointerScrollQueryData>;
+type ScrollQuery<'w, 's> = Query<'w, 's, ScrollQueryData>;
 
 fn handle_pointer_scroll(
-    scroll_data: PointerScrollQueryDataItem,
+    scroll_data: ScrollQueryDataItem,
     keyboard_input: &ButtonInput<KeyCode>,
     scroll: &Scroll,
     font_size: f32,
@@ -656,6 +658,14 @@ fn pointer_scroll_observer_system(
           keyboard_input: Res<ButtonInput<KeyCode>>| {
         if let Ok(data) = query.get_mut(event.entity) {
             handle_pointer_scroll(data, &keyboard_input, event.event(), font_size);
+        }
+    }
+}
+
+fn drag_scroll_observer_system(font_size: f32) -> impl Fn(On<Pointer<Drag>>, ScrollQuery) {
+    move |event: On<Pointer<Drag>>, mut query: ScrollQuery| {
+        if let Ok(data) = query.get_mut(event.entity) {
+            handle_scroll(data.scroll_position, data.node, data.computed, event.delta);
         }
     }
 }
