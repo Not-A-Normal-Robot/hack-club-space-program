@@ -408,7 +408,7 @@ fn main_node(
             MainElement,
         ))
         .observe(pointer_scroll_observer_system(MAIN_FONT_SIZE))
-        .observe(drag_scroll_observer_system(MAIN_FONT_SIZE))
+        .observe(drag_scroll_observer_system())
         .add_children(children)
         .id()
 }
@@ -487,7 +487,7 @@ fn aside_node(
             AsideElement,
         ))
         .observe(pointer_scroll_observer_system(ASIDE_FONT_SIZE))
-        .observe(drag_scroll_observer_system(ASIDE_FONT_SIZE))
+        .observe(drag_scroll_observer_system())
         .add_children(children)
         .id()
 }
@@ -662,10 +662,10 @@ fn pointer_scroll_observer_system(
     }
 }
 
-fn drag_scroll_observer_system(font_size: f32) -> impl Fn(On<Pointer<Drag>>, ScrollQuery) {
+fn drag_scroll_observer_system() -> impl Fn(On<Pointer<Drag>>, ScrollQuery) {
     move |event: On<Pointer<Drag>>, mut query: ScrollQuery| {
         if let Ok(data) = query.get_mut(event.entity) {
-            handle_scroll(data.scroll_position, data.node, data.computed, event.delta);
+            handle_scroll(data.scroll_position, data.node, data.computed, -event.delta);
         }
     }
 }
