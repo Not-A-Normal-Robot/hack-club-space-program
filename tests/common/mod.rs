@@ -11,7 +11,7 @@ use bevy::{
     time::TimeUpdateStrategy,
 };
 use hack_club_space_program::{
-    components::frames::{RootSpaceLinearVelocity, RootSpacePosition},
+    components::main_game::frames::{RootSpaceLinearVelocity, RootSpacePosition},
     plugins::main_game::logic::GameLogicPlugin,
     resources::scene::GameScene,
 };

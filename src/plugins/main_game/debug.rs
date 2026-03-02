@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    components::{
+    components::main_game::{
         frames::{RigidSpaceVelocity, RootSpaceLinearVelocity, RootSpacePosition},
         relations::RailMode,
         vessel::Vessel,

@@ -1,4 +1,4 @@
-use crate::components::frames::{RootSpaceLinearVelocity, RootSpacePosition};
+use crate::components::main_game::frames::{RootSpaceLinearVelocity, RootSpacePosition};
 use bevy::prelude::*;
 
 #[derive(Resource)]

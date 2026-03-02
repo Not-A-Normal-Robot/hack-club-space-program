@@ -4,7 +4,9 @@ use bevy::{
 };
 
 use crate::{
-    components::{camera::Focusable, celestial::CelestialBody, relations::CelestialParent},
+    components::main_game::{
+        camera::Focusable, celestial::CelestialBody, relations::CelestialParent,
+    },
     resources::{
         controls::{FocusableData, FocusableEntry, GameControlMode},
         scene::GameScene,

@@ -6,7 +6,7 @@ use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use hack_club_space_program::{
     builders::{celestial::CelestialBodyBuilder, vessel::VesselBuilder},
-    components::{
+    components::main_game::{
         frames::{RootSpaceLinearVelocity, RootSpacePosition},
         relations::{CelestialParent, RailMode, SurfaceAttachment},
     },

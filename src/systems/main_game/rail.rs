@@ -1,5 +1,5 @@
 use crate::{
-    components::{
+    components::main_game::{
         celestial::CelestialBody,
         frames::{RootSpaceLinearVelocity, RootSpacePosition},
         relations::{CelestialChildren, CelestialParent, RailMode, SurfaceAttachment},

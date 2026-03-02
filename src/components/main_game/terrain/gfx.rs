@@ -1,5 +1,5 @@
 use crate::{
-    components::camera::SimCameraZoom,
+    components::main_game::camera::SimCameraZoom,
     consts::terrain::{LOD_DIVISIONS, LOD_VERTS, LOD_VERTS_PER_DIVISION, MIN_LOD_VERTS},
     terrain::{
         TerrainGen, TerrainPoint,
@@ -386,7 +386,7 @@ fn partial_wrapping_copy<T: Clone, const M: usize>(
 mod tests {
     use core::f64::consts::TAU;
 
-    use crate::components::celestial::Terrain;
+    use crate::components::main_game::celestial::Terrain;
 
     use super::*;
     use bevy::mesh::Indices;

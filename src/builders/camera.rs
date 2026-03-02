@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::components::camera::{SimCamera, SimCameraOffset, SimCameraZoom};
+use crate::components::main_game::camera::{SimCamera, SimCameraOffset, SimCameraZoom};
 
 pub struct SimCameraBuilder {
     pub offset: SimCameraOffset,

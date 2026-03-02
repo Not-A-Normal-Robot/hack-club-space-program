@@ -1,5 +1,5 @@
 use crate::{
-    components::{
+    components::main_game::{
         celestial::{CelestialBody, Terrain},
         frames::RootSpacePosition,
         relations::CelestialChildren,

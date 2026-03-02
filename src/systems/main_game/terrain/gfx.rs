@@ -1,5 +1,5 @@
 use crate::{
-    components::{
+    components::main_game::{
         camera::{SimCamera, SimCameraOffset, SimCameraZoom},
         celestial::{CelestialBody, Terrain},
         frames::RootSpacePosition,

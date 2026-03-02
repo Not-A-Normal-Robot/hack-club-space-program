@@ -1,5 +1,5 @@
 use crate::{
-    components::{camera::SimCameraZoom, frames::RootSpacePosition},
+    components::main_game::{camera::SimCameraZoom, frames::RootSpacePosition},
     consts::terrain::{LOD_DIVISIONS, LOD_VERTS},
     terrain::{TerrainGen, TerrainPoint},
 };
@@ -129,7 +129,7 @@ pub(crate) fn get_focus(
 mod tests {
     use bevy::math::DVec2;
 
-    use crate::components::{celestial::Terrain, terrain::gfx::LodVectors};
+    use crate::components::main_game::{celestial::Terrain, terrain::gfx::LodVectors};
 
     use super::*;
     use core::{

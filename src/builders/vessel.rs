@@ -1,4 +1,4 @@
-use crate::components::{
+use crate::components::main_game::{
     camera::Focusable,
     frames::{RigidSpaceVelocity, RootSpaceLinearVelocity, RootSpacePosition},
     relations::{CelestialParent, RailMode},

@@ -1,4 +1,4 @@
-use crate::components::{
+use crate::components::main_game::{
     camera::Focusable,
     celestial::{CelestialBody, Terrain},
     frames::{RigidSpaceVelocity, RootSpaceLinearVelocity, RootSpacePosition},

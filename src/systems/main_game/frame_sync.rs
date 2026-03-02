@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    components::{
+    components::main_game::{
         camera::{SimCamera, SimCameraOffset, SimCameraZoom},
         celestial::Terrain,
         frames::{

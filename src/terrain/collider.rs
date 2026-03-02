@@ -2,7 +2,7 @@ use bevy::{math::DVec2, prelude::*};
 use bevy_rapier2d::rapier::prelude::Aabb;
 
 use crate::{
-    components::celestial::Terrain,
+    components::main_game::celestial::Terrain,
     consts::terrain::{LOD_DIVISIONS, LOD_VERTS},
     terrain::{TerrainGen, TerrainPoint},
 };

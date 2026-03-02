@@ -1,4 +1,4 @@
-use crate::components::{camera::SimCameraZoom, celestial::Terrain};
+use crate::components::main_game::{camera::SimCameraZoom, celestial::Terrain};
 use bevy::{math::DVec2, prelude::*};
 use fastnoise_lite::{FastNoiseLite, FractalType};
 

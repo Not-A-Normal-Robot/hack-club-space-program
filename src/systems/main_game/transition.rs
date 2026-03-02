@@ -1,6 +1,6 @@
 use crate::{
     builders::{camera::SimCameraBuilder, celestial::CelestialBodyBuilder, vessel::VesselBuilder},
-    components::{
+    components::main_game::{
         camera::{SimCamera, SimCameraOffset, SimCameraZoom},
         celestial::Terrain,
         frames::{RootSpaceLinearVelocity, RootSpacePosition},

@@ -1,4 +1,4 @@
-use crate::components::frames::RootSpacePosition;
+use crate::components::main_game::frames::RootSpacePosition;
 use bevy::{math::DVec2, prelude::*};
 use core::ops::Deref;
 

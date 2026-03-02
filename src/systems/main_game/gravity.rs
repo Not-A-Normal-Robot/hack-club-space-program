@@ -4,7 +4,7 @@ use bevy::{ecs::query::QueryData, prelude::*};
 use bevy_rapier2d::prelude::*;
 
 use crate::{
-    components::{
+    components::main_game::{
         celestial::CelestialBody, frames::RootSpacePosition, relations::CelestialParent,
         vessel::Vessel,
     },
@@ -66,7 +66,9 @@ pub(crate) fn apply_gravity(
     });
 }
 
-pub(crate) fn unapply_gravity_to_unloaded(mut vessels: Query<&mut ExternalForce, FilterUnloadedVessels>) {
+pub(crate) fn unapply_gravity_to_unloaded(
+    mut vessels: Query<&mut ExternalForce, FilterUnloadedVessels>,
+) {
     vessels
         .iter_mut()
         .for_each(|mut force| *force = ExternalForce::default());

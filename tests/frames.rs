@@ -5,7 +5,7 @@ use bevy::{math::DVec2, prelude::*};
 use bevy_rapier2d::prelude::*;
 use hack_club_space_program::{
     builders::{camera::SimCameraBuilder, celestial::CelestialBodyBuilder, vessel::VesselBuilder},
-    components::{
+    components::main_game::{
         camera::{SimCameraOffset, SimCameraZoom},
         frames::{
             CameraSpaceTransform, RigidSpaceVelocity, RootSpaceLinearVelocity, RootSpacePosition,

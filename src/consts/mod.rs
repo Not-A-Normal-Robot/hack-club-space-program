@@ -1,6 +1,6 @@
 use std::sync::LazyLock;
 
-use crate::components::{celestial::CelestialBody, vessel::Vessel};
+use crate::components::main_game::{celestial::CelestialBody, vessel::Vessel};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use i18n_embed::fluent::{FluentLanguageLoader, fluent_language_loader};

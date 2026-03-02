@@ -3,7 +3,7 @@
 //! Root Space converts into Rigid Space position (with its own rotation)
 //! Root Space position + Rigid Space rotation + Camera offset = Camera Space transform
 
-use crate::components::camera::SimCameraZoom;
+use crate::components::main_game::camera::SimCameraZoom;
 use bevy::{math::DVec2, prelude::*};
 use bevy_rapier2d::prelude::*;
 use std::fmt::Display;
@@ -187,7 +187,7 @@ wrapper! {
 mod tests {
     use bevy::math::{DVec2, Vec2};
 
-    use crate::components::frames::{
+    use crate::components::main_game::frames::{
         RigidSpaceVelocity, RigidSpaceVelocityImpl as _, RootSpaceLinearVelocity, RootSpacePosition,
     };
 
