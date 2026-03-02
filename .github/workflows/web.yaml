@@ -57,7 +57,7 @@ jobs:
           distribution: "temurin"
 
       - name: Run build script
-        run: ${{ github.workspace }}/scripts/build-web.ts
+        run: ${{ github.workspace }}/scripts/build-web.ts --release
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
