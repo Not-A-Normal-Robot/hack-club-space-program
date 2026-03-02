@@ -218,6 +218,9 @@ async function buildWasm()
         stdin: "null",
         stdout: "inherit",
         stderr: "inherit",
+        env: {
+            RUSTFLAGS: "-C target-feature=+simd128 -C target-feature=+tail-call -C target-feature=+extended-const"
+        }
     });
 
     const output = await command.output();
