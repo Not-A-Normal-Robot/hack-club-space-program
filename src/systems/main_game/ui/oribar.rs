@@ -18,7 +18,7 @@ use crate::{
     assets::fonts::URI_FONT_JETBRAINS_MONO,
     checked_assign,
     components::main_game::{
-        frames::RootSpacePosition,
+        frames::{RootSpaceLinearVelocity, RootSpacePosition},
         ui::oribar::{Oribar, OribarIndicator},
     },
     consts::{
@@ -158,48 +158,51 @@ pub(crate) fn init_oribar(
     ));
 }
 
-struct OribarState {
-    root_rotation: f64,
-    offset: f64,
+#[derive(Component)]
+pub(crate) struct OribarState {
+    /// The rotation of the active vessel relative to its parent body.
+    rel_rotation: f64,
+    /// The prograde direction fo the active vessel relative to the
+    /// parent body.
+    vel_direction: f64,
+    /// The size of the window in logical pixels.
+    window_size: Vec2,
 }
 
 impl OribarState {
     fn new(
         tf_query: Query<&Transform>,
-        parent_query: Query<&RootSpacePosition>,
+        sv_query: Query<(&RootSpacePosition, &RootSpaceLinearVelocity)>,
         active_vessel: Res<ActiveVessel>,
+        screen: Single<&Window, With<PrimaryWindow>>,
     ) -> Option<Self> {
         let Ok(transform) = tf_query.get(active_vessel.entity) else {
             return None;
         };
         let root_rotation = quat_to_rot(transform.rotation);
 
-        let Ok(parent_pos) = parent_query.get(active_vessel.prev_tick_parent) else {
+        let Ok((parent_pos, parent_vel)) = sv_query.get(active_vessel.prev_tick_parent) else {
             return None;
         };
+
         let rel_pos = active_vessel.prev_tick_position.0 - parent_pos.0;
+        let rel_vel = active_vessel.prev_tick_velocity.0 - parent_vel.0;
+
         let longitude = rel_pos.to_angle();
         let offset = -longitude + FRAC_PI_2;
 
         Some(Self {
-            root_rotation,
-            offset,
+            rel_rotation: root_rotation + offset,
+            vel_direction: rel_vel.to_angle() + offset, // FIXME: See if this is correct?
+            window_size: screen.size(),
         })
     }
 
-    fn get_rel_rotation(&self) -> f64 {
-        self.root_rotation + self.offset
-    }
-
-    fn update_oribar(
-        &self,
-        mut oribar: Single<&mut Node, With<Oribar>>,
-        screen: Single<&Window, With<PrimaryWindow>>,
-    ) {
+    fn update_oribar(&self, mut oribar: Single<&mut Node, With<Oribar>>) {
         // We need to shift it by +50vw
-        let total_vw = f64::from(get_oribar_vw(screen.size()));
+        let total_vw = f64::from(get_oribar_vw(self.window_size));
 
-        let selected_vw = total_vw * self.get_rel_rotation() * const { 0.25 * FRAC_1_PI };
+        let selected_vw = total_vw * self.rel_rotation * const { 0.25 * FRAC_1_PI };
 
         let left_vw = selected_vw + 50.0;
         let left_vw = left_vw.rem_euclid(total_vw / 2.0) - total_vw / 2.0;
@@ -211,25 +214,30 @@ impl OribarState {
     }
 
     fn update_indicator(&self, mut indicator: Single<&mut Text, With<OribarIndicator>>) {
-        let rel_rotation = self.get_rel_rotation().to_degrees().rem_euclid(360.0);
+        let rel_rotation = self.rel_rotation.to_degrees().rem_euclid(360.0);
         let rel_rotation_str = format!("{rel_rotation:05.1}°");
 
         checked_assign!(indicator.0, rel_rotation_str);
     }
 }
 
-pub(crate) fn update_oribar(
-    oribar: Single<&mut Node, With<Oribar>>,
-    indicator: Single<&mut Text, With<OribarIndicator>>,
+pub(crate) fn calculate_oribar_state(
     screen: Single<&Window, With<PrimaryWindow>>,
     tf_query: Query<&Transform>,
-    parent_query: Query<&RootSpacePosition>,
+    sv_query: Query<(&RootSpacePosition, &RootSpaceLinearVelocity)>,
     active_vessel: Res<ActiveVessel>,
+) -> Option<OribarState> {
+    OribarState::new(tf_query, sv_query, active_vessel, screen)
+}
+
+pub(crate) fn apply_oribar_state(
+    In(state): In<Option<OribarState>>,
+    oribar: Single<&mut Node, With<Oribar>>,
+    indicator: Single<&mut Text, With<OribarIndicator>>,
 ) {
-    let Some(state) = OribarState::new(tf_query, parent_query, active_vessel) else {
-        return;
-    };
-    state.update_oribar(oribar, screen);
+    let Some(state) = state else { return };
+
+    state.update_oribar(oribar);
     state.update_indicator(indicator);
 }
 

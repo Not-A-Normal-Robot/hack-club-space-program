@@ -10,3 +10,9 @@ pub(crate) struct Oribar;
 #[derive(Component)]
 #[require(DespawnOnExit::<GameScene>(GameScene::InGame), Node)]
 pub(crate) struct OribarIndicator;
+
+#[derive(Component)]
+pub(crate) enum OribarOverlay {
+    Prograde,
+    Retrograde,
+}

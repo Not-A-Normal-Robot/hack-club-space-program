@@ -2,7 +2,9 @@ use bevy::prelude::*;
 
 use crate::{
     resources::scene::GameScene,
-    systems::main_game::ui::oribar::{self, init_oribar, update_oribar},
+    systems::main_game::ui::oribar::{
+        self, apply_oribar_state, calculate_oribar_state, init_oribar,
+    },
 };
 
 #[derive(Component)]
@@ -13,7 +15,11 @@ impl Plugin for GameUiPlugin {
         app.add_systems(OnEnter(GameScene::InGame), init_oribar);
         app.add_systems(
             Update,
-            (update_oribar, oribar::handle_resize).run_if(in_state(GameScene::InGame)),
+            (
+                calculate_oribar_state.pipe(apply_oribar_state),
+                oribar::handle_resize,
+            )
+                .run_if(in_state(GameScene::InGame)),
         );
     }
 }
