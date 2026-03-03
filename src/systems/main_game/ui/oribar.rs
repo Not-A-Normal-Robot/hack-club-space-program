@@ -7,7 +7,7 @@
 //! Degrees to percentage: theta / 720.0 + 0.5
 //! Radians to percentage: theta / (4 * PI) + 0.5
 
-use core::f32::consts::PI;
+use core::f64::consts::{FRAC_1_PI, FRAC_PI_2};
 
 use bevy::{
     prelude::*,
@@ -16,7 +16,7 @@ use bevy::{
 
 use crate::{
     checked_assign,
-    components::main_game::ui::oribar::Oribar,
+    components::main_game::{frames::RootSpacePosition, ui::oribar::Oribar},
     consts::{
         colors::ORIBAR_BACKGROUND,
         ui::oribar::{INDEX_TO_PERCENT, MarkIntensity, ORIBAR_MARK_PER_REV, get_oribar_vw},
@@ -89,26 +89,43 @@ pub(crate) fn init_oribar(screen: Single<&Window, With<PrimaryWindow>>, mut comm
 pub(crate) fn update_oribar(
     mut oribar: Single<&mut Node, With<Oribar>>,
     screen: Single<&Window, With<PrimaryWindow>>,
-    query: Query<&Transform>,
+    tf_query: Query<&Transform>,
+    parent_query: Query<&RootSpacePosition>,
     active_vessel: Res<ActiveVessel>,
 ) {
-    if let Ok(transform) = query.get(active_vessel.entity) {
-        // TODO: Consider rotations relative to planet center (not world-space)
+    /*
+    1. Get relative pos of vessel to parent
+    2. Get angle between rel vector to +x (atan2) to get longitude
+    3. Root-space transform rotation - longitude
+    4. Don't forget rem_euclid!
+     */
+    let Ok(transform) = tf_query.get(active_vessel.entity) else {
+        return;
+    };
 
-        #[expect(clippy::cast_possible_truncation)]
-        let rotation = quat_to_rot(transform.rotation) as f32;
+    let Ok(parent_pos) = parent_query.get(active_vessel.prev_tick_parent) else {
+        return;
+    };
 
-        // We need to shift it by +50vw
-        let total_vw = get_oribar_vw(screen.size());
+    let rel_pos = active_vessel.prev_tick_position.0 - parent_pos.0;
+    let longitude = rel_pos.to_angle();
 
-        let selected_vw = total_vw * rotation / (4.0 * PI);
+    let rootspace_rotation = quat_to_rot(transform.rotation);
 
-        let left_vw = selected_vw + 50.0;
+    let rel_rotation = rootspace_rotation - longitude + FRAC_PI_2;
 
-        let left_percent = left_vw.rem_euclid(total_vw / 2.0) - total_vw / 2.0;
+    // We need to shift it by +50vw
+    let total_vw = f64::from(get_oribar_vw(screen.size()));
 
-        checked_assign!(oribar.left, Val::Vw(left_percent));
-    }
+    let selected_vw = total_vw * rel_rotation * const { 0.25 * FRAC_1_PI };
+
+    let left_vw = selected_vw + 50.0;
+    let left_vw = left_vw.rem_euclid(total_vw / 2.0) - total_vw / 2.0;
+
+    #[expect(clippy::cast_possible_truncation)]
+    let val = Val::Vw(left_vw as f32);
+
+    checked_assign!(oribar.left, val);
 }
 
 pub(crate) fn handle_resize(

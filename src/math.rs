@@ -2,6 +2,9 @@ use bevy::math::Quat;
 
 /// Gets the rotation of the quaternion, assuming the
 /// quaternion stays in the 2D XY plane.
+///
+/// # Output
+/// If not NaN, outputs a float in the range [-tau, +tau].
 #[must_use]
 pub(crate) fn quat_to_rot(quat: Quat) -> f64 {
     2.0 * f64::from(quat.z).atan2(f64::from(quat.w))
