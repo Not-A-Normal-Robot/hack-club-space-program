@@ -2,6 +2,7 @@ use bevy::{asset::embedded_asset, prelude::*};
 
 pub(crate) static LICENSE_DOTO: &str = include_str!("doto/OFL.txt");
 pub(crate) static LICENSE_WDXL: &str = include_str!("WDXL_Lubrifont_SC/OFL.txt");
+pub(crate) static LICENSE_JETBRAINS_MONO: &str = include_str!("JetBrains_Mono/OFL.txt");
 
 macro_rules! define_fonts {
     ($( $name: ident = $rel_path: literal ),* $(,)?) => {
@@ -26,6 +27,8 @@ define_fonts! {
     DOTO_BLACK = "doto/Doto-Black.ttf",
     DOTO_BOLD = "doto/Doto-Bold.ttf",
     WDXL_LUBRIFONT_SC = "WDXL_Lubrifont_SC/WDXLLubrifontSC-Regular.ttf",
+    JETBRAINS_MONO = "JetBrains_Mono/JetBrainsMono-VariableFont_wght.ttf",
+    JETBRAINS_MONO_ITALIC = "JetBrains_Mono/JetBrainsMono-Italic-VariableFont_wght.ttf",
 }
 
 #[cfg(test)]

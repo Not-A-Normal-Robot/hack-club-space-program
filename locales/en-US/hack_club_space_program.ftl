@@ -11,8 +11,6 @@ gameControlMode__cameraControlMode = camera control mode
 
 aboutMenu__backButton__text = { general__back }
 aboutMenu__title__text = About
-aboutMenu__licenseTitles__doto = Doto font license
-aboutMenu__licenseTitles__wdxl = WDXL Lubrifont SC font license
 aboutMenu__article__main__title = About Hack Club Space Program
 aboutMenu__article__main__body =
     Hack Club Space Program is an open-source game originally made for Hack Club Flavortown.
@@ -27,3 +25,4 @@ aboutMenu__article__main__body =
 aboutMenu__article__gameLicense__title = License: Hack Club Space Program
 aboutMenu__article__dotoLicense__title = Font license: Doto
 aboutMenu__article__wdxlLicense__title = Font license: WDXL Lubrifont SC
+aboutMenu__article__jbmLicense__title = Font license: JetBrains Mono
