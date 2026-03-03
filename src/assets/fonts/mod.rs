@@ -49,6 +49,8 @@ mod tests {
             URI_FONT_DOTO_ROUNDED_BLACK,
             URI_FONT_DOTO_ROUNDED_BOLD,
             URI_FONT_WDXL_LUBRIFONT_SC,
+            URI_FONT_JETBRAINS_MONO,
+            URI_FONT_JETBRAINS_MONO_ITALIC,
         ];
         let mut app = min_app();
         app.get_asset_server().register_loader(FontLoader);
