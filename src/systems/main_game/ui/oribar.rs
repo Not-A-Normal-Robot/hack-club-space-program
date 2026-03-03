@@ -15,7 +15,7 @@ use bevy::{
 };
 
 use crate::{
-    assets::fonts::URI_FONT_WDXL_LUBRIFONT_SC,
+    assets::fonts::URI_FONT_JETBRAINS_MONO,
     checked_assign,
     components::main_game::{
         frames::RootSpacePosition,
@@ -25,8 +25,9 @@ use crate::{
         colors::{ORIBAR_BACKGROUND, scheme::ERROR},
         ui::oribar::{
             INDEX_TO_PERCENT, MarkIntensity, ORIBAR_HEIGHT, ORIBAR_INDICATOR_BOTTOM,
-            ORIBAR_INDICATOR_HEIGHT, ORIBAR_INDICATOR_LEFT, ORIBAR_INDICATOR_WIDTH,
-            ORIBAR_MARK_PER_REV, ORIBAR_NEEDLE_LEFT, ORIBAR_NEEDLE_WIDTH, get_oribar_vw,
+            ORIBAR_INDICATOR_HEIGHT, ORIBAR_INDICATOR_LEFT, ORIBAR_INDICATOR_PADDING,
+            ORIBAR_INDICATOR_WIDTH, ORIBAR_MARK_PER_REV, ORIBAR_NEEDLE_LEFT, ORIBAR_NEEDLE_WIDTH,
+            get_oribar_vw,
         },
     },
     math::quat_to_rot,
@@ -88,7 +89,7 @@ pub(crate) fn init_oribar(
     mut commands: Commands,
     server: Res<AssetServer>,
 ) {
-    let font = server.load::<Font>(URI_FONT_WDXL_LUBRIFONT_SC);
+    let font = server.load::<Font>(URI_FONT_JETBRAINS_MONO);
     let text_font = TextFont::from(font).with_font_size(20.0);
 
     let vw = get_oribar_vw(screen.size());
@@ -141,17 +142,20 @@ pub(crate) fn init_oribar(
     commands.spawn((
         Node {
             position_type: PositionType::Absolute,
+            display: Display::Flex,
+            justify_content: JustifyContent::Center,
+            align_items: AlignItems::Center,
             width: ORIBAR_INDICATOR_WIDTH,
             height: ORIBAR_INDICATOR_HEIGHT,
             left: ORIBAR_INDICATOR_LEFT,
             bottom: ORIBAR_INDICATOR_BOTTOM,
-            padding: UiRect::left(Val::Px(8.0)),
+            padding: ORIBAR_INDICATOR_PADDING,
             ..Default::default()
         },
         BackgroundColor(ORIBAR_BACKGROUND),
-        text_font,
-        Text(String::new()),
-        OribarIndicator,
+        DespawnOnExit(GameScene::InGame),
+        ZIndex(1),
+        children![(OribarIndicator, Text(String::new()), text_font)],
     ));
 }
 

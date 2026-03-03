@@ -173,6 +173,7 @@ pub(crate) const ORIBAR_NEEDLE_LEFT: Val = Val::Vw(ORIBAR_NEEDLE_LEFT_VW);
 pub(crate) const ORIBAR_INDICATOR_LEFT_VW: f32 = 50.0 + (ORIBAR_NEEDLE_WIDTH_VW / 2.0);
 pub(crate) const ORIBAR_INDICATOR_LEFT: Val = Val::Vw(ORIBAR_INDICATOR_LEFT_VW);
 
-pub(crate) const ORIBAR_INDICATOR_WIDTH: Val = Val::Px(60.0);
+pub(crate) const ORIBAR_INDICATOR_WIDTH: Val = Val::Px(84.0);
 pub(crate) const ORIBAR_INDICATOR_HEIGHT: Val = Val::Px(ORIBAR_HEIGHT_PX / 2.0);
 pub(crate) const ORIBAR_INDICATOR_BOTTOM: Val = Val::Px(ORIBAR_HEIGHT_PX / 2.0);
+pub(crate) const ORIBAR_INDICATOR_PADDING: UiRect = UiRect::axes(Val::Px(8.0), Val::Px(4.0));
