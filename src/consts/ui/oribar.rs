@@ -1,8 +1,12 @@
-use crate::consts::colors::{
-    scheme::{PRIMARY, SECONDARY, TERTIARY},
-    shades::{NEUTRAL_70, NEUTRAL_90},
+use crate::{
+    components::main_game::ui::oribar::OribarOverlay,
+    consts::colors::{
+        scheme::{PRIMARY, SECONDARY, TERTIARY},
+        shades::{NEUTRAL_70, NEUTRAL_90},
+    },
 };
 use bevy::prelude::*;
+use strum::EnumCount;
 
 /// The threshold of when to switch oribar scales.
 ///
@@ -177,3 +181,8 @@ pub(crate) const ORIBAR_INDICATOR_WIDTH: Val = Val::Px(84.0);
 pub(crate) const ORIBAR_INDICATOR_HEIGHT: Val = Val::Px(ORIBAR_HEIGHT_PX / 2.0);
 pub(crate) const ORIBAR_INDICATOR_BOTTOM: Val = Val::Px(ORIBAR_HEIGHT_PX / 2.0);
 pub(crate) const ORIBAR_INDICATOR_PADDING: UiRect = UiRect::axes(Val::Px(8.0), Val::Px(4.0));
+
+pub(crate) const ORIBAR_MARK_COUNT: usize = ORIBAR_MARK_PER_REV as usize * 2 + 1;
+pub(crate) const ORIBAR_TEXTS_COUNT: usize = 16 + 1;
+pub(crate) const ORIBAR_CHILDREN_COUNT: usize =
+    1 + ORIBAR_MARK_COUNT + ORIBAR_TEXTS_COUNT + OribarOverlay::COUNT;

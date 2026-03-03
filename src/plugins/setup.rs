@@ -20,7 +20,6 @@ use bevy::{
     log::LogPlugin,
     prelude::*,
 };
-use bevy_resvg::prelude::SvgPlugin;
 
 /// The entry point for the full game as a plugin.
 ///
@@ -44,7 +43,7 @@ impl Plugin for GameSetupPlugin {
                     ..Default::default()
                 }),
         );
-        app.add_plugins((InputDispatchPlugin, TabNavigationPlugin, SvgPlugin));
+        app.add_plugins((InputDispatchPlugin, TabNavigationPlugin));
         initialize_assets(app);
         app.init_state::<GameScene>();
         app.add_plugins((

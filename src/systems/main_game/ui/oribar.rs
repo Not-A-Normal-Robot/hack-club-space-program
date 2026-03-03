@@ -13,27 +13,32 @@ use bevy::{
     prelude::*,
     window::{PrimaryWindow, WindowResized},
 };
+use bevy_vello::prelude::UiVelloSvg;
+use strum::IntoEnumIterator;
 
 use crate::{
     assets::fonts::URI_FONT_JETBRAINS_MONO,
     checked_assign,
     components::main_game::{
         frames::{RootSpaceLinearVelocity, RootSpacePosition},
-        ui::oribar::{Oribar, OribarIndicator},
+        ui::oribar::{Oribar, OribarIndicator, OribarOverlay},
     },
     consts::{
         colors::{ORIBAR_BACKGROUND, scheme::ERROR},
         ui::oribar::{
-            INDEX_TO_PERCENT, MarkIntensity, ORIBAR_HEIGHT, ORIBAR_INDICATOR_BOTTOM,
-            ORIBAR_INDICATOR_HEIGHT, ORIBAR_INDICATOR_LEFT, ORIBAR_INDICATOR_PADDING,
-            ORIBAR_INDICATOR_WIDTH, ORIBAR_MARK_PER_REV, ORIBAR_NEEDLE_LEFT, ORIBAR_NEEDLE_WIDTH,
-            get_oribar_vw,
+            INDEX_TO_PERCENT, MarkIntensity, ORIBAR_CHILDREN_COUNT, ORIBAR_HEIGHT,
+            ORIBAR_INDICATOR_BOTTOM, ORIBAR_INDICATOR_HEIGHT, ORIBAR_INDICATOR_LEFT,
+            ORIBAR_INDICATOR_PADDING, ORIBAR_INDICATOR_WIDTH, ORIBAR_MARK_PER_REV,
+            ORIBAR_NEEDLE_LEFT, ORIBAR_NEEDLE_WIDTH, get_oribar_vw,
         },
     },
     math::quat_to_rot,
     resources::{scene::GameScene, simulation::ActiveVessel},
 };
 
+/// Spawns a gradation mark with the specified index.
+///
+/// |""""|""""|""""|
 fn create_mark(index: u16, commands: &mut Commands) -> Entity {
     // The percentage of the position at the middle of the line.
     let middle_percent = f32::from(index) * INDEX_TO_PERCENT;
@@ -83,6 +88,51 @@ fn create_text(eighth: u16, font: &TextFont, commands: &mut Commands) -> Entity 
         .id()
 }
 
+/// Create an oribar overlay, e.g. prograde & retrograde.
+fn create_overlay(
+    overlay_kind: OribarOverlay,
+    commands: &mut Commands,
+    asset_server: &AssetServer,
+) -> Entity {
+    // Because of screen wrap we need 5 overlays:
+    // + ... - ... + ... - ... +
+    //             |
+
+    let (pos_img, neg_img) = overlay_kind.get_icon_set(asset_server);
+
+    let wrapper = Node {
+        position_type: PositionType::Absolute,
+        width: Val::Percent(100.0),
+        height: Val::Percent(100.0),
+        ..Default::default()
+    };
+
+    let children: Box<[Entity]> = (0..=5u8)
+        .map(|i| {
+            let is_positive = i.is_multiple_of(2);
+
+            let img = if is_positive {
+                pos_img.clone()
+            } else {
+                neg_img.clone()
+            };
+
+            commands
+                .spawn((
+                    Node {
+                        position_type: PositionType::Absolute,
+                        left: Val::Percent(25.0 * f32::from(i)),
+                        ..Default::default()
+                    },
+                    UiVelloSvg(img),
+                ))
+                .id()
+        })
+        .collect();
+
+    commands.spawn(wrapper).add_children(&children).id()
+}
+
 pub(crate) fn init_oribar(
     screen: Single<&Window, With<PrimaryWindow>>,
     mut commands: Commands,
@@ -115,13 +165,13 @@ pub(crate) fn init_oribar(
         BackgroundColor(ORIBAR_BACKGROUND),
     );
 
-    let mut children: Vec<Entity> =
-        Vec::with_capacity(1 + (ORIBAR_MARK_PER_REV as usize * 2 + 1) + (16 + 1));
+    let mut children: Vec<Entity> = Vec::with_capacity(ORIBAR_CHILDREN_COUNT);
 
     children.push(commands.spawn(rect).id());
 
     children.extend((0..=ORIBAR_MARK_PER_REV * 2).map(|i| create_mark(i, &mut commands)));
     children.extend((0..=16).map(|i| create_text(i, &text_font, &mut commands)));
+    children.extend(OribarOverlay::iter().map(|i| create_overlay(i, &mut commands, &server)));
 
     commands.spawn(bundle).add_children(&children);
 
@@ -193,7 +243,7 @@ impl OribarState {
 
         Some(Self {
             rel_rotation: root_rotation + offset,
-            vel_direction: rel_vel.to_angle() + offset, // FIXME: See if this is correct?
+            vel_direction: rel_vel.to_angle() + offset,
             window_size: screen.size(),
         })
     }
