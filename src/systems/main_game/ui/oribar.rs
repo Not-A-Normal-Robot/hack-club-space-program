@@ -66,7 +66,6 @@ fn create_text(eighth: u16, font: &TextFont, commands: &mut Commands) -> Entity 
     let color = intensity.color();
 
     let left = f32::from(eighth).mul_add(const { 100.0 / 16.0 }, size.x.mul_add(0.5, 0.125));
-    // let bottom = size.y - 50.0;
     let bottom = 5.0;
 
     commands
@@ -159,51 +158,79 @@ pub(crate) fn init_oribar(
     ));
 }
 
+struct OribarState {
+    root_rotation: f64,
+    offset: f64,
+}
+
+impl OribarState {
+    fn new(
+        tf_query: Query<&Transform>,
+        parent_query: Query<&RootSpacePosition>,
+        active_vessel: Res<ActiveVessel>,
+    ) -> Option<Self> {
+        let Ok(transform) = tf_query.get(active_vessel.entity) else {
+            return None;
+        };
+        let root_rotation = quat_to_rot(transform.rotation);
+
+        let Ok(parent_pos) = parent_query.get(active_vessel.prev_tick_parent) else {
+            return None;
+        };
+        let rel_pos = active_vessel.prev_tick_position.0 - parent_pos.0;
+        let longitude = rel_pos.to_angle();
+        let offset = -longitude + FRAC_PI_2;
+
+        Some(Self {
+            root_rotation,
+            offset,
+        })
+    }
+
+    fn get_rel_rotation(&self) -> f64 {
+        self.root_rotation + self.offset
+    }
+
+    fn update_oribar(
+        &self,
+        mut oribar: Single<&mut Node, With<Oribar>>,
+        screen: Single<&Window, With<PrimaryWindow>>,
+    ) {
+        // We need to shift it by +50vw
+        let total_vw = f64::from(get_oribar_vw(screen.size()));
+
+        let selected_vw = total_vw * self.get_rel_rotation() * const { 0.25 * FRAC_1_PI };
+
+        let left_vw = selected_vw + 50.0;
+        let left_vw = left_vw.rem_euclid(total_vw / 2.0) - total_vw / 2.0;
+
+        #[expect(clippy::cast_possible_truncation)]
+        let val = Val::Vw(left_vw as f32);
+
+        checked_assign!(oribar.left, val);
+    }
+
+    fn update_indicator(&self, mut indicator: Single<&mut Text, With<OribarIndicator>>) {
+        let rel_rotation = self.get_rel_rotation().to_degrees().rem_euclid(360.0);
+        let rel_rotation_str = format!("{rel_rotation:05.1}°");
+
+        checked_assign!(indicator.0, rel_rotation_str);
+    }
+}
+
 pub(crate) fn update_oribar(
-    mut oribar: Single<&mut Node, With<Oribar>>,
-    mut indicator: Single<&mut Text, With<OribarIndicator>>,
+    oribar: Single<&mut Node, With<Oribar>>,
+    indicator: Single<&mut Text, With<OribarIndicator>>,
     screen: Single<&Window, With<PrimaryWindow>>,
     tf_query: Query<&Transform>,
     parent_query: Query<&RootSpacePosition>,
     active_vessel: Res<ActiveVessel>,
 ) {
-    /*
-    1. Get relative pos of vessel to parent
-    2. Get angle between rel vector to +x (atan2) to get longitude
-    3. Root-space transform rotation - longitude
-    4. Don't forget rem_euclid!
-     */
-    let Ok(transform) = tf_query.get(active_vessel.entity) else {
+    let Some(state) = OribarState::new(tf_query, parent_query, active_vessel) else {
         return;
     };
-
-    let Ok(parent_pos) = parent_query.get(active_vessel.prev_tick_parent) else {
-        return;
-    };
-
-    let rel_pos = active_vessel.prev_tick_position.0 - parent_pos.0;
-    let longitude = rel_pos.to_angle();
-
-    let rootspace_rotation = quat_to_rot(transform.rotation);
-
-    let rel_rotation = rootspace_rotation - longitude + FRAC_PI_2;
-
-    // We need to shift it by +50vw
-    let total_vw = f64::from(get_oribar_vw(screen.size()));
-
-    let selected_vw = total_vw * rel_rotation * const { 0.25 * FRAC_1_PI };
-
-    let left_vw = selected_vw + 50.0;
-    let left_vw = left_vw.rem_euclid(total_vw / 2.0) - total_vw / 2.0;
-
-    #[expect(clippy::cast_possible_truncation)]
-    let val = Val::Vw(left_vw as f32);
-
-    checked_assign!(oribar.left, val);
-
-    let rel_rotation_str = format!("{:05.1}°", rel_rotation.to_degrees().rem_euclid(360.0));
-
-    checked_assign!(indicator.0, rel_rotation_str);
+    state.update_oribar(oribar, screen);
+    state.update_indicator(indicator);
 }
 
 pub(crate) fn handle_resize(
