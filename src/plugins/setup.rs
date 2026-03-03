@@ -1,5 +1,5 @@
 use crate::{
-    assets::fonts::initialize_fonts,
+    assets::initialize_assets,
     consts::WEB_CANVAS_SELECTOR,
     plugins::{
         about_menu::AboutMenuPlugin,
@@ -20,6 +20,7 @@ use bevy::{
     log::LogPlugin,
     prelude::*,
 };
+use bevy_resvg::prelude::SvgPlugin;
 
 /// The entry point for the full game as a plugin.
 ///
@@ -43,8 +44,8 @@ impl Plugin for GameSetupPlugin {
                     ..Default::default()
                 }),
         );
-        app.add_plugins((InputDispatchPlugin, TabNavigationPlugin));
-        initialize_fonts(app);
+        app.add_plugins((InputDispatchPlugin, TabNavigationPlugin, SvgPlugin));
+        initialize_assets(app);
         app.init_state::<GameScene>();
         app.add_plugins((
             I18nPlugin,
