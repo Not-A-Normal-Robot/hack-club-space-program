@@ -109,6 +109,18 @@ impl MarkIntensity {
         }
     }
 
+    pub(crate) const fn from_eighth(index: u16) -> Self {
+        if index.is_multiple_of(8) {
+            Self::North
+        } else if index.is_multiple_of(4) {
+            Self::South
+        } else if index.is_multiple_of(2) {
+            Self::Horizontal
+        } else {
+            Self::Eighths
+        }
+    }
+
     /// Returns the width in percentage of the mark at this intensity.
     pub(crate) const fn width(self) -> f32 {
         match self {
@@ -148,3 +160,19 @@ impl MarkIntensity {
 }
 
 pub(crate) const INDEX_TO_PERCENT: f32 = 50.0 / ORIBAR_MARK_PER_REV as f32;
+
+pub(crate) const ORIBAR_HEIGHT_PX: f32 = 64.0;
+pub(crate) const ORIBAR_HEIGHT: Val = Val::Px(ORIBAR_HEIGHT_PX);
+
+pub(crate) const ORIBAR_NEEDLE_WIDTH_VW: f32 = 0.25;
+pub(crate) const ORIBAR_NEEDLE_WIDTH: Val = Val::Vw(ORIBAR_NEEDLE_WIDTH_VW);
+
+pub(crate) const ORIBAR_NEEDLE_LEFT_VW: f32 = 50.0 - (ORIBAR_NEEDLE_WIDTH_VW / 2.0);
+pub(crate) const ORIBAR_NEEDLE_LEFT: Val = Val::Vw(ORIBAR_NEEDLE_LEFT_VW);
+
+pub(crate) const ORIBAR_INDICATOR_LEFT_VW: f32 = 50.0 + (ORIBAR_NEEDLE_WIDTH_VW / 2.0);
+pub(crate) const ORIBAR_INDICATOR_LEFT: Val = Val::Vw(ORIBAR_INDICATOR_LEFT_VW);
+
+pub(crate) const ORIBAR_INDICATOR_WIDTH: Val = Val::Px(60.0);
+pub(crate) const ORIBAR_INDICATOR_HEIGHT: Val = Val::Px(ORIBAR_HEIGHT_PX / 2.0);
+pub(crate) const ORIBAR_INDICATOR_BOTTOM: Val = Val::Px(ORIBAR_HEIGHT_PX / 2.0);

@@ -15,14 +15,22 @@ use bevy::{
 };
 
 use crate::{
+    assets::fonts::URI_FONT_WDXL_LUBRIFONT_SC,
     checked_assign,
-    components::main_game::{frames::RootSpacePosition, ui::oribar::Oribar},
+    components::main_game::{
+        frames::RootSpacePosition,
+        ui::oribar::{Oribar, OribarIndicator},
+    },
     consts::{
-        colors::ORIBAR_BACKGROUND,
-        ui::oribar::{INDEX_TO_PERCENT, MarkIntensity, ORIBAR_MARK_PER_REV, get_oribar_vw},
+        colors::{ORIBAR_BACKGROUND, scheme::ERROR},
+        ui::oribar::{
+            INDEX_TO_PERCENT, MarkIntensity, ORIBAR_HEIGHT, ORIBAR_INDICATOR_BOTTOM,
+            ORIBAR_INDICATOR_HEIGHT, ORIBAR_INDICATOR_LEFT, ORIBAR_INDICATOR_WIDTH,
+            ORIBAR_MARK_PER_REV, ORIBAR_NEEDLE_LEFT, ORIBAR_NEEDLE_WIDTH, get_oribar_vw,
+        },
     },
     math::quat_to_rot,
-    resources::simulation::ActiveVessel,
+    resources::{scene::GameScene, simulation::ActiveVessel},
 };
 
 fn create_mark(index: u16, commands: &mut Commands) -> Entity {
@@ -50,15 +58,46 @@ fn create_mark(index: u16, commands: &mut Commands) -> Entity {
         .id()
 }
 
-pub(crate) fn init_oribar(screen: Single<&Window, With<PrimaryWindow>>, mut commands: Commands) {
+/// `eighth` is assumed to range from 0 to 16, inclusively on both ends.
+fn create_text(eighth: u16, font: &TextFont, commands: &mut Commands) -> Entity {
+    let intensity = MarkIntensity::from_eighth(eighth);
+    let size = intensity.size();
+    let color = intensity.color();
+
+    let left = f32::from(eighth).mul_add(const { 100.0 / 16.0 }, size.x.mul_add(0.5, 0.125));
+    // let bottom = size.y - 50.0;
+    let bottom = 5.0;
+
+    commands
+        .spawn((
+            Node {
+                position_type: PositionType::Absolute,
+                left: Val::Percent(left),
+                bottom: Val::Percent(bottom),
+                ..Default::default()
+            },
+            font.clone(),
+            Text((eighth.cast_signed() * -45).rem_euclid(360).to_string()),
+            TextColor(color),
+        ))
+        .id()
+}
+
+pub(crate) fn init_oribar(
+    screen: Single<&Window, With<PrimaryWindow>>,
+    mut commands: Commands,
+    server: Res<AssetServer>,
+) {
+    let font = server.load::<Font>(URI_FONT_WDXL_LUBRIFONT_SC);
+    let text_font = TextFont::from(font).with_font_size(20.0);
+
     let vw = get_oribar_vw(screen.size());
 
     let bundle = (
         Node {
             position_type: PositionType::Absolute,
-            display: Display::Flex,
             width: Val::Vw(vw),
-            height: Val::Vh(6.0),
+            height: ORIBAR_HEIGHT,
             bottom: Val::ZERO,
             ..Default::default()
         },
@@ -75,19 +114,50 @@ pub(crate) fn init_oribar(screen: Single<&Window, With<PrimaryWindow>>, mut comm
         },
         BackgroundColor(ORIBAR_BACKGROUND),
     );
-    let rect = commands.spawn(rect).id();
 
-    let marks = (0..=ORIBAR_MARK_PER_REV * 2).map(|i| create_mark(i, &mut commands));
+    let mut children: Vec<Entity> =
+        Vec::with_capacity(1 + (ORIBAR_MARK_PER_REV as usize * 2 + 1) + (16 + 1));
 
-    // TODO: Texts i.e. "NESW"
+    children.push(commands.spawn(rect).id());
 
-    let children: Box<[Entity]> = core::iter::once(rect).chain(marks).collect();
+    children.extend((0..=ORIBAR_MARK_PER_REV * 2).map(|i| create_mark(i, &mut commands)));
+    children.extend((0..=16).map(|i| create_text(i, &text_font, &mut commands)));
 
     commands.spawn(bundle).add_children(&children);
+
+    commands.spawn((
+        Node {
+            position_type: PositionType::Absolute,
+            width: ORIBAR_NEEDLE_WIDTH,
+            height: ORIBAR_HEIGHT,
+            bottom: Val::ZERO,
+            left: ORIBAR_NEEDLE_LEFT,
+            ..Default::default()
+        },
+        BackgroundColor(ERROR),
+        DespawnOnExit(GameScene::InGame),
+        ZIndex(1),
+    ));
+    commands.spawn((
+        Node {
+            position_type: PositionType::Absolute,
+            width: ORIBAR_INDICATOR_WIDTH,
+            height: ORIBAR_INDICATOR_HEIGHT,
+            left: ORIBAR_INDICATOR_LEFT,
+            bottom: ORIBAR_INDICATOR_BOTTOM,
+            padding: UiRect::left(Val::Px(8.0)),
+            ..Default::default()
+        },
+        BackgroundColor(ORIBAR_BACKGROUND),
+        text_font,
+        Text(String::new()),
+        OribarIndicator,
+    ));
 }
 
 pub(crate) fn update_oribar(
     mut oribar: Single<&mut Node, With<Oribar>>,
+    mut indicator: Single<&mut Text, With<OribarIndicator>>,
     screen: Single<&Window, With<PrimaryWindow>>,
     tf_query: Query<&Transform>,
     parent_query: Query<&RootSpacePosition>,
@@ -126,6 +196,10 @@ pub(crate) fn update_oribar(
     let val = Val::Vw(left_vw as f32);
 
     checked_assign!(oribar.left, val);
+
+    let rel_rotation_str = format!("{:05.1}°", rel_rotation.to_degrees().rem_euclid(360.0));
+
+    checked_assign!(indicator.0, rel_rotation_str);
 }
 
 pub(crate) fn handle_resize(

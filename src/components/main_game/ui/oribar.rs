@@ -6,3 +6,7 @@ use bevy::prelude::*;
 #[derive(Component)]
 #[require(DespawnOnExit::<GameScene>(GameScene::InGame), Node)]
 pub(crate) struct Oribar;
+
+#[derive(Component)]
+#[require(DespawnOnExit::<GameScene>(GameScene::InGame), Node)]
+pub(crate) struct OribarIndicator;
