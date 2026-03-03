@@ -24,7 +24,7 @@ use crate::{
         ui::oribar::{Oribar, OribarIndicator, OribarOverlay},
     },
     consts::{
-        colors::{ORIBAR_BACKGROUND, scheme::ERROR},
+        colors::{ORIBAR_BACKGROUND, scheme::ERROR, shades::TERTIARY_30},
         ui::oribar::{
             INDEX_TO_PERCENT, MarkIntensity, ORIBAR_CHILDREN_COUNT, ORIBAR_HEIGHT,
             ORIBAR_INDICATOR_BOTTOM, ORIBAR_INDICATOR_HEIGHT, ORIBAR_INDICATOR_LEFT,
@@ -39,6 +39,7 @@ use crate::{
 /// Spawns a gradation mark with the specified index.
 ///
 /// |""""|""""|""""|
+#[must_use = "add this to a parent"]
 fn create_mark(index: u16, commands: &mut Commands) -> Entity {
     // The percentage of the position at the middle of the line.
     let middle_percent = f32::from(index) * INDEX_TO_PERCENT;
@@ -65,6 +66,7 @@ fn create_mark(index: u16, commands: &mut Commands) -> Entity {
 }
 
 /// `eighth` is assumed to range from 0 to 16, inclusively on both ends.
+#[must_use = "add this to a parent"]
 fn create_text(eighth: u16, font: &TextFont, commands: &mut Commands) -> Entity {
     let intensity = MarkIntensity::from_eighth(eighth);
     let size = intensity.size();
@@ -89,6 +91,7 @@ fn create_text(eighth: u16, font: &TextFont, commands: &mut Commands) -> Entity 
 }
 
 /// Create an oribar overlay, e.g. prograde & retrograde.
+#[must_use = "add this to a parent"]
 fn create_overlay(
     overlay_kind: OribarOverlay,
     commands: &mut Commands,
@@ -102,6 +105,8 @@ fn create_overlay(
 
     let wrapper = Node {
         position_type: PositionType::Absolute,
+        top: Val::ZERO,
+        left: Val::ZERO,
         width: Val::Percent(100.0),
         height: Val::Percent(100.0),
         ..Default::default()
@@ -122,8 +127,11 @@ fn create_overlay(
                     Node {
                         position_type: PositionType::Absolute,
                         left: Val::Percent(25.0 * f32::from(i)),
+                        width: Val::Px(32.0),
+                        height: Val::Px(32.0),
                         ..Default::default()
                     },
+                    BackgroundColor(TERTIARY_30), // DEBUG
                     UiVelloSvg(img),
                 ))
                 .id()
@@ -220,6 +228,7 @@ pub(crate) struct OribarState {
 }
 
 impl OribarState {
+    #[must_use]
     fn new(
         tf_query: Query<&Transform>,
         sv_query: Query<(&RootSpacePosition, &RootSpaceLinearVelocity)>,
@@ -271,6 +280,7 @@ impl OribarState {
     }
 }
 
+#[must_use]
 pub(crate) fn calculate_oribar_state(
     screen: Single<&Window, With<PrimaryWindow>>,
     tf_query: Query<&Transform>,

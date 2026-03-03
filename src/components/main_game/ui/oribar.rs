@@ -28,7 +28,7 @@ impl OribarOverlay {
             Self::Prograde => {
                 (
                     URI_ICON_PROGRADE,
-                    "", // TODO: retrograde icon
+                    "foo", // TODO: retrograde icon
                 )
             }
         }
