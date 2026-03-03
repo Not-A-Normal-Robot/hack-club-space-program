@@ -1,5 +1,9 @@
 use crate::{
-    builders::{camera::SimCameraBuilder, celestial::CelestialBodyBuilder, vessel::VesselBuilder},
+    builders::{
+        camera::{SimCameraBuilder, UiCameraBuilder},
+        celestial::CelestialBodyBuilder,
+        vessel::VesselBuilder,
+    },
     components::main_game::{
         camera::{SimCamera, SimCameraOffset, SimCameraZoom},
         celestial::Terrain,
@@ -86,6 +90,12 @@ pub(crate) fn init_game(
         }
         .build(true),
     );
+
+    commands.spawn(UiCameraBuilder::with_extra(Camera {
+        clear_color: ClearColorConfig::None,
+        order: 1,
+        ..Default::default()
+    }));
 
     commands.insert_resource(ActiveVessel {
         entity: vessel_entity,

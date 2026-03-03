@@ -61,6 +61,7 @@ fn create_mark(index: u16, commands: &mut Commands) -> Entity {
                 ..Default::default()
             },
             BackgroundColor(intensity.color()),
+            ZIndex(-2),
         ))
         .id()
 }
@@ -86,6 +87,7 @@ fn create_text(eighth: u16, font: &TextFont, commands: &mut Commands) -> Entity 
             font.clone(),
             Text((eighth.cast_signed() * -45).rem_euclid(360).to_string()),
             TextColor(color),
+            ZIndex(-1),
         ))
         .id()
 }
@@ -127,11 +129,11 @@ fn create_overlay(
                     Node {
                         position_type: PositionType::Absolute,
                         left: Val::Percent(25.0 * f32::from(i)),
+                        bottom: Val::ZERO,
                         width: Val::Px(32.0),
                         height: Val::Px(32.0),
                         ..Default::default()
                     },
-                    BackgroundColor(TERTIARY_30), // DEBUG
                     UiVelloSvg(img),
                 ))
                 .id()
@@ -171,6 +173,7 @@ pub(crate) fn init_oribar(
             ..Default::default()
         },
         BackgroundColor(ORIBAR_BACKGROUND),
+        ZIndex(-3),
     );
 
     let mut children: Vec<Entity> = Vec::with_capacity(ORIBAR_CHILDREN_COUNT);
@@ -194,7 +197,6 @@ pub(crate) fn init_oribar(
         },
         BackgroundColor(ERROR),
         DespawnOnExit(GameScene::InGame),
-        ZIndex(1),
     ));
     commands.spawn((
         Node {
@@ -211,7 +213,6 @@ pub(crate) fn init_oribar(
         },
         BackgroundColor(ORIBAR_BACKGROUND),
         DespawnOnExit(GameScene::InGame),
-        ZIndex(1),
         children![(OribarIndicator, Text(String::new()), text_font)],
     ));
 }
