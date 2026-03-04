@@ -28,7 +28,7 @@ use crate::{
             INDEX_TO_PERCENT, MarkIntensity, ORIBAR_CHILDREN_COUNT, ORIBAR_HEIGHT,
             ORIBAR_INDICATOR_BOTTOM, ORIBAR_INDICATOR_HEIGHT, ORIBAR_INDICATOR_LEFT,
             ORIBAR_INDICATOR_PADDING, ORIBAR_INDICATOR_WIDTH, ORIBAR_MARK_PER_REV,
-            ORIBAR_NEEDLE_LEFT, ORIBAR_NEEDLE_WIDTH, get_oribar_vw,
+            ORIBAR_NEEDLE_LEFT, ORIBAR_NEEDLE_WIDTH, RADIAN_TO_PERCENT, get_oribar_vw,
         },
     },
     math::quat_to_rot,
@@ -103,15 +103,19 @@ fn create_overlay(
     //             |
 
     let (pos_image, neg_image) = overlay_kind.get_icon_set(asset_server);
+    let color = overlay_kind.get_color();
 
-    let wrapper = Node {
-        position_type: PositionType::Absolute,
-        top: Val::ZERO,
-        left: Val::ZERO,
-        width: Val::Percent(100.0),
-        height: Val::Percent(100.0),
-        ..Default::default()
-    };
+    let wrapper = (
+        Node {
+            position_type: PositionType::Absolute,
+            top: Val::ZERO,
+            right: Val::ZERO,
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            ..Default::default()
+        },
+        overlay_kind,
+    );
 
     let children: Box<[Entity]> = (0..=5u8)
         .map(|i| {
@@ -134,7 +138,7 @@ fn create_overlay(
                         ..Default::default()
                     },
                     ImageNode {
-                        color: COLOR_PROGRADE,
+                        color,
                         image,
                         ..Default::default()
                     },
@@ -261,7 +265,7 @@ impl OribarState {
         })
     }
 
-    fn update_oribar(&self, mut oribar: Single<&mut Node, With<Oribar>>) {
+    fn update_oribar(&self, mut oribar: Single<&mut Node, (With<Oribar>, Without<OribarOverlay>)>) {
         // We need to shift it by +50vw
         let total_vw = f64::from(get_oribar_vw(self.window_size));
 
@@ -282,6 +286,25 @@ impl OribarState {
 
         checked_assign!(indicator.0, rel_rotation_str);
     }
+
+    /// Gets the direction associated with this overlay.
+    fn get_overlay_direction(&self, overlay: OribarOverlay) -> f64 {
+        match overlay {
+            OribarOverlay::Prograde => self.vel_direction,
+        }
+    }
+
+    fn update_overlays(&self, overlays: Query<(&mut Node, &OribarOverlay), Without<Oribar>>) {
+        for (mut node, &overlay) in overlays {
+            #[expect(clippy::cast_possible_truncation)]
+            let direction = self.get_overlay_direction(overlay) as f32;
+            let offset = direction * RADIAN_TO_PERCENT;
+            let offset = offset.rem_euclid(50.0) - 12.5;
+            let offset = Val::Percent(offset);
+
+            checked_assign!(node.right, offset);
+        }
+    }
 }
 
 #[must_use]
@@ -296,13 +319,15 @@ pub(crate) fn calculate_oribar_state(
 
 pub(crate) fn apply_oribar_state(
     In(state): In<Option<OribarState>>,
-    oribar: Single<&mut Node, With<Oribar>>,
+    oribar: Single<&mut Node, (With<Oribar>, Without<OribarOverlay>)>,
     indicator: Single<&mut Text, With<OribarIndicator>>,
+    overlays: Query<(&mut Node, &OribarOverlay), Without<Oribar>>,
 ) {
     let Some(state) = state else { return };
 
     state.update_oribar(oribar);
     state.update_indicator(indicator);
+    state.update_overlays(overlays);
 }
 
 pub(crate) fn handle_resize(

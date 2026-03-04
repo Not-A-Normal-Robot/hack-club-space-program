@@ -1,3 +1,5 @@
+use core::f32::consts::FRAC_1_PI;
+
 use crate::{
     components::main_game::ui::oribar::OribarOverlay,
     consts::colors::{
@@ -186,3 +188,5 @@ pub(crate) const ORIBAR_MARK_COUNT: usize = ORIBAR_MARK_PER_REV as usize * 2 + 1
 pub(crate) const ORIBAR_TEXTS_COUNT: usize = 16 + 1;
 pub(crate) const ORIBAR_CHILDREN_COUNT: usize =
     1 + ORIBAR_MARK_COUNT + ORIBAR_TEXTS_COUNT + OribarOverlay::COUNT;
+
+pub(crate) const RADIAN_TO_PERCENT: f32 = 100.0 * 0.25 * FRAC_1_PI;
