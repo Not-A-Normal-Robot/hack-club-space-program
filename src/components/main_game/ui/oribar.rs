@@ -1,8 +1,7 @@
 //! Oribar: Orientation Bar
 
-use crate::{assets::icons::ICON_PROGRADE, resources::scene::GameScene};
+use crate::resources::scene::GameScene;
 use bevy::prelude::*;
-use bevy_prototype_lyon::entity::Shape;
 use strum::{EnumCount, EnumIter};
 
 #[derive(Component)]
@@ -23,12 +22,9 @@ impl OribarOverlay {
     /// Returns the twin icon of the given overlay.
     ///
     /// It goes (positive, negative), e.g. (prograde, retrograde).
-    pub(crate) fn get_icon_set(self) -> (Shape, Shape) {
+    pub(crate) fn get_icon_set(self) -> ((), ()) {
         match self {
-            Self::Prograde => (
-                ICON_PROGRADE.clone(),
-                ICON_PROGRADE.clone(), // TODO: retrograde icon
-            ),
+            Self::Prograde => ((), ()), // TODO: Icon set
         }
     }
 }
