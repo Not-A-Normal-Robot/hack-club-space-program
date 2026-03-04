@@ -190,3 +190,9 @@ pub(crate) const ORIBAR_CHILDREN_COUNT: usize =
     1 + ORIBAR_MARK_COUNT + ORIBAR_TEXTS_COUNT + OribarOverlay::COUNT;
 
 pub(crate) const RADIAN_TO_PERCENT: f32 = 100.0 * 0.25 * FRAC_1_PI;
+
+/// The minimum significance/speed of an overlay for it to appear.
+///
+/// For example, this controls how many m/s it takes for the prograde/retrograde
+/// overlay to appear.
+pub(crate) const ORIBAR_OVERLAY_MIN_SIGNIFICANCE: f64 = 0.005;

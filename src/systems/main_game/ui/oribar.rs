@@ -23,12 +23,13 @@ use crate::{
         ui::oribar::{Oribar, OribarIndicator, OribarOverlay},
     },
     consts::{
-        colors::{ORIBAR_BACKGROUND, icons::COLOR_PROGRADE, scheme::ERROR},
+        colors::{ORIBAR_BACKGROUND, scheme::ERROR},
         ui::oribar::{
             INDEX_TO_PERCENT, MarkIntensity, ORIBAR_CHILDREN_COUNT, ORIBAR_HEIGHT,
             ORIBAR_INDICATOR_BOTTOM, ORIBAR_INDICATOR_HEIGHT, ORIBAR_INDICATOR_LEFT,
             ORIBAR_INDICATOR_PADDING, ORIBAR_INDICATOR_WIDTH, ORIBAR_MARK_PER_REV,
-            ORIBAR_NEEDLE_LEFT, ORIBAR_NEEDLE_WIDTH, RADIAN_TO_PERCENT, get_oribar_vw,
+            ORIBAR_NEEDLE_LEFT, ORIBAR_NEEDLE_WIDTH, ORIBAR_OVERLAY_MIN_SIGNIFICANCE,
+            RADIAN_TO_PERCENT, get_oribar_vw,
         },
     },
     math::quat_to_rot,
@@ -60,7 +61,7 @@ fn create_mark(index: u16, commands: &mut Commands) -> Entity {
                 ..Default::default()
             },
             BackgroundColor(intensity.color()),
-            ZIndex(-2),
+            ZIndex(1),
         ))
         .id()
 }
@@ -86,7 +87,7 @@ fn create_text(eighth: u16, font: &TextFont, commands: &mut Commands) -> Entity 
             font.clone(),
             Text((eighth.cast_signed() * -45).rem_euclid(360).to_string()),
             TextColor(color),
-            ZIndex(-1),
+            ZIndex(2),
         ))
         .id()
 }
@@ -102,6 +103,8 @@ fn create_overlay(
     // + ... - ... + ... - ... +
     //             |
 
+    const OVERLAY_NEEDLE_WIDTH_PERCENT: f32 = MarkIntensity::North.width();
+
     let (pos_image, neg_image) = overlay_kind.get_icon_set(asset_server);
     let color = overlay_kind.get_color();
 
@@ -114,11 +117,12 @@ fn create_overlay(
             height: Val::Percent(100.0),
             ..Default::default()
         },
+        ZIndex(3),
         overlay_kind,
     );
 
     let children: Box<[Entity]> = (0..=5u8)
-        .map(|i| {
+        .flat_map(|i| {
             let is_positive = i.is_multiple_of(2);
 
             let image = if is_positive {
@@ -127,11 +131,11 @@ fn create_overlay(
                 neg_image.clone()
             };
 
-            commands
+            let icon = commands
                 .spawn((
                     Node {
                         position_type: PositionType::Absolute,
-                        left: Val::Percent(25.0 * f32::from(i)),
+                        right: Val::Percent(25.0 * f32::from(i)),
                         bottom: Val::ZERO,
                         width: Val::Px(32.0),
                         height: Val::Px(32.0),
@@ -142,8 +146,27 @@ fn create_overlay(
                         image,
                         ..Default::default()
                     },
+                    BackgroundColor(Color::Srgba(Srgba::new(0.15, 0.15, 0.15, 0.8))),
                 ))
-                .id()
+                .id();
+
+            let needle = commands
+                .spawn((
+                    Node {
+                        position_type: PositionType::Absolute,
+                        right: Val::Percent(
+                            25.0f32.mul_add(f32::from(i), -OVERLAY_NEEDLE_WIDTH_PERCENT),
+                        ),
+                        bottom: Val::ZERO,
+                        width: Val::Percent(OVERLAY_NEEDLE_WIDTH_PERCENT),
+                        height: Val::Px(32.0),
+                        ..Default::default()
+                    },
+                    BackgroundColor(overlay_kind.get_color()),
+                ))
+                .id();
+
+            [icon, needle]
         })
         .collect();
 
@@ -180,7 +203,6 @@ pub(crate) fn init_oribar(
             ..Default::default()
         },
         BackgroundColor(ORIBAR_BACKGROUND),
-        ZIndex(-3),
     );
 
     let mut children: Vec<Entity> = Vec::with_capacity(ORIBAR_CHILDREN_COUNT);
@@ -203,6 +225,7 @@ pub(crate) fn init_oribar(
             ..Default::default()
         },
         BackgroundColor(ERROR),
+        ZIndex(5),
         DespawnOnExit(GameScene::InGame),
     ));
     commands.spawn((
@@ -230,7 +253,10 @@ pub(crate) struct OribarState {
     rel_rotation: f64,
     /// The prograde direction fo the active vessel relative to the
     /// parent body.
-    vel_direction: f64,
+    ///
+    /// If None, this means that prograde isn't significant enough (see
+    /// [`ORIBAR_OVERLAY_MIN_SIGNIFICANCE`]).
+    prograde_direction: Option<f64>,
     /// The size of the window in logical pixels.
     window_size: Vec2,
 }
@@ -260,7 +286,8 @@ impl OribarState {
 
         Some(Self {
             rel_rotation: root_rotation + offset,
-            vel_direction: rel_vel.to_angle() + offset,
+            prograde_direction: (rel_vel.length() > ORIBAR_OVERLAY_MIN_SIGNIFICANCE)
+                .then_some(rel_vel.to_angle() + offset),
             window_size: screen.size(),
         })
     }
@@ -288,21 +315,28 @@ impl OribarState {
     }
 
     /// Gets the direction associated with this overlay.
-    fn get_overlay_direction(&self, overlay: OribarOverlay) -> f64 {
+    ///
+    /// If this returns [`None`], then that direction is not significant
+    /// enough to be displayed.
+    fn get_overlay_direction(&self, overlay: OribarOverlay) -> Option<f64> {
         match overlay {
-            OribarOverlay::Prograde => self.vel_direction,
+            OribarOverlay::Prograde => self.prograde_direction,
         }
     }
 
     fn update_overlays(&self, overlays: Query<(&mut Node, &OribarOverlay), Without<Oribar>>) {
         for (mut node, &overlay) in overlays {
-            #[expect(clippy::cast_possible_truncation)]
-            let direction = self.get_overlay_direction(overlay) as f32;
-            let offset = direction * RADIAN_TO_PERCENT;
-            let offset = offset.rem_euclid(50.0) - 12.5;
-            let offset = Val::Percent(offset);
+            if let Some(direction) = self.get_overlay_direction(overlay) {
+                #[expect(clippy::cast_possible_truncation)]
+                let offset = direction as f32 * RADIAN_TO_PERCENT;
+                let offset = (offset - 12.5).rem_euclid(50.0) - 50.0;
+                let offset = Val::Percent(offset);
 
-            checked_assign!(node.right, offset);
+                checked_assign!(node.right, offset);
+                checked_assign!(node.display, Display::DEFAULT);
+            } else {
+                checked_assign!(node.display, Display::None);
+            }
         }
     }
 }
