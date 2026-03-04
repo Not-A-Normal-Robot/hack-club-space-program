@@ -1,7 +1,13 @@
 use strum::{EnumCount, VariantArray};
 
 /// The amount of digits to display in the altitude number.
-const ALTITUDE_DIGITS: u8 = 6;
+pub(crate) const ALTITUDE_DIGITS: u8 = 6;
+
+/// The size of "big text" in the altimeter.
+pub(crate) const ALTIMETER_BIG_TEXT_SIZE: f32 = 36.0;
+
+/// The size of "small text" in the altimeter.
+pub(crate) const ALTIMETER_SMALL_TEXT_SIZE: f32 = 14.0;
 
 /// Contains data on how the altitude should be formatted.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -137,7 +143,7 @@ impl AltitudePrefix {
             Self::Yotta => 'Y',
             Self::Ronna => 'R',
             Self::Quetta => 'Q',
-            Self::OutOfRange => '?',
+            Self::OutOfRange => 'X',
         }
     }
 }

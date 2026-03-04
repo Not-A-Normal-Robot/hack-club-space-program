@@ -51,6 +51,12 @@ const fn hex_to_color(hex: &[u8; 7]) -> Color {
 }
 
 pub(crate) const ORIBAR_BACKGROUND: Color = Color::Srgba(Srgba::new(0.25, 0.25, 0.25, 0.55));
+pub(crate) const ALTIMETER_BACKGROUND: Color = scheme::SURFACE_DIM;
+pub(crate) const ALTIMETER_ACTIVE: Color = scheme::SECONDARY;
+pub(crate) const ALTIMETER_INACTIVE: Color = scheme::ON_SECONDARY;
+pub(crate) const ALTIMETER_PREFIX: Color = scheme::PRIMARY_FIXED;
+pub(crate) const ALTIMETER_OUTER_BORDER: Color = shades::SECONDARY_50;
+pub(crate) const ALTIMETER_INNER_BORDER: Color = shades::SECONDARY_35;
 
 #[allow(dead_code)]
 pub(crate) mod icons {
