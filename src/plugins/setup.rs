@@ -38,6 +38,12 @@ impl Plugin for GameSetupPlugin {
                 .set(WindowPlugin {
                     primary_window: Some(Window {
                         canvas: Some(WEB_CANVAS_SELECTOR.into()),
+                        resize_constraints: WindowResizeConstraints {
+                            min_width: 320.0,
+                            min_height: 576.0,
+                            max_width: f32::INFINITY,
+                            max_height: f32::INFINITY,
+                        },
                         ..Default::default()
                     }),
                     ..Default::default()
