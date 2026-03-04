@@ -91,12 +91,6 @@ pub(crate) fn init_game(
         .build(true),
     );
 
-    commands.spawn(UiCameraBuilder::with_extra(Camera {
-        clear_color: ClearColorConfig::None,
-        order: 1,
-        ..Default::default()
-    }));
-
     commands.insert_resource(ActiveVessel {
         entity: vessel_entity,
         prev_tick_parent: body,

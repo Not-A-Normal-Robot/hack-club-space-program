@@ -1557,9 +1557,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_vello"
-version = "0.13.1"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c2ee247616c922c3d19895aa8f93c556721ceff447f7af84865bac7a678c09d"
+checksum = "97fed322323ab26f854994b703d8de9c0c40561a038acee1a02e47fcd7eb9731"
 dependencies = [
  "bevy",
  "thiserror 2.0.18",
