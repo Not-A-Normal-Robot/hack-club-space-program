@@ -13,7 +13,6 @@ use bevy::{
     prelude::*,
     window::{PrimaryWindow, WindowResized},
 };
-use bevy_vello::prelude::UiVelloSvg;
 use strum::IntoEnumIterator;
 
 use crate::{
@@ -94,16 +93,12 @@ fn create_text(eighth: u16, font: &TextFont, commands: &mut Commands) -> Entity 
 
 /// Create an oribar overlay, e.g. prograde & retrograde.
 #[must_use = "add this to a parent"]
-fn create_overlay(
-    overlay_kind: OribarOverlay,
-    commands: &mut Commands,
-    asset_server: &AssetServer,
-) -> Entity {
+fn create_overlay(overlay_kind: OribarOverlay, commands: &mut Commands) -> Entity {
     // Because of screen wrap we need 5 overlays:
     // + ... - ... + ... - ... +
     //             |
 
-    let (pos_img, neg_img) = overlay_kind.get_icon_set(asset_server);
+    let (pos_shape, neg_shape) = overlay_kind.get_icon_set();
 
     let wrapper = Node {
         position_type: PositionType::Absolute,
@@ -118,10 +113,10 @@ fn create_overlay(
         .map(|i| {
             let is_positive = i.is_multiple_of(2);
 
-            let img = if is_positive {
-                pos_img.clone()
+            let shape = if is_positive {
+                pos_shape.clone()
             } else {
-                neg_img.clone()
+                neg_shape.clone()
             };
 
             commands
@@ -134,7 +129,7 @@ fn create_overlay(
                         height: Val::Px(32.0),
                         ..Default::default()
                     },
-                    UiVelloSvg(img),
+                    shape,
                 ))
                 .id()
         })
@@ -182,7 +177,7 @@ pub(crate) fn init_oribar(
 
     children.extend((0..=ORIBAR_MARK_PER_REV * 2).map(|i| create_mark(i, &mut commands)));
     children.extend((0..=16).map(|i| create_text(i, &text_font, &mut commands)));
-    children.extend(OribarOverlay::iter().map(|i| create_overlay(i, &mut commands, &server)));
+    children.extend(OribarOverlay::iter().map(|i| create_overlay(i, &mut commands)));
 
     commands.spawn(bundle).add_children(&children);
 

@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy_vello::render::VelloView;
 
 use crate::components::main_game::camera::{SimCamera, SimCameraOffset, SimCameraZoom};
 
@@ -51,7 +50,7 @@ pub(crate) struct UiCameraBuilder;
 impl UiCameraBuilder {
     #[must_use]
     pub(crate) const fn build() -> impl Bundle {
-        (Camera2d, IsDefaultUiCamera, VelloView)
+        (Camera2d, IsDefaultUiCamera)
     }
 
     #[must_use]

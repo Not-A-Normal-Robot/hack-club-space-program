@@ -1,8 +1,8 @@
 //! Oribar: Orientation Bar
 
-use crate::{assets::icons::URI_ICON_PROGRADE, resources::scene::GameScene};
+use crate::{assets::icons::ICON_PROGRADE, resources::scene::GameScene};
 use bevy::prelude::*;
-use bevy_vello::prelude::VelloSvg;
+use bevy_prototype_lyon::entity::Shape;
 use strum::{EnumCount, EnumIter};
 
 #[derive(Component)]
@@ -20,28 +20,15 @@ pub(crate) enum OribarOverlay {
 }
 
 impl OribarOverlay {
-    /// Returns the twin icon URI of the given overlay.
+    /// Returns the twin icon of the given overlay.
     ///
     /// It goes (positive, negative), e.g. (prograde, retrograde).
-    pub(crate) const fn get_icon_uri_set(self) -> (&'static str, &'static str) {
+    pub(crate) fn get_icon_set(self) -> (Shape, Shape) {
         match self {
-            Self::Prograde => {
-                (
-                    URI_ICON_PROGRADE,
-                    URI_ICON_PROGRADE, // TODO: retrograde icon
-                )
-            }
+            Self::Prograde => (
+                ICON_PROGRADE.clone(),
+                ICON_PROGRADE.clone(), // TODO: retrograde icon
+            ),
         }
-    }
-
-    pub(crate) fn get_icon_set(
-        self,
-        asset_server: &AssetServer,
-    ) -> (Handle<VelloSvg>, Handle<VelloSvg>) {
-        let (pos, neg) = self.get_icon_uri_set();
-
-        let [pos, neg] = [pos, neg].map(|uri| asset_server.load(uri));
-
-        (pos, neg)
     }
 }

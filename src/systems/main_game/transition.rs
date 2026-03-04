@@ -1,9 +1,5 @@
 use crate::{
-    builders::{
-        camera::{SimCameraBuilder, UiCameraBuilder},
-        celestial::CelestialBodyBuilder,
-        vessel::VesselBuilder,
-    },
+    builders::{camera::SimCameraBuilder, celestial::CelestialBodyBuilder, vessel::VesselBuilder},
     components::main_game::{
         camera::{SimCamera, SimCameraOffset, SimCameraZoom},
         celestial::Terrain,

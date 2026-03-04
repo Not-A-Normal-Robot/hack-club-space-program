@@ -1,65 +1,32 @@
-macro_rules! define_icons {
-    ($( $name: ident = $rel_path: literal ),* $(,)?) => {
-        $(::pastey::paste! {
-            #[allow(dead_code)]
-            pub(crate) const [< URI_ICON_ $name >]: &str =
-                concat!("embedded://hack_club_space_program/assets/icons/", $rel_path);
-        })*
+use bevy::prelude::*;
+use bevy_prototype_lyon::prelude::*;
+use core::f32::consts::PI;
+use std::sync::LazyLock;
 
-        pub(super) fn initialize_icons(app: &mut ::bevy::app::App) {
-            app.add_plugins(::bevy_vello::VelloPlugin::default());
+use crate::consts::colors::icons::COLOR_ICON_PROGRADE;
 
-            <::bevy::app::App as ::bevy::asset::AssetApp>
-                ::init_asset::<::bevy_vello::integrations::svg::VelloSvg>(app);
-            $(
-                ::bevy::asset::embedded_asset!(app, $rel_path);
-            )*
-        }
-    };
-}
+pub(crate) static ICON_PROGRADE: LazyLock<Shape> = LazyLock::new(|| {
+    let path = ShapePath::new()
+        .move_to(Vec2::new(-30.0, 0.0))
+        .line_to(Vec2::new(-12.0, 0.0))
+        .move_to(Vec2::new(12.0, 0.0))
+        .line_to(Vec2::new(30.0, 0.0))
+        .move_to(Vec2::new(0.0, -30.0))
+        .line_to(Vec2::new(0.0, -12.0));
 
-define_icons! {
-    PROGRADE = "prograde.svg",
-}
+    // let circle = Circle::new(12.0);
+    let circle = ShapePath::new()
+        .move_to(Vec2::new(-12.0, 0.0))
+        .arc(Vec2::ZERO, Vec2::splat(12.0), PI, 0.0)
+        .arc(Vec2::ZERO, Vec2::splat(12.0), PI, 0.0);
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use bevy::{asset::io::embedded::GetAssetServer, prelude::*};
-    use bevy_vello::prelude::VelloSvg;
+    ShapeBuilder::with(&path)
+        .add(&circle)
+        .fill(Color::NONE)
+        .stroke(Stroke::new(COLOR_ICON_PROGRADE, 5.0))
+        .build()
+});
 
-    fn min_app() -> App {
-        let mut app = App::new();
-        app.add_plugins((MinimalPlugins, AssetPlugin::default()));
-        app
-    }
-
-    #[test]
-    fn test_uris() {
-        let uris = [URI_ICON_PROGRADE];
-
-        let mut app = min_app();
-        app.init_asset::<bevy::shader::Shader>();
-
-        initialize_icons(&mut app);
-
-        let server = app.get_asset_server();
-
-        let invalid_handle = server.load::<VelloSvg>("embedded://erm/this/doesnt/exist/haha.otf");
-        let handles = uris.map(|uri| server.load::<VelloSvg>(uri));
-
-        for _ in 0..8192 {
-            app.update();
-        }
-
-        let server = app.get_asset_server();
-
-        let state = server.load_state(invalid_handle.id().untyped());
-        assert!(state.is_failed(), "Expected {state:?} to be failed");
-
-        for handle in handles {
-            let state = server.load_state(handle.id().untyped());
-            assert!(state.is_loaded(), "Expected {state:?} to be loaded");
-        }
-    }
+pub(super) fn initialize_icons() {
+    LazyLock::force(&ICON_PROGRADE);
 }
