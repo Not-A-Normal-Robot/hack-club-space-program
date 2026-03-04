@@ -16,6 +16,7 @@ macro_rules! define_icons {
 
 define_icons! {
     PROGRADE = "prograde.png",
+    RETROGRADE = "retrograde.png",
 }
 
 #[cfg(test)]

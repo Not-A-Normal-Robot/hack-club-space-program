@@ -1,6 +1,9 @@
 //! Oribar: Orientation Bar
 
-use crate::{assets::icons::URI_ICON_PROGRADE, resources::scene::GameScene};
+use crate::{
+    assets::icons::{URI_ICON_PROGRADE, URI_ICON_RETROGRADE},
+    resources::scene::GameScene,
+};
 use bevy::prelude::*;
 use strum::{EnumCount, EnumIter};
 
@@ -26,7 +29,7 @@ impl OribarOverlay {
         match self {
             Self::Prograde => (
                 asset_server.load(URI_ICON_PROGRADE),
-                asset_server.load(URI_ICON_PROGRADE), // TODO: retrograde icon
+                asset_server.load(URI_ICON_RETROGRADE),
             ),
         }
     }
