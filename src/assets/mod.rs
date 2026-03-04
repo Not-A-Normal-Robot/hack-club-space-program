@@ -7,5 +7,5 @@ pub(crate) mod icons;
 
 pub(crate) fn initialize_assets(app: &mut App) {
     initialize_fonts(app);
-    initialize_icons();
+    initialize_icons(app);
 }

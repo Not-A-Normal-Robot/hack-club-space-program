@@ -105,3 +105,8 @@ web-sys = { version = "0.3", features = [
     "HtmlTextAreaElement",
     "HtmlDocument",
 ] }
+
+[build-dependencies]
+png = "0.18.1"
+resvg = "0.47.0"
+texture_packer = "0.30.0"
