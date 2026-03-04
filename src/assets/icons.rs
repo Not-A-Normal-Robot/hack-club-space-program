@@ -7,8 +7,6 @@ macro_rules! define_icons {
         })*
 
         pub(super) fn initialize_icons(app: &mut ::bevy::app::App) {
-            <::bevy::app::App as ::bevy::asset::AssetApp>
-                ::init_asset::<::bevy::image::Image>(app);
             $(
                 ::bevy::asset::embedded_asset!(app, concat!("../../assets/_processed/icons/", $rel_path));
             )*
@@ -39,6 +37,7 @@ mod tests {
     fn test_uris() {
         let uris = [URI_ICON_PROGRADE];
         let mut app = min_app();
+        app.init_asset::<Image>();
         app.get_asset_server()
             .register_loader(ImageLoader::new(CompressedImageFormats::all()));
 

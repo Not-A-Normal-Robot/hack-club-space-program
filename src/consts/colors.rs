@@ -53,6 +53,14 @@ const fn hex_to_color(hex: &[u8; 7]) -> Color {
 pub(crate) const ORIBAR_BACKGROUND: Color = Color::Srgba(Srgba::new(0.25, 0.25, 0.25, 0.55));
 
 #[allow(dead_code)]
+pub(crate) mod icons {
+    use crate::consts::colors::hex_to_color;
+    use bevy::color::Color;
+
+    pub(crate) const COLOR_PROGRADE: Color = hex_to_color(b"#9ACD32");
+}
+
+#[allow(dead_code)]
 pub(crate) mod scheme {
     use crate::consts::colors::hex_to_color;
     use bevy::color::Color;

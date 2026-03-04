@@ -23,7 +23,7 @@ use crate::{
         ui::oribar::{Oribar, OribarIndicator, OribarOverlay},
     },
     consts::{
-        colors::{ORIBAR_BACKGROUND, scheme::ERROR, shades::TERTIARY_30},
+        colors::{ORIBAR_BACKGROUND, icons::COLOR_PROGRADE, scheme::ERROR},
         ui::oribar::{
             INDEX_TO_PERCENT, MarkIntensity, ORIBAR_CHILDREN_COUNT, ORIBAR_HEIGHT,
             ORIBAR_INDICATOR_BOTTOM, ORIBAR_INDICATOR_HEIGHT, ORIBAR_INDICATOR_LEFT,
@@ -93,12 +93,16 @@ fn create_text(eighth: u16, font: &TextFont, commands: &mut Commands) -> Entity 
 
 /// Create an oribar overlay, e.g. prograde & retrograde.
 #[must_use = "add this to a parent"]
-fn create_overlay(overlay_kind: OribarOverlay, commands: &mut Commands) -> Entity {
+fn create_overlay(
+    overlay_kind: OribarOverlay,
+    commands: &mut Commands,
+    asset_server: &AssetServer,
+) -> Entity {
     // Because of screen wrap we need 5 overlays:
     // + ... - ... + ... - ... +
     //             |
 
-    let (pos_shape, neg_shape) = overlay_kind.get_icon_set();
+    let (pos_image, neg_image) = overlay_kind.get_icon_set(asset_server);
 
     let wrapper = Node {
         position_type: PositionType::Absolute,
@@ -113,10 +117,10 @@ fn create_overlay(overlay_kind: OribarOverlay, commands: &mut Commands) -> Entit
         .map(|i| {
             let is_positive = i.is_multiple_of(2);
 
-            let shape = if is_positive {
-                pos_shape.clone()
+            let image = if is_positive {
+                pos_image.clone()
             } else {
-                neg_shape.clone()
+                neg_image.clone()
             };
 
             commands
@@ -129,7 +133,11 @@ fn create_overlay(overlay_kind: OribarOverlay, commands: &mut Commands) -> Entit
                         height: Val::Px(32.0),
                         ..Default::default()
                     },
-                    shape,
+                    ImageNode {
+                        color: COLOR_PROGRADE,
+                        image,
+                        ..Default::default()
+                    },
                 ))
                 .id()
         })
@@ -177,7 +185,7 @@ pub(crate) fn init_oribar(
 
     children.extend((0..=ORIBAR_MARK_PER_REV * 2).map(|i| create_mark(i, &mut commands)));
     children.extend((0..=16).map(|i| create_text(i, &text_font, &mut commands)));
-    children.extend(OribarOverlay::iter().map(|i| create_overlay(i, &mut commands)));
+    children.extend(OribarOverlay::iter().map(|i| create_overlay(i, &mut commands, &server)));
 
     commands.spawn(bundle).add_children(&children);
 
