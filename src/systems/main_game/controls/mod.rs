@@ -1,5 +1,3 @@
-pub(crate) mod camera;
-
 use crate::{
     consts::controls::{
         KB_MODE_SWITCH_TO_CAM_MODE, KB_MODE_SWITCH_TO_MAIN_MODE, KB_MODE_SWITCH_TO_MENU_MODE,
@@ -8,6 +6,9 @@ use crate::{
     resources::controls::{FocusableData, GameControlMode},
 };
 use bevy::prelude::*;
+
+pub(crate) mod camera;
+pub(crate) mod menu;
 
 pub(crate) fn init_controls(mut commands: Commands) {
     commands.init_resource::<FocusableData>();

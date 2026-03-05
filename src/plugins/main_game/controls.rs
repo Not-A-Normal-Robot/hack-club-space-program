@@ -12,7 +12,10 @@ use crate::{
         scene::GameScene,
     },
     systems::main_game::{
-        controls::{camera::control_camera, cleanup_controls, control_switching, init_controls},
+        controls::{
+            camera::control_camera, cleanup_controls, control_switching, init_controls,
+            menu::control_menu,
+        },
         ui::controls::update_controls_text,
     },
 };
@@ -30,6 +33,7 @@ impl Plugin for GameControlPlugin {
                 control_switching,
                 update_controls_text.run_if(state_changed::<GameControlMode>),
                 control_camera.run_if(in_state(GameControlMode::CameraControl)),
+                control_menu.run_if(in_state(GameControlMode::Menu)),
             )
                 .run_if(in_state(GameScene::InGame)),
         );
