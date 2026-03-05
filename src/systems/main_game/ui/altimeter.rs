@@ -197,11 +197,42 @@ pub(crate) fn calculate_altitude_format(
     Some(AltitudeFormat::new(altitude))
 }
 
-pub(crate) fn apply_altimeter_format(In(format): In<Option<AltitudeFormat>>) {
+type AltimeterSet<'w, 's, 'qw, 'qs> = ParamSet<
+    'w,
+    's,
+    (
+        Query<'qw, 'qs, &'static mut TextColor, With<AltimeterSign>>,
+        Query<'qw, 'qs, &'static mut Text, With<AltimeterAltitudeText>>,
+        Query<'qw, 'qs, &'static mut Text, With<AltimeterPrefix>>,
+    ),
+>;
+
+pub(crate) fn apply_altimeter_format(
+    In(format): In<Option<AltitudeFormat>>,
+    mut param_set: AltimeterSet,
+) {
     let Some(format) = format else { return };
-    dbg!(format);
-    warn!("Altimeter state application is not implemented yet");
-    // todo!();
+
+    for mut sign_color in param_set.p0() {
+        sign_color.0 = if format.is_negative {
+            ALTIMETER_ACTIVE
+        } else {
+            ALTIMETER_INACTIVE
+        };
+    }
+
+    for mut altitude_text in param_set.p1() {
+        altitude_text.0.clear();
+
+        for char in format.numeric {
+            altitude_text.0.push(char);
+        }
+    }
+
+    for mut prefix_text in param_set.p2() {
+        prefix_text.0.clear();
+        prefix_text.0.push(format.prefix.to_char());
+    }
 }
 
 pub(crate) fn update_altimeter_ref_disp(

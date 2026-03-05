@@ -1,7 +1,5 @@
 use strum::{EnumCount, VariantArray};
 
-use crate::resources::ui::AltimeterMode;
-
 /// The amount of digits to display in the altitude number.
 pub(crate) const ALTITUDE_DIGITS: u8 = 6;
 
