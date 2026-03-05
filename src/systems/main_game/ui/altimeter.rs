@@ -14,12 +14,11 @@ use crate::{
             ALTIMETER_ACTIVE, ALTIMETER_BACKGROUND, ALTIMETER_INACTIVE, ALTIMETER_INNER_BORDER,
             ALTIMETER_OUTER_BORDER, ALTIMETER_PREFIX,
         },
-        ui::altimeter::{
-            ALTIMETER_BIG_TEXT_SIZE, ALTIMETER_SMALL_TEXT_SIZE, AltimeterState, AltitudeFormat,
-        },
+        ui::altimeter::{ALTIMETER_BIG_TEXT_SIZE, ALTIMETER_SMALL_TEXT_SIZE, AltitudeFormat},
     },
     fl,
     resources::{scene::GameScene, simulation::ActiveVessel, ui::AltimeterMode},
+    systems::general::ui_activation::ActivationEvent,
     terrain::TerrainGen,
 };
 
@@ -36,7 +35,15 @@ fn root(children: &[Entity], commands: &mut Commands) -> Entity {
             },
             BackgroundColor(ALTIMETER_BACKGROUND),
             BorderColor::all(ALTIMETER_OUTER_BORDER),
+            Button,
         ))
+        .observe(
+            |_: On<ActivationEvent>,
+             mode: Res<State<AltimeterMode>>,
+             mut next_mode: ResMut<NextState<AltimeterMode>>| {
+                next_mode.set(mode.next());
+            },
+        )
         .add_children(children)
         .id();
     commands
@@ -68,11 +75,8 @@ fn altitude(doto_bold: Handle<Font>, commands: &mut Commands) -> Entity {
                 flex_direction: FlexDirection::Row,
                 align_items: AlignItems::Center,
                 padding: UiRect::all(Val::Px(4.0)),
-                border_radius: BorderRadius::all(Val::Px(4.0)),
-                border: UiRect::all(Val::Px(2.0)),
                 ..Default::default()
             },
-            BorderColor::all(ALTIMETER_INNER_BORDER),
             children![
                 (
                     Text("-".into()),
@@ -137,11 +141,11 @@ fn ref_frame_displays(doto_black: Handle<Font>, commands: &mut Commands) -> Enti
             Node {
                 display: Display::Flex,
                 flex_direction: FlexDirection::Row,
-                justify_content: JustifyContent::SpaceAround,
+                justify_content: JustifyContent::SpaceEvenly,
                 align_items: AlignItems::Center,
                 padding: UiRect::all(Val::Px(4.0)),
                 border_radius: BorderRadius::all(Val::Px(4.0)),
-                border: UiRect::all(Val::Px(2.0)),
+                border: UiRect::all(Val::Px(1.0)),
                 ..Default::default()
             },
             BorderColor::all(ALTIMETER_INNER_BORDER),
@@ -165,11 +169,11 @@ pub(crate) fn init_altimeter(mut commands: Commands, server: Res<AssetServer>) {
     root(&[altitude, ref_frames], &mut commands);
 }
 
-pub(crate) fn calculate_altimeter_state(
+pub(crate) fn calculate_altitude_format(
     cel_query: Query<(&CelestialBody, &RootSpacePosition, &Terrain)>,
     active_vessel: Res<ActiveVessel>,
     altimeter_mode: Res<State<AltimeterMode>>,
-) -> Option<AltimeterState> {
+) -> Option<AltitudeFormat> {
     let Ok((body, body_pos, terrain)) = cel_query.get(active_vessel.prev_tick_parent) else {
         return None;
     };
@@ -190,15 +194,29 @@ pub(crate) fn calculate_altimeter_state(
         }
     };
 
-    Some(AltimeterState {
-        format: AltitudeFormat::new(altitude),
-        mode: *altimeter_mode.get(),
-    })
+    Some(AltitudeFormat::new(altitude))
 }
 
-pub(crate) fn apply_altimeter_state(In(state): In<Option<AltimeterState>>) {
-    let Some(state) = state else { return };
-    dbg!(state);
+pub(crate) fn apply_altimeter_format(In(format): In<Option<AltitudeFormat>>) {
+    let Some(format) = format else { return };
+    dbg!(format);
     warn!("Altimeter state application is not implemented yet");
     // todo!();
+}
+
+pub(crate) fn update_altimeter_ref_disp(
+    query: Query<(&mut TextColor, &AltimeterModeIndicator)>,
+    mode: Res<State<AltimeterMode>>,
+) {
+    let mode = mode.get();
+
+    for (mut color, indicator) in query {
+        let active = indicator.0 == *mode;
+
+        color.0 = if active {
+            ALTIMETER_ACTIVE
+        } else {
+            ALTIMETER_INACTIVE
+        };
+    }
 }

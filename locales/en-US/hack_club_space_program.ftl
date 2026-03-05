@@ -32,4 +32,4 @@ altimeter__mode__asl__tooltip = Above Sea Level
 altimeter__mode__agl__text = AGL
 altimeter__mode__agl__tooltip = Above Ground Level
 altimeter__mode__ctr__text = CTR
-altimeter__mode__ctr__tooltip = From Planetary Center
+altimeter__mode__ctr__tooltip = From Planetary Centre

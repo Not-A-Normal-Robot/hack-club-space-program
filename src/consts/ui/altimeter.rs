@@ -11,13 +11,6 @@ pub(crate) const ALTIMETER_BIG_TEXT_SIZE: f32 = 36.0;
 /// The size of "small text" in the altimeter.
 pub(crate) const ALTIMETER_SMALL_TEXT_SIZE: f32 = 14.0;
 
-/// Contains data on how the altimeter should be updated.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub(crate) struct AltimeterState {
-    pub(crate) format: AltitudeFormat,
-    pub(crate) mode: AltimeterMode,
-}
-
 /// Contains data on how the altitude should be formatted.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(crate) struct AltitudeFormat {
