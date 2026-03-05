@@ -66,7 +66,8 @@ fn desktop_altimeter(children: &[Entity], window_width: f32, commands: &mut Comm
                 flex_direction: FlexDirection::Column,
                 align_items: AlignItems::Stretch,
                 padding: UiRect::all(Val::Px(4.0)),
-                border: UiRect::all(Val::Px(1.5)).with_top(Val::ZERO),
+                border: UiRect::left(Val::Px(1.5)).with_bottom(Val::Px(1.5)),
+                border_radius: BorderRadius::bottom_left(Val::Px(6.0)),
                 ..Default::default()
             },
             BackgroundColor(ALTIMETER_BACKGROUND),

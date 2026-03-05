@@ -25,7 +25,8 @@ pub(crate) fn update_controls_text(
                 left: Val::ZERO,
                 bottom: Val::ZERO,
                 height: ORIBAR_HEIGHT * 0.5,
-                border: UiRect::all(Val::Px(1.0)),
+                border: UiRect::top(Val::Px(1.0)).with_right(Val::Px(1.0)),
+                border_radius: BorderRadius::top_right(Val::Px(3.0)),
                 ..Default::default()
             },
             BackgroundColor(CONTROL_MODE_BACKGROUND),

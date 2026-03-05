@@ -51,7 +51,7 @@ const fn hex_to_color(hex: &[u8; 7]) -> Color {
 }
 
 pub(crate) const CONTROL_MODE_BACKGROUND: Color =
-    Color::Srgba(Srgba::new(0.085, 0.125, 0.105, 0.9));
+    Color::Srgba(Srgba::new(0.085, 0.125, 0.105, 0.95));
 pub(crate) const CONTROL_MODE_FOREGROUND: Color = hex_to_color(b"#39BC22");
 pub(crate) const ORIBAR_BACKGROUND: Color = Color::Srgba(Srgba::new(0.25, 0.25, 0.25, 0.55));
 pub(crate) const ALTIMETER_BACKGROUND: Color = scheme::ON_PRIMARY;
