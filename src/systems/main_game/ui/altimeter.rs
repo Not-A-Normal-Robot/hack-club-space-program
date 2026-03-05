@@ -1,12 +1,19 @@
-use bevy::prelude::*;
+use bevy::{
+    prelude::*,
+    window::{PrimaryWindow, WindowResized},
+};
 
 use crate::{
-    assets::fonts::{URI_FONT_DOTO_BLACK, URI_FONT_DOTO_BOLD},
+    assets::fonts::{
+        URI_FONT_DOTO_BLACK, URI_FONT_DOTO_BOLD, URI_FONT_JETBRAINS_MONO,
+        URI_FONT_JETBRAINS_MONO_ITALIC,
+    },
     components::main_game::{
         celestial::{CelestialBody, Terrain},
         frames::RootSpacePosition,
         ui::altimeter::{
-            AltimeterAltitudeText, AltimeterModeIndicator, AltimeterPrefix, AltimeterSign,
+            Altimeter, AltimeterAltitudeText, AltimeterMobileAltitudeText,
+            AltimeterMobileModeIndicator, AltimeterModeIndicator, AltimeterPrefix, AltimeterSign,
         },
     },
     consts::{
@@ -14,7 +21,10 @@ use crate::{
             ALTIMETER_ACTIVE, ALTIMETER_BACKGROUND, ALTIMETER_INACTIVE, ALTIMETER_INNER_BORDER,
             ALTIMETER_OUTER_BORDER, ALTIMETER_PREFIX,
         },
-        ui::altimeter::{ALTIMETER_BIG_TEXT_SIZE, ALTIMETER_SMALL_TEXT_SIZE, AltitudeFormat},
+        ui::altimeter::{
+            ALTIMETER_BIG_TEXT_SIZE, ALTIMETER_MEDIUM_TEXT_SIZE, ALTIMETER_MOBILE_CUTOFF,
+            ALTIMETER_SMALL_TEXT_SIZE, ALTIMETER_TINY_TEXT_SIZE, AltitudeFormat, AltitudePrefix,
+        },
     },
     fl,
     resources::{scene::GameScene, simulation::ActiveVessel, ui::AltimeterMode},
@@ -22,11 +32,36 @@ use crate::{
     terrain::TerrainGen,
 };
 
-fn root(children: &[Entity], commands: &mut Commands) -> Entity {
-    let inner = commands
+fn wrapper(children: &[Entity], commands: &mut Commands) -> Entity {
+    commands
         .spawn((
             Node {
+                position_type: PositionType::Absolute,
                 display: Display::Flex,
+                top: Val::ZERO,
+                left: Val::ZERO,
+                width: Val::Vw(100.0),
+                justify_content: JustifyContent::End,
+                align_items: AlignItems::Center,
+                ..Default::default()
+            },
+            DespawnOnExit(GameScene::InGame),
+        ))
+        .add_children(children)
+        .id()
+}
+
+/// The container for the desktop altimeter.
+#[must_use]
+fn desktop_altimeter(children: &[Entity], window_width: f32, commands: &mut Commands) -> Entity {
+    commands
+        .spawn((
+            Node {
+                display: if window_width > ALTIMETER_MOBILE_CUTOFF {
+                    Display::Flex
+                } else {
+                    Display::None
+                },
                 flex_direction: FlexDirection::Column,
                 align_items: AlignItems::Stretch,
                 padding: UiRect::all(Val::Px(4.0)),
@@ -36,6 +71,7 @@ fn root(children: &[Entity], commands: &mut Commands) -> Entity {
             BackgroundColor(ALTIMETER_BACKGROUND),
             BorderColor::all(ALTIMETER_OUTER_BORDER),
             Button,
+            Altimeter { desktop_mode: true },
         ))
         .observe(
             |_: On<ActivationEvent>,
@@ -45,27 +81,64 @@ fn root(children: &[Entity], commands: &mut Commands) -> Entity {
             },
         )
         .add_children(children)
-        .id();
-    commands
-        .spawn((
-            Node {
-                position_type: PositionType::Absolute,
-                display: Display::Flex,
-                top: Val::ZERO,
-                left: Val::ZERO,
-                width: Val::Vw(100.0),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
-                ..Default::default()
-            },
-            DespawnOnExit(GameScene::InGame),
-        ))
-        .add_child(inner)
         .id()
 }
 
+/// The container for the mobile altimeter.
 #[must_use]
-fn altitude(doto_bold: Handle<Font>, commands: &mut Commands) -> Entity {
+fn mobile_altimeter(
+    children: &[Entity],
+    jetbrains_mono_italic: Handle<Font>,
+    window_width: f32,
+    commands: &mut Commands,
+) -> Entity {
+    let mut label_font =
+        TextFont::from(jetbrains_mono_italic).with_font_size(ALTIMETER_TINY_TEXT_SIZE);
+    label_font.weight = FontWeight(200);
+
+    let label = commands
+        .spawn((
+            Text::new(fl!("altimeter__altitude__label")),
+            label_font,
+            TextColor(ALTIMETER_ACTIVE),
+        ))
+        .id();
+    let inner = commands.spawn(Node::DEFAULT).add_children(children).id();
+    commands
+        .spawn((
+            Node {
+                display: if window_width <= ALTIMETER_MOBILE_CUTOFF {
+                    Display::Flex
+                } else {
+                    Display::None
+                },
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Center,
+                padding: UiRect::axes(Val::Px(4.0), Val::Px(2.0)),
+                min_width: Val::Px(48.0),
+                min_height: Val::Px(48.0),
+                ..Default::default()
+            },
+            BackgroundColor(ALTIMETER_BACKGROUND),
+            Button,
+            Altimeter {
+                desktop_mode: false,
+            },
+        ))
+        .observe(
+            |_: On<ActivationEvent>,
+             mode: Res<State<AltimeterMode>>,
+             mut next_mode: ResMut<NextState<AltimeterMode>>| {
+                next_mode.set(mode.next());
+            },
+        )
+        .add_children(&[label, inner])
+        .id()
+}
+
+/// The big text for the desktop altimeter.
+#[must_use]
+fn desktop_altitude(doto_bold: Handle<Font>, commands: &mut Commands) -> Entity {
     let doto_bold = TextFont::from(doto_bold.clone()).with_font_size(ALTIMETER_BIG_TEXT_SIZE);
 
     commands
@@ -95,7 +168,7 @@ fn altitude(doto_bold: Handle<Font>, commands: &mut Commands) -> Entity {
                     AltimeterAltitudeText,
                 ),
                 (
-                    Text("m".into()),
+                    Text(AltitudePrefix::Meter.to_char().to_string()),
                     doto_bold,
                     TextColor(ALTIMETER_PREFIX),
                     AltimeterPrefix,
@@ -105,21 +178,54 @@ fn altitude(doto_bold: Handle<Font>, commands: &mut Commands) -> Entity {
         .id()
 }
 
-fn ref_frame_display(font: TextFont, mode: AltimeterMode) -> impl Bundle {
-    let text = match mode {
-        AltimeterMode::AboveGroundLevel => fl!("altimeter__mode__agl__text"),
-        AltimeterMode::AboveSeaLevel => fl!("altimeter__mode__asl__text"),
-        AltimeterMode::FromCentre => fl!("altimeter__mode__ctr__text"),
-    };
+#[must_use]
+fn mobile_altitude(jetbrains_mono: Handle<Font>, commands: &mut Commands) -> Entity {
+    let text_font = TextFont::from(jetbrains_mono).with_font_size(ALTIMETER_MEDIUM_TEXT_SIZE);
 
+    commands
+        .spawn((
+            Node::DEFAULT,
+            children![
+                (
+                    Text("0".into()),
+                    AltimeterMobileAltitudeText,
+                    TextColor(ALTIMETER_ACTIVE),
+                    text_font.clone()
+                ),
+                (
+                    Node {
+                        margin: UiRect::horizontal(Val::Px(4.0)),
+                        ..Default::default()
+                    },
+                    Text(AltitudePrefix::Meter.to_char().to_string()),
+                    TextColor(ALTIMETER_PREFIX),
+                    AltimeterPrefix,
+                    text_font.clone()
+                ),
+                (
+                    Text(AltimeterMode::AboveSeaLevel.to_string()),
+                    AltimeterMobileModeIndicator,
+                    TextColor(ALTIMETER_ACTIVE),
+                    text_font.clone()
+                )
+            ],
+        ))
+        .id()
+}
+
+/// The display for the reference frame, for the desktop altimeter.
+#[must_use]
+fn ref_frame_display(font: TextFont, mode: AltimeterMode) -> impl Bundle {
     (
-        Text(text),
+        Text(mode.to_string()),
         font,
         TextColor(ALTIMETER_ACTIVE),
         AltimeterModeIndicator(mode),
     )
 }
 
+/// The separator between reference frames, for the desktop altimeter.
+#[must_use]
 fn ref_frame_separator() -> impl Bundle {
     (
         Node {
@@ -133,6 +239,8 @@ fn ref_frame_separator() -> impl Bundle {
     )
 }
 
+/// The list of reference frames, for the desktop altimeter.
+#[must_use]
 fn ref_frame_displays(doto_black: Handle<Font>, commands: &mut Commands) -> Entity {
     let doto_black = TextFont::from(doto_black.clone()).with_font_size(ALTIMETER_SMALL_TEXT_SIZE);
 
@@ -160,13 +268,31 @@ fn ref_frame_displays(doto_black: Handle<Font>, commands: &mut Commands) -> Enti
         .id()
 }
 
-pub(crate) fn init_altimeter(mut commands: Commands, server: Res<AssetServer>) {
+pub(crate) fn init_altimeter(
+    mut commands: Commands,
+    window: Single<&Window, With<PrimaryWindow>>,
+    server: Res<AssetServer>,
+) {
     let doto_bold = server.load::<Font>(URI_FONT_DOTO_BOLD);
     let doto_black = server.load::<Font>(URI_FONT_DOTO_BLACK);
+    let jetbrains_mono_italic = server.load::<Font>(URI_FONT_JETBRAINS_MONO_ITALIC);
+    let jetbrains_mono = server.load::<Font>(URI_FONT_JETBRAINS_MONO);
 
-    let altitude = altitude(doto_bold, &mut commands);
+    let window_width = window.width();
+
+    let altitude = desktop_altitude(doto_bold, &mut commands);
     let ref_frames = ref_frame_displays(doto_black, &mut commands);
-    root(&[altitude, ref_frames], &mut commands);
+    let desktop = desktop_altimeter(&[altitude, ref_frames], window_width, &mut commands);
+
+    let altitude = mobile_altitude(jetbrains_mono, &mut commands);
+    let mobile = mobile_altimeter(
+        &[altitude],
+        jetbrains_mono_italic,
+        window_width,
+        &mut commands,
+    );
+
+    wrapper(&[desktop, mobile], &mut commands);
 }
 
 pub(crate) fn calculate_altitude_format(
@@ -248,6 +374,29 @@ pub(crate) fn update_altimeter_ref_disp(
             ALTIMETER_ACTIVE
         } else {
             ALTIMETER_INACTIVE
+        };
+    }
+}
+
+pub(crate) fn handle_resize(
+    query: Query<(&mut Node, &Altimeter)>,
+    window: Single<&Window, With<PrimaryWindow>>,
+    mut messages: MessageReader<WindowResized>,
+) {
+    if messages.is_empty() {
+        return;
+    }
+
+    messages.clear();
+
+    let size = window.width();
+    let desktop_mode = size > ALTIMETER_MOBILE_CUTOFF;
+
+    for (mut node, altimeter) in query {
+        node.display = if altimeter.desktop_mode == desktop_mode {
+            Display::DEFAULT
+        } else {
+            Display::None
         };
     }
 }

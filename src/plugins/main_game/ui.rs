@@ -4,7 +4,7 @@ use crate::{
     resources::{scene::GameScene, ui::AltimeterMode},
     systems::main_game::ui::{
         altimeter::{
-            apply_altimeter_format, calculate_altitude_format, init_altimeter,
+            self, apply_altimeter_format, calculate_altitude_format, init_altimeter,
             update_altimeter_ref_disp,
         },
         oribar::{self, apply_oribar_state, calculate_oribar_state, init_oribar},
@@ -25,6 +25,7 @@ impl Plugin for GameUiPlugin {
                 calculate_altitude_format.pipe(apply_altimeter_format),
                 update_altimeter_ref_disp.run_if(state_changed::<AltimeterMode>),
                 oribar::handle_resize,
+                altimeter::handle_resize,
             )
                 .run_if(in_state(GameScene::InGame)),
         );

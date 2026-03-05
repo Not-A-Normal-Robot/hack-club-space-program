@@ -1,7 +1,7 @@
+use crate::{fl, resources::scene::GameScene};
 use bevy::prelude::*;
+use core::fmt::Display;
 use strum::EnumCount;
-
-use crate::resources::scene::GameScene;
 
 /// The reference frame that this altimeter is using for its measurements.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, EnumCount, Hash, SubStates)]
@@ -22,6 +22,16 @@ impl AltimeterMode {
             Self::AboveSeaLevel => Self::AboveGroundLevel,
             Self::AboveGroundLevel => Self::FromCentre,
             Self::FromCentre => Self::AboveSeaLevel,
+        }
+    }
+}
+
+impl Display for AltimeterMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::AboveSeaLevel => f.write_str(&fl!("altimeter__mode__asl__text")),
+            Self::AboveGroundLevel => f.write_str(&fl!("altimeter__mode__agl__text")),
+            Self::FromCentre => f.write_str(&fl!("altimeter__mode__ctr__text")),
         }
     }
 }
