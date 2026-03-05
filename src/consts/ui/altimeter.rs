@@ -7,7 +7,7 @@ pub(crate) const ALTITUDE_DIGITS: u8 = 6;
 pub(crate) const ALTIMETER_BIG_TEXT_SIZE: f32 = 36.0;
 
 /// The size of "medium text" in the altimeter.
-pub(crate) const ALTIMETER_MEDIUM_TEXT_SIZE: f32 = 22.0;
+pub(crate) const ALTIMETER_MEDIUM_TEXT_SIZE: f32 = 18.0;
 
 /// The size of "small text" in the altimeter.
 pub(crate) const ALTIMETER_SMALL_TEXT_SIZE: f32 = 14.0;
@@ -24,8 +24,12 @@ pub(crate) const ALTIMETER_MOBILE_CUTOFF: f32 = 576.0;
 pub(crate) struct AltitudeFormat {
     /// Is this altitude negative?
     pub(crate) is_negative: bool,
-    /// The integer number to display before the SI prefix.
-    pub(crate) numeric: [char; ALTITUDE_DIGITS as usize],
+    /// The integer number to display before the SI prefix, for
+    /// desktop.
+    pub(crate) desktop_numeric: [char; ALTITUDE_DIGITS as usize],
+    /// The number and sign to display before the SI prefix, for
+    /// mobile.
+    pub(crate) mobile_numeric: [char; 1 + ALTITUDE_DIGITS as usize],
     /// The SI prefix to display after the number, or "m".
     pub(crate) prefix: AltitudePrefix,
 }
@@ -33,19 +37,22 @@ pub(crate) struct AltitudeFormat {
 impl AltitudeFormat {
     pub(crate) const NAN: Self = Self {
         is_negative: true,
-        numeric: ['.', '.', '.', 'N', 'a', 'N'],
+        desktop_numeric: ['#', 'N', 'a', 'N', '!', '#'],
+        mobile_numeric: ['#', '#', 'N', 'a', 'N', '#', '#'],
         prefix: AltitudePrefix::OutOfRange,
     };
 
     pub(crate) const OVERFLOW: Self = Self {
         is_negative: false,
-        numeric: ['+', '+', '+', '+', '+', '+'],
+        desktop_numeric: ['#', 'O', 'V', 'E', 'R', '#'],
+        mobile_numeric: ['#', 'O', 'V', 'E', 'R', '!', '#'],
         prefix: AltitudePrefix::OutOfRange,
     };
 
     pub(crate) const UNDERFLOW: Self = Self {
         is_negative: true,
-        numeric: ['-', '-', '-', '-', '-', '-'],
+        desktop_numeric: ['#', 'U', 'N', 'D', 'R', '#'],
+        mobile_numeric: ['#', 'U', 'N', 'D', 'E', 'R', '#'],
         prefix: AltitudePrefix::OutOfRange,
     };
 
@@ -71,17 +78,34 @@ impl AltitudeFormat {
             return out_of_range;
         }
 
-        let Ok(chars): Result<[char; 6], _> = format!("{scaled_alt:06.0}")
+        let desktop_numeric: [char; ALTITUDE_DIGITS as usize] = format!("{scaled_alt:06.0}")
             .chars()
             .collect::<Vec<char>>()
             .try_into()
-        else {
-            return out_of_range;
-        };
+            .unwrap_or(out_of_range.desktop_numeric);
+
+        let mut mobile_numeric: [char; 1 + ALTITUDE_DIGITS as usize] =
+            format!(" {scaled_alt:>6.0}")
+                .chars()
+                .collect::<Vec<char>>()
+                .try_into()
+                .unwrap_or(out_of_range.mobile_numeric);
+
+        // Insert minus if needed
+        if is_negative {
+            let minus_position = mobile_numeric
+                .into_iter()
+                .position(|char| char != ' ')
+                .map(|x| x - 1)
+                .unwrap_or_default();
+
+            mobile_numeric[minus_position] = '-';
+        }
 
         Self {
             is_negative,
-            numeric: chars,
+            desktop_numeric,
+            mobile_numeric,
             prefix,
         }
     }

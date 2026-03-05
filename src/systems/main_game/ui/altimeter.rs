@@ -8,6 +8,7 @@ use crate::{
         URI_FONT_DOTO_BLACK, URI_FONT_DOTO_BOLD, URI_FONT_JETBRAINS_MONO,
         URI_FONT_JETBRAINS_MONO_ITALIC,
     },
+    checked_assign,
     components::main_game::{
         celestial::{CelestialBody, Terrain},
         frames::RootSpacePosition,
@@ -194,7 +195,7 @@ fn mobile_altitude(jetbrains_mono: Handle<Font>, commands: &mut Commands) -> Ent
                 ),
                 (
                     Node {
-                        margin: UiRect::horizontal(Val::Px(4.0)),
+                        margin: UiRect::left(Val::Px(2.0)).with_right(Val::Px(4.0)),
                         ..Default::default()
                     },
                     Text(AltitudePrefix::Meter.to_char().to_string()),
@@ -330,6 +331,7 @@ type AltimeterSet<'w, 's, 'qw, 'qs> = ParamSet<
         Query<'qw, 'qs, &'static mut TextColor, With<AltimeterSign>>,
         Query<'qw, 'qs, &'static mut Text, With<AltimeterAltitudeText>>,
         Query<'qw, 'qs, &'static mut Text, With<AltimeterPrefix>>,
+        Query<'qw, 'qs, &'static mut Text, With<AltimeterMobileAltitudeText>>,
     ),
 >;
 
@@ -350,7 +352,7 @@ pub(crate) fn apply_altimeter_format(
     for mut altitude_text in param_set.p1() {
         altitude_text.0.clear();
 
-        for char in format.numeric {
+        for char in format.desktop_numeric {
             altitude_text.0.push(char);
         }
     }
@@ -359,15 +361,24 @@ pub(crate) fn apply_altimeter_format(
         prefix_text.0.clear();
         prefix_text.0.push(format.prefix.to_char());
     }
+
+    for mut mobile_text in param_set.p3() {
+        mobile_text.0.clear();
+
+        for char in format.mobile_numeric {
+            mobile_text.0.push(char);
+        }
+    }
 }
 
 pub(crate) fn update_altimeter_ref_disp(
-    query: Query<(&mut TextColor, &AltimeterModeIndicator)>,
+    desktop: Query<(&mut TextColor, &AltimeterModeIndicator)>,
+    mobile: Query<&mut Text, With<AltimeterMobileModeIndicator>>,
     mode: Res<State<AltimeterMode>>,
 ) {
     let mode = mode.get();
 
-    for (mut color, indicator) in query {
+    for (mut color, indicator) in desktop {
         let active = indicator.0 == *mode;
 
         color.0 = if active {
@@ -375,6 +386,12 @@ pub(crate) fn update_altimeter_ref_disp(
         } else {
             ALTIMETER_INACTIVE
         };
+    }
+
+    let stringified = mode.to_string();
+    for mut text in mobile {
+        checked_assign!(text.0, stringified, stringified.clone());
+        text.0 = mode.to_string();
     }
 }
 
