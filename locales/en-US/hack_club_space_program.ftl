@@ -26,3 +26,10 @@ aboutMenu__article__gameLicense__title = License: Hack Club Space Program
 aboutMenu__article__dotoLicense__title = Font license: Doto
 aboutMenu__article__wdxlLicense__title = Font license: WDXL Lubrifont SC
 aboutMenu__article__jbmLicense__title = Font license: JetBrains Mono
+
+altimeter__mode__asl__text = ASL
+altimeter__mode__asl__tooltip = Above Sea Level
+altimeter__mode__agl__text = AGL
+altimeter__mode__agl__tooltip = Above Ground Level
+altimeter__mode__ctr__text = CTR
+altimeter__mode__ctr__tooltip = From Planetary Center
