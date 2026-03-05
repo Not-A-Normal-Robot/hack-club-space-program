@@ -4,10 +4,15 @@ mainMenu__playButton__text = play
 mainMenu__aboutButton__text = about
 mainMenu__quitButton__text = quit
 
-gameControlMode__mainMode = main mode
-gameControlMode__menuMode = menu mode
-gameControlMode__vesselControlMode = vessel control mode
-gameControlMode__cameraControlMode = camera control mode
+gameControlMode__tooltip =
+    This is your current game control mode.
+    This determines what actions you can do right now with your keyboard.
+    This is similar to Vim's modal architecture, where you can switch between
+    modes easily.
+gameControlMode__mainMode = main
+gameControlMode__menuMode = menu
+gameControlMode__vesselControlMode = vessel
+gameControlMode__cameraControlMode = camera
 
 aboutMenu__backButton__text = { general__back }
 aboutMenu__title__text = About
