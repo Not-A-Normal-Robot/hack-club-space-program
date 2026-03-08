@@ -60,6 +60,12 @@ pub(crate) const ALTIMETER_INACTIVE: Color = scheme::PRIMARY_CONTAINER;
 pub(crate) const ALTIMETER_PREFIX: Color = scheme::ON_PRIMARY_CONTAINER;
 pub(crate) const ALTIMETER_OUTER_BORDER: Color = shades::PRIMARY_50;
 pub(crate) const ALTIMETER_INNER_BORDER: Color = shades::PRIMARY_35;
+pub(crate) const SPEEDOMETER_BACKGROUND: Color = scheme::ON_TERTIARY;
+pub(crate) const SPEEDOMETER_BORDER: Color = scheme::TERTIARY_CONTAINER;
+pub(crate) const SPEEDOMETER_HSPD: Color = hex_to_color(b"#6bb1ff");
+pub(crate) const SPEEDOMETER_VSPD: Color = hex_to_color(b"#ef8b39");
+pub(crate) const SPEEDOMETER_TSPD: Color = hex_to_color(b"#91be83");
+pub(crate) const SPEEDOMETER_DOTS: Color = SPEEDOMETER_TSPD;
 
 #[allow(dead_code)]
 pub(crate) mod icons {

@@ -8,6 +8,7 @@ use crate::{
             update_altimeter_ref_disp,
         },
         oribar::{self, apply_oribar_state, calculate_oribar_state, init_oribar},
+        speedometer::init_speedometer,
     },
 };
 
@@ -17,7 +18,10 @@ pub(crate) struct GameUiPlugin;
 impl Plugin for GameUiPlugin {
     fn build(&self, app: &mut App) {
         app.add_sub_state::<AltimeterMode>();
-        app.add_systems(OnEnter(GameScene::InGame), (init_oribar, init_altimeter));
+        app.add_systems(
+            OnEnter(GameScene::InGame),
+            (init_oribar, init_altimeter, init_speedometer),
+        );
         app.add_systems(
             Update,
             (

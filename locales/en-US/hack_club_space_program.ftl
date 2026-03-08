@@ -39,3 +39,10 @@ altimeter__mode__agl__text = AGL
 altimeter__mode__agl__tooltip = Above Ground Level
 altimeter__mode__ctr__text = CTR
 altimeter__mode__ctr__tooltip = From Planetary Centre
+
+speedometer__horizontalSpeed__label = HSPD
+speedometer__horizontalSpeed__tooltip = Horizontal speed relative to parent body
+speedometer__verticalSpeed__label = VSPD
+speedometer__verticalSpeed__tooltip = Vertical speed relative to parent body
+speedometer__totalSpeed__label = SPD
+speedometer__totalSpeed__tooltip = Speed relative to parent body
