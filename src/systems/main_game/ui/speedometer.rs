@@ -11,7 +11,8 @@ use crate::{
             SPEEDOMETER_BACKGROUND, SPEEDOMETER_BORDER, SPEEDOMETER_DOTS, SPEEDOMETER_HSPD,
             SPEEDOMETER_TSPD, SPEEDOMETER_VSPD,
         },
-        ui::speedometer::{DIRECTIONAL_FONT_SIZE, TSPD_FONT_SIZE, UNIT_FONT_SIZE},
+        si::SIPrefix,
+        ui::speedometer::{DIRECTIONAL_FONT_SIZE, SpeedometerUnit, TSPD_FONT_SIZE, UNIT_FONT_SIZE},
     },
     fl,
     resources::scene::GameScene,
@@ -126,7 +127,11 @@ fn unit_dots(commands: &mut Commands) -> Entity {
 fn unit_display(font: TextFont, commands: &mut Commands) -> Entity {
     let dots = unit_dots(commands);
     let unit = commands
-        .spawn((Text(" m/s".into()), font, SpeedometerUnitText))
+        .spawn((
+            Text(SpeedometerUnit::from(SIPrefix::Unit).to_string()),
+            font,
+            SpeedometerUnitText,
+        ))
         .id();
 
     commands

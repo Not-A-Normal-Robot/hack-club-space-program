@@ -22,6 +22,7 @@ use crate::{
             ALTIMETER_ACTIVE, ALTIMETER_BACKGROUND, ALTIMETER_INACTIVE, ALTIMETER_INNER_BORDER,
             ALTIMETER_OUTER_BORDER, ALTIMETER_PREFIX,
         },
+        si::SIPrefix,
         ui::altimeter::{
             ALTIMETER_BIG_TEXT_SIZE, ALTIMETER_MEDIUM_TEXT_SIZE, ALTIMETER_MOBILE_CUTOFF,
             ALTIMETER_SMALL_TEXT_SIZE, ALTIMETER_TINY_TEXT_SIZE, AltitudeFormat, AltitudePrefix,
@@ -170,7 +171,7 @@ fn desktop_altitude(doto_bold: Handle<Font>, commands: &mut Commands) -> Entity 
                     AltimeterAltitudeText,
                 ),
                 (
-                    Text(AltitudePrefix::Meter.to_char().to_string()),
+                    Text(AltitudePrefix::from(SIPrefix::Unit).to_char().to_string()),
                     doto_bold,
                     TextColor(ALTIMETER_PREFIX),
                     AltimeterPrefix,
@@ -199,7 +200,7 @@ fn mobile_altitude(jetbrains_mono: Handle<Font>, commands: &mut Commands) -> Ent
                         margin: UiRect::left(Val::Px(2.0)).with_right(Val::Px(4.0)),
                         ..Default::default()
                     },
-                    Text(AltitudePrefix::Meter.to_char().to_string()),
+                    Text(AltitudePrefix::from(SIPrefix::Unit).to_char().to_string()),
                     TextColor(ALTIMETER_PREFIX),
                     AltimeterPrefix,
                     text_font.clone()

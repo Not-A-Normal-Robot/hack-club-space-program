@@ -1,5 +1,7 @@
 use strum::{EnumCount, VariantArray};
 
+use crate::consts::si::SIPrefix;
+
 /// The amount of digits to display in the altitude number.
 pub(crate) const ALTITUDE_DIGITS: u8 = 6;
 
@@ -39,21 +41,21 @@ impl AltitudeFormat {
         is_negative: true,
         desktop_numeric: ['#', 'N', 'a', 'N', '!', '#'],
         mobile_numeric: ['#', '#', 'N', 'a', 'N', '#', '#'],
-        prefix: AltitudePrefix::OutOfRange,
+        prefix: AltitudePrefix(None),
     };
 
     pub(crate) const OVERFLOW: Self = Self {
         is_negative: false,
         desktop_numeric: ['#', 'O', 'V', 'E', 'R', '#'],
         mobile_numeric: ['#', 'O', 'V', 'E', 'R', '!', '#'],
-        prefix: AltitudePrefix::OutOfRange,
+        prefix: AltitudePrefix(None),
     };
 
     pub(crate) const UNDERFLOW: Self = Self {
         is_negative: true,
         desktop_numeric: ['#', 'U', 'N', 'D', 'R', '#'],
         mobile_numeric: ['#', 'U', 'N', 'D', 'E', 'R', '#'],
-        prefix: AltitudePrefix::OutOfRange,
+        prefix: AltitudePrefix(None),
     };
 
     #[must_use]
@@ -112,72 +114,50 @@ impl AltitudeFormat {
 }
 
 /// Contains data on the post-numeric thing to display, e.g. "k"
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, EnumCount, VariantArray)]
-pub(crate) enum AltitudePrefix {
-    Meter = 0,
-    Kilo = 1,
-    Mega = 2,
-    Giga = 3,
-    Tera = 4,
-    Peta = 5,
-    Exa = 6,
-    Zetta = 7,
-    Yotta = 8,
-    Ronna = 9,
-    Quetta = 10,
-    OutOfRange = 11,
+///
+/// If the inner value is None, then this means the meter amount is out
+/// of range!
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub(crate) struct AltitudePrefix(pub(crate) Option<SIPrefix>);
+
+impl From<Option<SIPrefix>> for AltitudePrefix {
+    fn from(value: Option<SIPrefix>) -> Self {
+        Self(value)
+    }
+}
+
+impl From<SIPrefix> for AltitudePrefix {
+    fn from(value: SIPrefix) -> Self {
+        Self(Some(value))
+    }
 }
 
 impl AltitudePrefix {
     /// Get an altitude prefix to use given a nonnegative float.
     #[must_use]
     pub(crate) fn from_meters(meters: f64) -> Self {
-        Self::VARIANTS
+        SIPrefix::VARIANTS
             .iter()
             .find(|prefix| prefix.max_altitude() > meters)
             .copied()
-            .unwrap_or(Self::OutOfRange)
+            .into()
     }
 
-    #[inline]
-    #[must_use]
-    pub(crate) const fn discriminant(self) -> u8 {
-        self as u8
-    }
-
-    /// The multiplier or scale of this prefix.
-    #[inline]
     #[must_use]
     pub(crate) fn multiplier(self) -> f64 {
-        1000f64.powi(i32::from(self.discriminant()))
+        1000f64.powi(i32::from(
+            self.0.map_or(SIPrefix::COUNT_U8, SIPrefix::discriminant),
+        ))
     }
 
-    /// The max altitude this prefix shall be used for.
-    ///
-    /// This is non-inclusive; if this function returns
-    /// 1e6, then a value of exactly 1e6 should not use
-    /// this prefix.
     #[inline]
     #[must_use]
-    pub(crate) fn max_altitude(self) -> f64 {
-        (10.0f64.powi(i32::from(ALTITUDE_DIGITS)) - 0.5) * self.multiplier()
-    }
-
-    #[must_use]
     pub(crate) const fn to_char(self) -> char {
-        match self {
-            Self::Meter => 'm',
-            Self::Kilo => 'k',
-            Self::Mega => 'M',
-            Self::Giga => 'G',
-            Self::Tera => 'T',
-            Self::Peta => 'P',
-            Self::Exa => 'E',
-            Self::Zetta => 'Z',
-            Self::Yotta => 'Y',
-            Self::Ronna => 'R',
-            Self::Quetta => 'Q',
-            Self::OutOfRange => 'X',
+        let Some(si) = self.0 else { return 'X' };
+
+        match si.to_char() {
+            Some(ch) => ch,
+            None => 'm',
         }
     }
 }
@@ -189,33 +169,33 @@ mod tests {
     #[test]
     fn test_altitude_prefix() {
         let cases = [
-            (0.0, AltitudePrefix::Meter),
-            (1.0, AltitudePrefix::Meter),
-            (100_000.0, AltitudePrefix::Meter),
-            (999_999.0, AltitudePrefix::Meter),
-            (999_999.4, AltitudePrefix::Meter),
-            (999_999.499_999_999_9, AltitudePrefix::Meter),
-            (999_999.5, AltitudePrefix::Kilo),
-            (999_999_000.0, AltitudePrefix::Kilo),
-            (999_999_499.9, AltitudePrefix::Kilo),
-            (999_999_499.999_999_9, AltitudePrefix::Kilo),
-            (999_999_500.0, AltitudePrefix::Mega),
-            (999_999e12, AltitudePrefix::Tera),
-            (999_999.499e12, AltitudePrefix::Tera),
-            (999_999.499_999_999_9e12, AltitudePrefix::Tera),
-            (999_999.5e12, AltitudePrefix::Peta),
-            (999_999.499_999_999_9e30, AltitudePrefix::Quetta),
-            (999_999.5e30, AltitudePrefix::OutOfRange),
-            (1_000_000e30, AltitudePrefix::OutOfRange),
-            (1e38, AltitudePrefix::OutOfRange),
-            (1e308, AltitudePrefix::OutOfRange),
-            (f64::MAX, AltitudePrefix::OutOfRange),
-            (f64::INFINITY, AltitudePrefix::OutOfRange),
-            (f64::NAN, AltitudePrefix::OutOfRange),
+            (0.0, Some(SIPrefix::Unit)),
+            (1.0, Some(SIPrefix::Unit)),
+            (100_000.0, Some(SIPrefix::Unit)),
+            (999_999.0, Some(SIPrefix::Unit)),
+            (999_999.4, Some(SIPrefix::Unit)),
+            (999_999.499_999_999_9, Some(SIPrefix::Unit)),
+            (999_999.5, Some(SIPrefix::Kilo)),
+            (999_999_000.0, Some(SIPrefix::Kilo)),
+            (999_999_499.9, Some(SIPrefix::Kilo)),
+            (999_999_499.999_999_9, Some(SIPrefix::Kilo)),
+            (999_999_500.0, Some(SIPrefix::Mega)),
+            (999_999e12, Some(SIPrefix::Tera)),
+            (999_999.499e12, Some(SIPrefix::Tera)),
+            (999_999.499_999_999_9e12, Some(SIPrefix::Tera)),
+            (999_999.5e12, Some(SIPrefix::Peta)),
+            (999_999.499_999_999_9e30, Some(SIPrefix::Quetta)),
+            (999_999.5e30, None),
+            (1_000_000e30, None),
+            (1e38, None),
+            (1e308, None),
+            (f64::MAX, None),
+            (f64::INFINITY, None),
+            (f64::NAN, None),
         ];
 
         for (meters, prefix) in cases {
-            assert_eq!(AltitudePrefix::from_meters(meters), prefix);
+            assert_eq!(AltitudePrefix::from_meters(meters).0, prefix);
         }
     }
 
