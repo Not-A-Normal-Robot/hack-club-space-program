@@ -1,6 +1,6 @@
 use strum::{EnumCount, VariantArray};
 
-use crate::consts::ui::{altimeter::ALTITUDE_DIGITS, speedometer::SPEEDO_CHAR_LEN};
+use crate::consts::ui::altimeter::ALTITUDE_DIGITS;
 
 /// An SI prefix.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, EnumCount, VariantArray)]
@@ -69,9 +69,14 @@ impl SIPrefix {
     /// This is non-inclusive; if this function returns
     /// 1e6, then a value of exactly 1e6 should not use
     /// this prefix.
+    ///
+    /// `chars` is the amount of characters used for the
+    /// decimal digit and point. For positive numbers,
+    /// this is [`SPEEDO_CHAR_LEN`][crate::consts::ui::speedometer::SPEEDO_CHAR_LEN],
+    /// and for negative numbers, this is `SPEEDO_CHAR_LEN - 1`.
     #[inline]
     #[must_use]
-    pub(crate) fn max_speed(self) -> f64 {
+    pub(crate) fn max_speed(self, chars: u8) -> f64 {
         // 999.99  m/s
         // 1.0000 km/s
 
@@ -83,9 +88,9 @@ impl SIPrefix {
         // len = 6: 999.995
         // 1000 - 0.5 * 10^(3 - len)
 
-        const _ASSERTION: () = assert!(SPEEDO_CHAR_LEN > 3);
+        debug_assert!(chars > 3);
 
-        let coeff = 0.5f64.mul_add(-10.0f64.powi(4 - i32::from(SPEEDO_CHAR_LEN)), 1000.0);
+        let coeff = 0.5f64.mul_add(-10.0f64.powi(4 - i32::from(chars)), 1000.0);
 
         coeff * self.multiplier()
     }

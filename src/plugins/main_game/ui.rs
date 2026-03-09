@@ -8,7 +8,7 @@ use crate::{
             update_altimeter_ref_disp,
         },
         oribar::{self, apply_oribar_state, calculate_oribar_state, init_oribar},
-        speedometer::init_speedometer,
+        speedometer::{apply_speedometer_format, calculate_speedometer_format, init_speedometer},
     },
 };
 
@@ -27,6 +27,7 @@ impl Plugin for GameUiPlugin {
             (
                 calculate_oribar_state.pipe(apply_oribar_state),
                 calculate_altitude_format.pipe(apply_altimeter_format),
+                calculate_speedometer_format.pipe(apply_speedometer_format),
                 update_altimeter_ref_disp.run_if(state_changed::<AltimeterMode>),
                 oribar::handle_resize,
                 altimeter::handle_resize,

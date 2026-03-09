@@ -30,7 +30,7 @@ pub(crate) struct SpeedometerFormat {
 
 impl SpeedometerFormat {
     const TEXT_OVERFLOW: [char; SPEEDO_CHAR_LEN as usize] = ['>', '9', '9', '9', '.', '9'];
-    const TEXT_UNDERFLOW: [char; SPEEDO_CHAR_LEN as usize] = ['<', '0', '.', '0', '0', '0'];
+    const TEXT_UNDERFLOW: [char; SPEEDO_CHAR_LEN as usize] = ['<', '-', '1', '0', '0', '0'];
     const TEXT_NAN: [char; SPEEDO_CHAR_LEN as usize] = ['#', 'N', 'a', 'N', '!', '#'];
 
     /// Gets the formatted speedometer values from the given
@@ -56,18 +56,13 @@ impl SpeedometerFormat {
 
     /// Formats a scaled number into a char array.
     fn format_scaled(scaled: f64) -> [char; SPEEDO_CHAR_LEN as usize] {
-        let limit = SIPrefix::Unit.max_speed();
-
         if scaled.is_nan() {
             return Self::TEXT_NAN;
-        } else if scaled >= limit {
+        } else if scaled >= SIPrefix::Unit.max_speed(SPEEDO_CHAR_LEN) {
             return Self::TEXT_OVERFLOW;
-        } else if scaled < 0.0 {
+        } else if -scaled >= SIPrefix::Unit.max_speed(SPEEDO_CHAR_LEN - 1) {
             return Self::TEXT_UNDERFLOW;
         }
-
-        // Handle negative zero correctly
-        let scaled = scaled.abs();
 
         let precision = Self::get_precision(scaled);
 
@@ -89,13 +84,21 @@ impl SpeedometerFormat {
         // 10^2 - 0.5 * 10^-3
         // 10^3 - 0.5 * 10^-2
 
-        for precision in (1..SPEEDO_CHAR_LEN - 1).rev() {
-            let cutoff = 0.5f64.mul_add(
+        let is_negative = scaled.is_sign_negative();
+        let scaled = scaled.abs();
+        let chars = if is_negative {
+            SPEEDO_CHAR_LEN - 1
+        } else {
+            SPEEDO_CHAR_LEN
+        };
+
+        for precision in (1..chars - 1).rev() {
+            let max = 0.5f64.mul_add(
                 -10f64.powi(-i32::from(precision)),
-                10f64.powi(i32::from(SPEEDO_CHAR_LEN) - i32::from(precision) - 1),
+                10f64.powi(i32::from(chars) - i32::from(precision) - 1),
             );
 
-            if scaled < cutoff {
+            if scaled < max {
                 return precision;
             }
         }
@@ -136,9 +139,15 @@ impl SpeedometerUnit {
     #[inline]
     #[must_use]
     pub(crate) fn from_speed(speed: f64) -> Self {
+        let chars = if speed.is_sign_negative() {
+            SPEEDO_CHAR_LEN - 1
+        } else {
+            SPEEDO_CHAR_LEN
+        };
+
         SIPrefix::VARIANTS
             .iter()
-            .find(|prefix| prefix.max_speed() > speed)
+            .find(|prefix| prefix.max_speed(chars) > speed)
             .copied()
             .into()
     }
@@ -205,6 +214,16 @@ mod tests {
     #[test]
     fn test_get_precision() {
         let cases = [
+            (-999.95, 0),
+            (-999.949_999_999_999_9, 1),
+            (-99.995, 1),
+            (-99.994_999_999_999_99, 2),
+            (-9.999_5, 2),
+            (-9.999_499_999_999_998, 3),
+            (-9.999, 3),
+            (-1.000, 3),
+            (-0.4039, 3),
+            (-0.000, 3),
             (0.0000, 4),
             (1.0000, 4),
             (9.9999, 4),
@@ -227,17 +246,28 @@ mod tests {
 
         for (input, expected) in cases {
             let gotten = SpeedometerFormat::get_precision(input);
-            assert_eq!(gotten, expected);
+            assert_eq!(gotten, expected, "assertion failed with input {input}");
         }
     }
 
     #[test]
     fn test_format_scaled() {
         let cases = [
-            (f64::NEG_INFINITY, SpeedometerFormat::TEXT_UNDERFLOW),
-            (-1.0, SpeedometerFormat::TEXT_UNDERFLOW),
-            (-f64::MIN_POSITIVE, SpeedometerFormat::TEXT_UNDERFLOW),
-            (-0.000_00, ['0', '.', '0', '0', '0', '0']),
+            (-1000., SpeedometerFormat::TEXT_UNDERFLOW),
+            (-999.95, SpeedometerFormat::TEXT_UNDERFLOW),
+            (-999.949_999_999_999_9, ['-', '9', '9', '9', '.', '9']),
+            (-400.39, ['-', '4', '0', '0', '.', '4']),
+            (-100.0, ['-', '1', '0', '0', '.', '0']),
+            (-99.995, ['-', '1', '0', '0', '.', '0']),
+            (-99.994_999_999_999_99, ['-', '9', '9', '.', '9', '9']),
+            (-40.039, ['-', '4', '0', '.', '0', '4']),
+            (-10.0, ['-', '1', '0', '.', '0', '0']),
+            (-9.999_5, ['-', '1', '0', '.', '0', '0']),
+            (-9.999_499_999_999_998, ['-', '9', '.', '9', '9', '9']),
+            (-9.999, ['-', '9', '.', '9', '9', '9']),
+            (-4.0039, ['-', '4', '.', '0', '0', '4']),
+            (-0.4039, ['-', '0', '.', '4', '0', '4']),
+            (-0.000_00, ['-', '0', '.', '0', '0', '0']),
             (0.000_00, ['0', '.', '0', '0', '0', '0']),
             (0.000_04, ['0', '.', '0', '0', '0', '0']),
             (
@@ -246,15 +276,20 @@ mod tests {
             ),
             (0.000_05, ['0', '.', '0', '0', '0', '1']),
             (0.0001, ['0', '.', '0', '0', '0', '1']),
+            (0.00016, ['0', '.', '0', '0', '0', '2']),
+            (0.40016, ['0', '.', '4', '0', '0', '2']),
             (1.0000, ['1', '.', '0', '0', '0', '0']),
+            (4.00036, ['4', '.', '0', '0', '0', '4']),
             (9.0000, ['9', '.', '0', '0', '0', '0']),
             (9.9999, ['9', '.', '9', '9', '9', '9']),
             (9.999_94, ['9', '.', '9', '9', '9', '9']),
             (9.999_949_999_999_999, ['9', '.', '9', '9', '9', '9']),
             (9.999_95, ['1', '0', '.', '0', '0', '0']),
+            (40.0036, ['4', '0', '.', '0', '0', '4']),
             (99.999_4, ['9', '9', '.', '9', '9', '9']),
             (99.999_499_999_999_99, ['9', '9', '.', '9', '9', '9']),
             (99.999_5, ['1', '0', '0', '.', '0', '0']),
+            (400.036, ['4', '0', '0', '.', '0', '4']),
             (999.994, ['9', '9', '9', '.', '9', '9']),
             (999.994_999_999_999_9, ['9', '9', '9', '.', '9', '9']),
             (999.995, SpeedometerFormat::TEXT_OVERFLOW),

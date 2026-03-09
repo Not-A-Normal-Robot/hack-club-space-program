@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{math::DVec2, prelude::*};
 
 use crate::{
     assets::fonts::{URI_FONT_JETBRAINS_MONO, URI_FONT_JETBRAINS_MONO_ITALIC},
@@ -217,5 +217,63 @@ pub(crate) fn calculate_speedometer_format(
         return None;
     };
 
-    todo!();
+    let (rel_pos, rel_vel) = (vessel_sv.0.0 - parent_sv.0.0, vessel_sv.1.0 - parent_sv.1.0);
+
+    let up = rel_pos.normalize_or(DVec2::new(1.0, 0.0));
+    let perp_up = up.perp();
+    let hspd = rel_vel.dot(perp_up).abs();
+    let vspd = rel_vel.dot(up);
+    let tspd = rel_vel.length();
+
+    Some(SpeedometerFormat::from_speeds(hspd, vspd, tspd))
+}
+
+type SpeedometerUpdateQuery<'w, 's, 'qw, 'qs> = ParamSet<
+    'w,
+    's,
+    (
+        Query<'qw, 'qs, &'static mut Text, With<HorizontalSpeedometerText>>,
+        Query<'qw, 'qs, &'static mut Text, With<VerticalSpeedometerText>>,
+        Query<'qw, 'qs, &'static mut Text, With<TotalSpeedometerText>>,
+        Query<'qw, 'qs, &'static mut Text, With<SpeedometerUnitText>>,
+    ),
+>;
+
+pub(crate) fn apply_speedometer_format(
+    In(format): In<Option<SpeedometerFormat>>,
+    mut query: SpeedometerUpdateQuery,
+) {
+    let Some(format) = format else { return };
+
+    for mut hspd in query.p0() {
+        hspd.0.clear();
+
+        for ch in format.hspd {
+            hspd.0.push(ch);
+        }
+    }
+
+    for mut vspd in query.p1() {
+        vspd.0.clear();
+
+        for ch in format.vspd {
+            vspd.0.push(ch);
+        }
+    }
+
+    for mut tspd in query.p2() {
+        tspd.0.clear();
+
+        for ch in format.tspd {
+            tspd.0.push(ch);
+        }
+    }
+
+    for mut unit in query.p3() {
+        unit.0.clear();
+
+        for ch in format.unit.to_text() {
+            unit.0.push(ch);
+        }
+    }
 }
