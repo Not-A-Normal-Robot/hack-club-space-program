@@ -19,13 +19,89 @@ pub(crate) const SPEEDO_CHAR_LEN: u8 = 6;
 
 pub(crate) struct SpeedometerFormat {
     /// The formatted horizontal speed.
-    hspd: [char; SPEEDO_CHAR_LEN as usize],
+    pub(crate) hspd: [char; SPEEDO_CHAR_LEN as usize],
     /// The formatted vertical speed.
-    vspd: [char; SPEEDO_CHAR_LEN as usize],
+    pub(crate) vspd: [char; SPEEDO_CHAR_LEN as usize],
     /// The formatted total speed.
-    tspd: [char; SPEEDO_CHAR_LEN as usize],
+    pub(crate) tspd: [char; SPEEDO_CHAR_LEN as usize],
     /// The speedometer unit to use.
-    unit: SpeedometerUnit,
+    pub(crate) unit: SpeedometerUnit,
+}
+
+impl SpeedometerFormat {
+    const TEXT_OVERFLOW: [char; SPEEDO_CHAR_LEN as usize] = ['>', '9', '9', '9', '.', '9'];
+    const TEXT_UNDERFLOW: [char; SPEEDO_CHAR_LEN as usize] = ['<', '0', '.', '0', '0', '0'];
+    const TEXT_NAN: [char; SPEEDO_CHAR_LEN as usize] = ['#', 'N', 'a', 'N', '!', '#'];
+
+    /// Gets the formatted speedometer values from the given
+    /// horizontal, vertical, and total speed values, in m/s.
+    pub(crate) fn from_speeds(hspd: f64, vspd: f64, tspd: f64) -> Self {
+        debug_assert!(tspd >= hspd);
+        debug_assert!(tspd >= vspd);
+
+        let unit = SpeedometerUnit::from_speed(tspd);
+        let mult = unit.multiplier();
+
+        let [hspd, vspd, tspd] = [hspd, vspd, tspd]
+            .map(|x| x / mult)
+            .map(Self::format_scaled);
+
+        Self {
+            hspd,
+            vspd,
+            tspd,
+            unit,
+        }
+    }
+
+    /// Formats a scaled number into a char array.
+    fn format_scaled(scaled: f64) -> [char; SPEEDO_CHAR_LEN as usize] {
+        let limit = SIPrefix::Unit.max_speed();
+
+        if scaled.is_nan() {
+            return Self::TEXT_NAN;
+        } else if scaled >= limit {
+            return Self::TEXT_OVERFLOW;
+        } else if scaled < 0.0 {
+            return Self::TEXT_UNDERFLOW;
+        }
+
+        // Handle negative zero correctly
+        let scaled = scaled.abs();
+
+        let precision = Self::get_precision(scaled);
+
+        format!("{scaled:.*}", precision as usize)
+            .chars()
+            .collect::<Vec<_>>()
+            .try_into()
+            .expect("resulting string should fit within char length bounds")
+    }
+
+    /// Gets how many digits of precision to display.
+    fn get_precision(scaled: f64) -> u8 {
+        // Cutoffs:
+        // 9.99995
+        // 99.9995
+        // 999.995
+
+        // 10^1 - 0.5 * 10^-4
+        // 10^2 - 0.5 * 10^-3
+        // 10^3 - 0.5 * 10^-2
+
+        for precision in (1..SPEEDO_CHAR_LEN - 1).rev() {
+            let cutoff = 0.5f64.mul_add(
+                -10f64.powi(-i32::from(precision)),
+                10f64.powi(i32::from(SPEEDO_CHAR_LEN) - i32::from(precision) - 1),
+            );
+
+            if scaled < cutoff {
+                return precision;
+            }
+        }
+
+        0
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -92,5 +168,106 @@ impl SpeedometerUnit {
             Self::CHARS_SUFFIX[1],
             Self::CHARS_SUFFIX[2],
         ]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_speedometer_unit() {
+        let cases = [
+            (0.0000, SpeedometerUnit::from(SIPrefix::Unit)),
+            (1.0000, SpeedometerUnit::from(SIPrefix::Unit)),
+            (999.994_999_999_999_9, SpeedometerUnit::from(SIPrefix::Unit)),
+            (999.995, SpeedometerUnit::from(SIPrefix::Kilo)),
+            (
+                999.994_999_999_999_9e3,
+                SpeedometerUnit::from(SIPrefix::Kilo),
+            ),
+            (999.995e3, SpeedometerUnit::from(SIPrefix::Mega)),
+            (
+                999.994_999_999_999_9e30,
+                SpeedometerUnit::from(SIPrefix::Quetta),
+            ),
+            (999.995e30, SpeedometerUnit::from(None::<SIPrefix>)),
+            (f64::NAN, SpeedometerUnit::from(None::<SIPrefix>)),
+            (f64::INFINITY, SpeedometerUnit::from(None::<SIPrefix>)),
+        ];
+
+        for (input, expected) in cases {
+            let unit = SpeedometerUnit::from_speed(input);
+            assert_eq!(unit, expected);
+        }
+    }
+
+    #[test]
+    fn test_get_precision() {
+        let cases = [
+            (0.0000, 4),
+            (1.0000, 4),
+            (9.9999, 4),
+            (9.999_949_999_999_999, 4),
+            (9.99995, 3),
+            (10.000, 3),
+            (99.999, 3),
+            (99.999_499_999_999_99, 3),
+            (99.9995, 2),
+            (100.00, 2),
+            (999.99, 2),
+            (999.994_999_999_999_9, 2),
+            (999.995, 1),
+            (1000.0, 1),
+            (9999.9, 1),
+            (9_999.949_999_999_999, 1),
+            (9999.95, 0),
+            (10000., 0),
+        ];
+
+        for (input, expected) in cases {
+            let gotten = SpeedometerFormat::get_precision(input);
+            assert_eq!(gotten, expected);
+        }
+    }
+
+    #[test]
+    fn test_format_scaled() {
+        let cases = [
+            (f64::NEG_INFINITY, SpeedometerFormat::TEXT_UNDERFLOW),
+            (-1.0, SpeedometerFormat::TEXT_UNDERFLOW),
+            (-f64::MIN_POSITIVE, SpeedometerFormat::TEXT_UNDERFLOW),
+            (-0.000_00, ['0', '.', '0', '0', '0', '0']),
+            (0.000_00, ['0', '.', '0', '0', '0', '0']),
+            (0.000_04, ['0', '.', '0', '0', '0', '0']),
+            (
+                0.000_049_999_999_999_999_999,
+                ['0', '.', '0', '0', '0', '0'],
+            ),
+            (0.000_05, ['0', '.', '0', '0', '0', '1']),
+            (0.0001, ['0', '.', '0', '0', '0', '1']),
+            (1.0000, ['1', '.', '0', '0', '0', '0']),
+            (9.0000, ['9', '.', '0', '0', '0', '0']),
+            (9.9999, ['9', '.', '9', '9', '9', '9']),
+            (9.999_94, ['9', '.', '9', '9', '9', '9']),
+            (9.999_949_999_999_999, ['9', '.', '9', '9', '9', '9']),
+            (9.999_95, ['1', '0', '.', '0', '0', '0']),
+            (99.999_4, ['9', '9', '.', '9', '9', '9']),
+            (99.999_499_999_999_99, ['9', '9', '.', '9', '9', '9']),
+            (99.999_5, ['1', '0', '0', '.', '0', '0']),
+            (999.994, ['9', '9', '9', '.', '9', '9']),
+            (999.994_999_999_999_9, ['9', '9', '9', '.', '9', '9']),
+            (999.995, SpeedometerFormat::TEXT_OVERFLOW),
+            (1000.0, SpeedometerFormat::TEXT_OVERFLOW),
+            (1e38, SpeedometerFormat::TEXT_OVERFLOW),
+            (1e308, SpeedometerFormat::TEXT_OVERFLOW),
+            (f64::INFINITY, SpeedometerFormat::TEXT_OVERFLOW),
+            (f64::NAN, SpeedometerFormat::TEXT_NAN),
+        ];
+
+        for (input, expected) in cases {
+            let gotten = SpeedometerFormat::format_scaled(input);
+            assert_eq!(gotten, expected, "assertion failed with input {input}");
+        }
     }
 }

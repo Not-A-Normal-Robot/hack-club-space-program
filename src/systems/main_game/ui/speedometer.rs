@@ -2,9 +2,12 @@ use bevy::prelude::*;
 
 use crate::{
     assets::fonts::{URI_FONT_JETBRAINS_MONO, URI_FONT_JETBRAINS_MONO_ITALIC},
-    components::main_game::ui::speedometer::{
-        HorizontalSpeedometerText, SpeedometerUnitText, TotalSpeedometerText,
-        VerticalSpeedometerText,
+    components::main_game::{
+        frames::{RootSpaceLinearVelocity, RootSpacePosition},
+        ui::speedometer::{
+            HorizontalSpeedometerText, SpeedometerUnitText, TotalSpeedometerText,
+            VerticalSpeedometerText,
+        },
     },
     consts::{
         colors::{
@@ -12,10 +15,13 @@ use crate::{
             SPEEDOMETER_TSPD, SPEEDOMETER_VSPD,
         },
         si::SIPrefix,
-        ui::speedometer::{DIRECTIONAL_FONT_SIZE, SpeedometerUnit, TSPD_FONT_SIZE, UNIT_FONT_SIZE},
+        ui::speedometer::{
+            DIRECTIONAL_FONT_SIZE, SpeedometerFormat, SpeedometerUnit, TSPD_FONT_SIZE,
+            UNIT_FONT_SIZE,
+        },
     },
     fl,
-    resources::scene::GameScene,
+    resources::{scene::GameScene, simulation::ActiveVessel},
 };
 
 #[must_use]
@@ -190,4 +196,26 @@ pub(crate) fn init_speedometer(mut commands: Commands, server: Res<AssetServer>)
     );
 
     root(&[hspd, vspd, tspd, unit_display], &mut commands);
+}
+
+pub(crate) fn calculate_speedometer_format(
+    sv_query: Query<(&RootSpacePosition, &RootSpaceLinearVelocity)>,
+    active_vessel: Res<ActiveVessel>,
+) -> Option<SpeedometerFormat> {
+    let vessel_sv = sv_query
+        .get(active_vessel.entity)
+        .map(|(&x, &y)| (x, y))
+        .unwrap_or((
+            active_vessel.prev_tick_position,
+            active_vessel.prev_tick_velocity,
+        ));
+
+    let Ok(parent_sv) = sv_query
+        .get(active_vessel.prev_tick_parent)
+        .map(|(&x, &y)| (x, y))
+    else {
+        return None;
+    };
+
+    todo!();
 }

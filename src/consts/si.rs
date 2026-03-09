@@ -85,7 +85,7 @@ impl SIPrefix {
 
         const _ASSERTION: () = assert!(SPEEDO_CHAR_LEN > 3);
 
-        let coeff = 0.5f64.mul_add(-10.0f64.powi(3 - i32::from(SPEEDO_CHAR_LEN)), 1000.0);
+        let coeff = 0.5f64.mul_add(-10.0f64.powi(4 - i32::from(SPEEDO_CHAR_LEN)), 1000.0);
 
         coeff * self.multiplier()
     }
