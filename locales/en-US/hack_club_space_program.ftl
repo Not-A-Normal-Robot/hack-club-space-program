@@ -4,15 +4,18 @@ mainMenu__playButton__text = play
 mainMenu__aboutButton__text = about
 mainMenu__quitButton__text = quit
 
-gameControlMode__mainMode = main mode
-gameControlMode__menuMode = menu mode
-gameControlMode__vesselControlMode = vessel control mode
-gameControlMode__cameraControlMode = camera control mode
+gameControlMode__tooltip =
+    This is your current game control mode.
+    This determines what actions you can do right now with your keyboard.
+    This is similar to Vim's modal architecture, where you can switch between
+    modes easily.
+gameControlMode__mainMode = main
+gameControlMode__menuMode = menu
+gameControlMode__vesselControlMode = vessel
+gameControlMode__cameraControlMode = camera
 
 aboutMenu__backButton__text = { general__back }
 aboutMenu__title__text = About
-aboutMenu__licenseTitles__doto = Doto font license
-aboutMenu__licenseTitles__wdxl = WDXL Lubrifont SC font license
 aboutMenu__article__main__title = About Hack Club Space Program
 aboutMenu__article__main__body =
     Hack Club Space Program is an open-source game originally made for Hack Club Flavortown.
@@ -27,3 +30,19 @@ aboutMenu__article__main__body =
 aboutMenu__article__gameLicense__title = License: Hack Club Space Program
 aboutMenu__article__dotoLicense__title = Font license: Doto
 aboutMenu__article__wdxlLicense__title = Font license: WDXL Lubrifont SC
+aboutMenu__article__jbmLicense__title = Font license: JetBrains Mono
+
+altimeter__altitude__label = ALTITUDE
+altimeter__mode__asl__text = ASL
+altimeter__mode__asl__tooltip = Above Sea Level
+altimeter__mode__agl__text = AGL
+altimeter__mode__agl__tooltip = Above Ground Level
+altimeter__mode__ctr__text = CTR
+altimeter__mode__ctr__tooltip = From Planetary Centre
+
+speedometer__horizontalSpeed__label = HSPD
+speedometer__horizontalSpeed__tooltip = Horizontal speed relative to parent body
+speedometer__verticalSpeed__label = VSPD
+speedometer__verticalSpeed__tooltip = Vertical speed relative to parent body
+speedometer__totalSpeed__label = SPD
+speedometer__totalSpeed__tooltip = Speed relative to parent body

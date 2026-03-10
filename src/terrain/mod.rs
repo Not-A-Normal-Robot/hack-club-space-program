@@ -52,12 +52,36 @@ impl TerrainGen {
 
     /// Gets the vector pointing to the surface at the
     /// given theta.
-    fn get_terrain_vector(&self, theta: f64) -> TerrainPoint {
+    #[must_use]
+    pub(crate) fn get_terrain_vector(&self, theta: f64) -> TerrainPoint {
         let (sin, cos) = theta.sin_cos();
 
-        let noise = f64::from(self.noisegen.get_noise_2d(sin, cos));
-        let noise = noise.mul_add(self.multiplier, self.offset);
+        let noise = self.get_terrain_altitude_unchecked(sin, cos);
 
         TerrainPoint(DVec2::new(noise * cos, noise * sin))
+    }
+
+    /// Gets the altitude of the terrain at the given theta.
+    ///
+    /// This altitude is relative to the centre of the planet.
+    #[must_use]
+    pub(crate) fn get_terrain_altitude(&self, theta: f64) -> f64 {
+        let (sin, cos) = theta.sin_cos();
+
+        self.get_terrain_altitude_unchecked(sin, cos)
+    }
+
+    /// Gets the altitude of the terrain at the given theta.
+    ///
+    /// This altitude is relative to the centre of the planet.
+    ///
+    /// # Unchecked Operation
+    /// This operation does not check for the validity of the `sin_theta` and
+    /// `cos_theta` parameters. Make sure you derive it from `theta.sin_cos()`
+    /// or a similar method.
+    #[must_use]
+    pub(crate) fn get_terrain_altitude_unchecked(&self, sin_theta: f64, cos_theta: f64) -> f64 {
+        let noise = f64::from(self.noisegen.get_noise_2d(sin_theta, cos_theta));
+        noise.mul_add(self.multiplier, self.offset)
     }
 }

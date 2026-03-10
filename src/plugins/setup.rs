@@ -1,12 +1,12 @@
 use crate::{
-    assets::fonts::initialize_fonts,
+    assets::initialize_assets,
     consts::WEB_CANVAS_SELECTOR,
     plugins::{
         about_menu::AboutMenuPlugin,
         i18n::I18nPlugin,
         main_game::{
             controls::GameControlPlugin, debug::GameDebugPlugin, gfx::GameGfxPlugin,
-            logic::GameLogicPlugin, transition::GameTransitionPlugin,
+            logic::GameLogicPlugin, transition::GameTransitionPlugin, ui::GameUiPlugin,
         },
         main_menu::MainMenuPlugin,
         ui::MyUiPlugin,
@@ -38,13 +38,19 @@ impl Plugin for GameSetupPlugin {
                 .set(WindowPlugin {
                     primary_window: Some(Window {
                         canvas: Some(WEB_CANVAS_SELECTOR.into()),
+                        resize_constraints: WindowResizeConstraints {
+                            min_width: 320.0,
+                            min_height: 576.0,
+                            max_width: f32::INFINITY,
+                            max_height: f32::INFINITY,
+                        },
                         ..Default::default()
                     }),
                     ..Default::default()
                 }),
         );
         app.add_plugins((InputDispatchPlugin, TabNavigationPlugin));
-        initialize_fonts(app);
+        initialize_assets(app);
         app.init_state::<GameScene>();
         app.add_plugins((
             I18nPlugin,
@@ -55,6 +61,7 @@ impl Plugin for GameSetupPlugin {
             GameTransitionPlugin,
             GameDebugPlugin,
             GameControlPlugin,
+            GameUiPlugin,
             GameGfxPlugin,
         ));
     }

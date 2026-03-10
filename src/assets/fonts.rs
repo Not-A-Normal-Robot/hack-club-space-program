@@ -1,20 +1,21 @@
-use bevy::{asset::embedded_asset, prelude::*};
-
-pub(crate) static LICENSE_DOTO: &str = include_str!("doto/OFL.txt");
-pub(crate) static LICENSE_WDXL: &str = include_str!("WDXL_Lubrifont_SC/OFL.txt");
+pub(crate) static LICENSE_DOTO: &str = include_str!("../../assets/fonts/doto/OFL.txt");
+pub(crate) static LICENSE_WDXL: &str = include_str!("../../assets/fonts/WDXL_Lubrifont_SC/OFL.txt");
+pub(crate) static LICENSE_JETBRAINS_MONO: &str =
+    include_str!("../../assets/fonts/JetBrains_Mono/OFL.txt");
 
 macro_rules! define_fonts {
     ($( $name: ident = $rel_path: literal ),* $(,)?) => {
         $(::pastey::paste! {
             #[allow(dead_code)]
             pub(crate) const [< URI_FONT_ $name >]: &str =
-                concat!("embedded://hack_club_space_program/assets/fonts/", $rel_path);
+                concat!("embedded://hack_club_space_program/assets/../../assets/fonts/", $rel_path);
         })*
 
-        pub(crate) fn initialize_fonts(app: &mut ::bevy::app::App) {
-            app.init_asset::<::bevy::text::Font>();
+        pub(super) fn initialize_fonts(app: &mut ::bevy::app::App) {
+            <::bevy::app::App as ::bevy::asset::AssetApp>
+                ::init_asset::<::bevy::text::Font>(app);
             $(
-                embedded_asset!(app, $rel_path);
+                ::bevy::asset::embedded_asset!(app, concat!("../../assets/fonts/", $rel_path));
             )*
         }
     };
@@ -26,12 +27,14 @@ define_fonts! {
     DOTO_BLACK = "doto/Doto-Black.ttf",
     DOTO_BOLD = "doto/Doto-Bold.ttf",
     WDXL_LUBRIFONT_SC = "WDXL_Lubrifont_SC/WDXLLubrifontSC-Regular.ttf",
+    JETBRAINS_MONO = "JetBrains_Mono/JetBrainsMono-VariableFont_wght.ttf",
+    JETBRAINS_MONO_ITALIC = "JetBrains_Mono/JetBrainsMono-Italic-VariableFont_wght.ttf",
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bevy::{asset::io::embedded::GetAssetServer, text::FontLoader};
+    use bevy::{asset::io::embedded::GetAssetServer, prelude::*, text::FontLoader};
 
     fn min_app() -> App {
         let mut app = App::new();
@@ -47,6 +50,8 @@ mod tests {
             URI_FONT_DOTO_ROUNDED_BLACK,
             URI_FONT_DOTO_ROUNDED_BOLD,
             URI_FONT_WDXL_LUBRIFONT_SC,
+            URI_FONT_JETBRAINS_MONO,
+            URI_FONT_JETBRAINS_MONO_ITALIC,
         ];
         let mut app = min_app();
         app.get_asset_server().register_loader(FontLoader);

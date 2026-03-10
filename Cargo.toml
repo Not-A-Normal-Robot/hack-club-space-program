@@ -79,6 +79,7 @@ i18n-embed-fl = { version = "0.10.0", features = ["dashmap"] }
 keplerian_sim = "0.7.3"
 pastey = "0.2.1"
 rust-embed = "8.11.0"
+strum = { version = "0.28.0", features = ["derive"] }
 unic-langid = "0.9.6"
 
 [profile.dev]
@@ -104,3 +105,8 @@ web-sys = { version = "0.3", features = [
     "HtmlTextAreaElement",
     "HtmlDocument",
 ] }
+
+[build-dependencies]
+png = "0.18.1"
+resvg = "0.47.0"
+texture_packer = "0.30.0"

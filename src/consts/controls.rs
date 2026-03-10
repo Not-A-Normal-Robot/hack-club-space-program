@@ -50,3 +50,5 @@ pub(crate) const KB_CAM_ZOOM_RESET: [KeyCode; 2] = [KeyCode::Digit0, KeyCode::Nu
 
 pub(crate) const KB_CAM_SWITCH_PREV: [KeyCode; 1] = [KeyCode::BracketLeft];
 pub(crate) const KB_CAM_SWITCH_NEXT: [KeyCode; 1] = [KeyCode::BracketRight];
+
+pub(crate) const KB_MENU_SWITCH_ALTIMETER_MODE: [KeyCode; 1] = [KeyCode::KeyA];

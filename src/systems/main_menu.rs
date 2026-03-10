@@ -1,6 +1,6 @@
 use crate::{
     assets::fonts::URI_FONT_DOTO_ROUNDED_BOLD,
-    builders::button::TextButtonBuilder,
+    builders::{button::TextButtonBuilder, camera::UiCameraBuilder},
     consts::colors::{
         scheme::SURFACE,
         shades::{PRIMARY_50, PRIMARY_60, PRIMARY_80, TERTIARY_50, TERTIARY_60, TERTIARY_80},
@@ -178,16 +178,14 @@ pub(crate) fn init_main_menu(
 
     root_node(*window, root_children.as_slice(), &mut commands);
 
-    commands.spawn((
+    commands.spawn(UiCameraBuilder::with_extra((
         DespawnOnExit(GameScene::MainMenu),
-        Camera2d,
         Camera {
             clear_color: ClearColorConfig::Custom(SURFACE),
             is_active: true,
             ..Default::default()
         },
-        IsDefaultUiCamera,
-    ));
+    )));
 }
 
 pub(crate) fn handle_resize(

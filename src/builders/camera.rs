@@ -44,3 +44,17 @@ impl SimCameraBuilder {
         )
     }
 }
+
+pub(crate) struct UiCameraBuilder;
+
+impl UiCameraBuilder {
+    #[must_use]
+    pub(crate) const fn build() -> impl Bundle {
+        (Camera2d, IsDefaultUiCamera)
+    }
+
+    #[must_use]
+    pub(crate) const fn with_extra(extra: impl Bundle) -> impl Bundle {
+        (Self::build(), extra)
+    }
+}

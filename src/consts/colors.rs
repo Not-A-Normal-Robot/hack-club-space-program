@@ -50,6 +50,31 @@ const fn hex_to_color(hex: &[u8; 7]) -> Color {
     Color::Srgba(Srgba::rgb(r, g, b))
 }
 
+pub(crate) const CONTROL_MODE_BACKGROUND: Color =
+    Color::Srgba(Srgba::new(0.085, 0.125, 0.105, 0.95));
+pub(crate) const CONTROL_MODE_FOREGROUND: Color = hex_to_color(b"#39BC22");
+pub(crate) const ORIBAR_BACKGROUND: Color = Color::Srgba(Srgba::new(0.25, 0.25, 0.25, 0.55));
+pub(crate) const ALTIMETER_BACKGROUND: Color = scheme::ON_PRIMARY;
+pub(crate) const ALTIMETER_ACTIVE: Color = scheme::PRIMARY;
+pub(crate) const ALTIMETER_INACTIVE: Color = scheme::PRIMARY_CONTAINER;
+pub(crate) const ALTIMETER_PREFIX: Color = scheme::ON_PRIMARY_CONTAINER;
+pub(crate) const ALTIMETER_OUTER_BORDER: Color = shades::PRIMARY_50;
+pub(crate) const ALTIMETER_INNER_BORDER: Color = shades::PRIMARY_35;
+pub(crate) const SPEEDOMETER_BACKGROUND: Color = scheme::ON_TERTIARY;
+pub(crate) const SPEEDOMETER_BORDER: Color = scheme::TERTIARY_CONTAINER;
+pub(crate) const SPEEDOMETER_HSPD: Color = hex_to_color(b"#6bb1ff");
+pub(crate) const SPEEDOMETER_VSPD: Color = hex_to_color(b"#ef8b39");
+pub(crate) const SPEEDOMETER_TSPD: Color = hex_to_color(b"#91be83");
+pub(crate) const SPEEDOMETER_DOTS: Color = SPEEDOMETER_TSPD;
+
+#[allow(dead_code)]
+pub(crate) mod icons {
+    use crate::consts::colors::hex_to_color;
+    use bevy::color::Color;
+
+    pub(crate) const COLOR_PROGRADE: Color = hex_to_color(b"#9ACD32");
+}
+
 #[allow(dead_code)]
 pub(crate) mod scheme {
     use crate::consts::colors::hex_to_color;
