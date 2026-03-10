@@ -1,3 +1,5 @@
+#![cfg_attr(not(feature = "not-headless"), expect(dead_code))]
+
 use core::fmt::{Display, Write};
 
 use strum::VariantArray;

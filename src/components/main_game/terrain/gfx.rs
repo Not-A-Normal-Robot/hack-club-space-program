@@ -251,12 +251,7 @@ impl LodVectors {
 
         let buf = unsafe { buf.assume_init() };
 
-        let len = buf.len();
-        let ptr = Box::into_raw(buf).cast::<u16>();
-
-        let vec = unsafe { Vec::from_raw_parts(ptr, len, len) };
-
-        Indices::U16(vec)
+        Indices::U16(buf.into())
     }
 
     /// `len` is the length of the vertex buffer and must be >= 3
@@ -283,13 +278,7 @@ impl LodVectors {
         }
 
         let buf = unsafe { buf.assume_init() };
-
-        let len = buf.len();
-        let ptr = Box::into_raw(buf).cast::<u32>();
-
-        let vec = unsafe { Vec::from_raw_parts(ptr, len, len) };
-
-        Indices::U32(vec)
+        Indices::U32(buf.into())
     }
 
     /// Create an index buffer from the given vertex buffer.

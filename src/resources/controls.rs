@@ -47,6 +47,7 @@ pub(crate) struct FocusableData {
     focusable_list: Vec<FocusableEntry>,
 }
 
+#[cfg_attr(all(not(feature = "not-headless"), not(test)), expect(unused))]
 impl FocusableData {
     #[must_use]
     pub(crate) const fn index_map(&self) -> &HashMap<Entity, usize> {

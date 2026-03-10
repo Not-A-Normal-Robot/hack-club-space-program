@@ -1,3 +1,5 @@
+#![cfg_attr(not(feature = "not-headless"), expect(dead_code))]
+
 use bevy::prelude::*;
 
 use crate::components::ui::{ActiveTextColor, HoverTextColor, InactiveTextColor};

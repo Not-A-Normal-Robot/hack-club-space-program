@@ -2,6 +2,8 @@
 //!
 //! From: <https://material-foundation.github.io/material-theme-builder/?primary=%23B39A00&colorMatch=false>
 
+#![allow(dead_code)]
+
 use bevy::prelude::*;
 
 /// Converts a hex ASCII char into a nibble.
@@ -67,7 +69,6 @@ pub(crate) const SPEEDOMETER_VSPD: Color = hex_to_color(b"#ef8b39");
 pub(crate) const SPEEDOMETER_TSPD: Color = hex_to_color(b"#91be83");
 pub(crate) const SPEEDOMETER_DOTS: Color = SPEEDOMETER_TSPD;
 
-#[allow(dead_code)]
 pub(crate) mod icons {
     use crate::consts::colors::hex_to_color;
     use bevy::color::Color;
@@ -75,7 +76,6 @@ pub(crate) mod icons {
     pub(crate) const COLOR_PROGRADE: Color = hex_to_color(b"#9ACD32");
 }
 
-#[allow(dead_code)]
 pub(crate) mod scheme {
     use crate::consts::colors::hex_to_color;
     use bevy::color::Color;

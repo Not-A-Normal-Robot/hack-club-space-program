@@ -1,11 +1,13 @@
 use bevy::prelude::*;
 
-use crate::assets::{fonts::initialize_fonts, icons::initialize_icons};
-
+#[cfg(feature = "not-headless")]
 pub(crate) mod fonts;
+#[cfg(feature = "not-headless")]
 pub(crate) mod icons;
 
 pub(crate) fn initialize_assets(app: &mut App) {
-    initialize_fonts(app);
-    initialize_icons(app);
+    #[cfg(feature = "not-headless")]
+    fonts::initialize_fonts(app);
+    #[cfg(feature = "not-headless")]
+    icons::initialize_icons(app);
 }

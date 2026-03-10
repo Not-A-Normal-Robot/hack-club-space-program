@@ -1,3 +1,5 @@
+#![cfg_attr(not(feature = "not-headless"), expect(dead_code))]
+
 use bevy::prelude::*;
 
 use crate::{consts::controls::KB_MENU_SWITCH_ALTIMETER_MODE, resources::ui::AltimeterMode};

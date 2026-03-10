@@ -1,3 +1,5 @@
+#![cfg_attr(not(feature = "not-headless"), expect(dead_code))]
+
 use bevy::input::keyboard::KeyCode;
 
 /// The keys a user can press to activate a selected button.

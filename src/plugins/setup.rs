@@ -1,14 +1,18 @@
+#[cfg(feature = "not-headless")]
+use crate::plugins::{
+    about_menu::AboutMenuPlugin,
+    main_game::{controls::GameControlPlugin, ui::GameUiPlugin},
+    main_menu::MainMenuPlugin,
+};
 use crate::{
     assets::initialize_assets,
     consts::WEB_CANVAS_SELECTOR,
     plugins::{
-        about_menu::AboutMenuPlugin,
         i18n::I18nPlugin,
         main_game::{
-            controls::GameControlPlugin, debug::GameDebugPlugin, gfx::GameGfxPlugin,
-            logic::GameLogicPlugin, transition::GameTransitionPlugin, ui::GameUiPlugin,
+            debug::GameDebugPlugin, gfx::GameGfxPlugin, logic::GameLogicPlugin,
+            transition::GameTransitionPlugin,
         },
-        main_menu::MainMenuPlugin,
         ui::MyUiPlugin,
     },
     resources::scene::GameScene,
@@ -53,15 +57,18 @@ impl Plugin for GameSetupPlugin {
         initialize_assets(app);
         app.init_state::<GameScene>();
         app.add_plugins((
+            #[cfg(feature = "not-headless")]
+            (
+                MainMenuPlugin,
+                AboutMenuPlugin,
+                GameControlPlugin,
+                GameUiPlugin,
+            ),
             I18nPlugin,
-            MainMenuPlugin,
-            AboutMenuPlugin,
             MyUiPlugin,
             GameLogicPlugin,
             GameTransitionPlugin,
             GameDebugPlugin,
-            GameControlPlugin,
-            GameUiPlugin,
             GameGfxPlugin,
         ));
     }

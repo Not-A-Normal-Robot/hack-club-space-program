@@ -1,3 +1,5 @@
+#![cfg_attr(not(feature = "not-headless"), expect(dead_code))]
+
 use crate::{
     consts::controls::{
         KB_MODE_SWITCH_TO_CAM_MODE, KB_MODE_SWITCH_TO_MAIN_MODE, KB_MODE_SWITCH_TO_MENU_MODE,

@@ -65,6 +65,7 @@ impl TerrainGen {
     ///
     /// This altitude is relative to the centre of the planet.
     #[must_use]
+    #[cfg_attr(not(feature = "not-headless"), expect(dead_code))]
     pub(crate) fn get_terrain_altitude(&self, theta: f64) -> f64 {
         let (sin, cos) = theta.sin_cos();
 

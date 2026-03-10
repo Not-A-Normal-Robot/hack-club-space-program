@@ -1,4 +1,6 @@
-use strum::{EnumCount, VariantArray};
+#![cfg_attr(not(feature = "not-headless"), expect(dead_code))]
+
+use strum::VariantArray;
 
 use crate::consts::si::SIPrefix;
 

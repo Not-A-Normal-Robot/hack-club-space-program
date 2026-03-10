@@ -47,6 +47,7 @@ impl SimCameraBuilder {
 
 pub(crate) struct UiCameraBuilder;
 
+#[cfg_attr(not(feature = "not-headless"), expect(dead_code))]
 impl UiCameraBuilder {
     #[must_use]
     pub(crate) const fn build() -> impl Bundle {

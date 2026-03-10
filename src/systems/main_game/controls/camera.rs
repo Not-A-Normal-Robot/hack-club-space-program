@@ -1,3 +1,5 @@
+#![cfg_attr(not(feature = "not-headless"), expect(dead_code))]
+
 use crate::{
     components::main_game::{
         camera::{Focusable, SimCamera, SimCameraOffset, SimCameraZoom},

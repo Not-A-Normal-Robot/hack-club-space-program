@@ -1,3 +1,5 @@
+#![cfg_attr(not(feature = "not-headless"), expect(dead_code))]
+
 use crate::resources::scene::GameScene;
 use bevy::{input_focus::tab_navigation::TabGroup, prelude::*};
 
