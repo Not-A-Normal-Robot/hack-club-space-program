@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_rapier2d::render::RapierDebugRenderPlugin;
 
 use crate::{
     components::main_game::{
@@ -14,6 +15,10 @@ pub(crate) struct GameDebugPlugin;
 impl Plugin for GameDebugPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, switch_game_scenes);
+        app.add_plugins(RapierDebugRenderPlugin {
+            enabled: true,
+            ..Default::default()
+        });
     }
 }
 

@@ -94,6 +94,8 @@ pub(crate) fn write_rigid_vel_to_root(
             continue;
         }
 
+        dbg!(rigid_vel); // DEBUG
+
         *root_space_vel = rigid_vel.to_root_space_linear_velocity(active_vessel.prev_tick_velocity);
     }
 }

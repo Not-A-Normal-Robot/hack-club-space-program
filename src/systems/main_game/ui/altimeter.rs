@@ -299,7 +299,7 @@ pub(crate) fn init_altimeter(
 }
 
 pub(crate) fn calculate_altitude_format(
-    cel_query: Query<(&CelestialBody, &RootSpacePosition, &Terrain)>,
+    cel_query: Query<(&CelestialBody, &RootSpacePosition, Option<&Terrain>)>,
     active_vessel: Res<ActiveVessel>,
     altimeter_mode: Res<State<AltimeterMode>>,
 ) -> Option<AltitudeFormat> {
@@ -310,10 +310,12 @@ pub(crate) fn calculate_altitude_format(
     let rel_pos = active_vessel.prev_tick_position.0 - body_pos.0;
     let dist = rel_pos.length();
 
-    let altitude = match altimeter_mode.get() {
-        AltimeterMode::FromCentre => dist,
-        AltimeterMode::AboveSeaLevel => dist - f64::from(body.base_radius),
-        AltimeterMode::AboveGroundLevel => {
+    let altitude = match (altimeter_mode.get(), terrain) {
+        (AltimeterMode::FromCentre, _) => dist,
+        (AltimeterMode::AboveSeaLevel, _) | (AltimeterMode::AboveGroundLevel, None) => {
+            dist - f64::from(body.base_radius)
+        }
+        (AltimeterMode::AboveGroundLevel, Some(terrain)) => {
             // TODO: Consider celestial rotation
             let theta = rel_pos.to_angle();
             let terrain = TerrainGen::new(*terrain);

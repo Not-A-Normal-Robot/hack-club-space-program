@@ -1,3 +1,5 @@
+use core::f64::consts::PI;
+
 use crate::{
     builders::{camera::SimCameraBuilder, celestial::CelestialBodyBuilder, vessel::VesselBuilder},
     components::main_game::{
@@ -6,14 +8,16 @@ use crate::{
         frames::{RootSpaceLinearVelocity, RootSpacePosition},
         relations::{CelestialParent, RailMode},
     },
+    consts::GRAVITATIONAL_CONSTANT,
     resources::simulation::ActiveVessel,
 };
 use bevy::{asset::RenderAssetUsages, math::DVec2, mesh::PrimitiveTopology, prelude::*};
 use bevy_rapier2d::prelude::*;
+use keplerian_sim::{Orbit2D, OrbitTrait2D};
 
-const CELESTIAL_RADIUS: f32 = 6_378_137.0;
-const CELESTIAL_MASS: f32 = 5.972e24;
-const ALTITUDE: f32 = CELESTIAL_RADIUS - 2000.0;
+const CELESTIAL_RADIUS: f32 = 6_371_137.0;
+const CELESTIAL_MASS: f32 = 5.972_168e24;
+const ALTITUDE: f32 = CELESTIAL_RADIUS + 100e3;
 
 pub(crate) fn init_game(
     mut commands: Commands,
@@ -50,8 +54,14 @@ pub(crate) fn init_game(
     });
     let body = commands.spawn(body).id();
 
-    let vessel_pos = RootSpacePosition(DVec2::new(0.0, f64::from(ALTITUDE)));
-    let vessel_vel = RootSpaceLinearVelocity(DVec2::new(100.0, 0.0));
+    let orbit = Orbit2D::new_circular(
+        f64::from(ALTITUDE),
+        0.0,
+        f64::from(CELESTIAL_MASS) * GRAVITATIONAL_CONSTANT,
+    );
+    let vessel_init_sv = orbit.get_state_vectors_at_true_anomaly(PI / 2.0);
+    let vessel_pos = RootSpacePosition(vessel_init_sv.position);
+    let vessel_vel = RootSpaceLinearVelocity(vessel_init_sv.velocity);
     let vessel_half_x = 10.0;
     let vessel_half_y = 20.0;
 
@@ -60,7 +70,7 @@ pub(crate) fn init_game(
     let vessel = VesselBuilder {
         name: Name::new("Vessel"),
         collider: Collider::cuboid(vessel_half_x, vessel_half_y),
-        mass: AdditionalMassProperties::Mass(1e12),
+        mass: AdditionalMassProperties::Mass(1000.0),
         parent: CelestialParent { entity: body },
         rail_mode: RailMode::None,
         position: vessel_pos,
