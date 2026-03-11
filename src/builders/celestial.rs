@@ -13,7 +13,7 @@ use bevy_rapier2d::prelude::*;
 pub struct CelestialBodyBuilder<M: Material2d> {
     pub name: Name,
     pub radius: f32,
-    pub mass: f32,
+    pub mass: f64,
     pub angle: f32,
     pub mesh: Mesh2d,
     pub material: MeshMaterial2d<M>,
@@ -35,6 +35,7 @@ impl<M: Material2d> CelestialBodyBuilder<M> {
         (
             self.name,
             CelestialBody {
+                mass: self.mass,
                 base_radius: self.radius,
             },
             AdditionalMassProperties::MassProperties(MassProperties {
@@ -42,7 +43,8 @@ impl<M: Material2d> CelestialBodyBuilder<M> {
                 // is updated every tick to be the rigid-space position
                 // of the body
                 local_center_of_mass: Vec2::ZERO,
-                mass: self.mass,
+                #[expect(clippy::cast_possible_truncation)]
+                mass: self.mass as f32,
                 ..Default::default()
             }),
             self.mesh,

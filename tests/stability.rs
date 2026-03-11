@@ -57,7 +57,7 @@ fn test_orbit_stability() {
                 mesh: mesh.clone(),
                 material: material.clone(),
                 angle: 0.0,
-                mass: BODY_MASS as f32,
+                mass: BODY_MASS,
                 radius: BODY_RADIUS as f32,
             }
             .build_with_terrain(Terrain {
@@ -105,36 +105,37 @@ fn test_orbit_stability() {
         prev_tick_parent: body,
     });
 
-    for _ in 0..TICKS {
+    for i in 0..TICKS {
         app.update();
+        eprintln!("Tick {i}");
+
+        let vessel_pos = app
+            .world()
+            .get::<RootSpacePosition>(vessel)
+            .expect("Vessel should have root position");
+        let vessel_vel = app
+            .world()
+            .get::<RootSpaceLinearVelocity>(vessel)
+            .expect("Vessel should have RSLV");
+
+        dbg!(vessel_pos, vessel_vel);
+
+        let vessel_altitude = vessel_pos.0.length();
+        let vessel_speed = vessel_vel.0.length();
+
+        let altitude_frac = vessel_altitude / ORBIT_RADIUS;
+        let speed_frac = vessel_speed / vessel_init_sv.velocity.length();
+
+        assert!(
+            (altitude_frac - 1.0).abs() < TOLERANCE,
+            "Altitude {vessel_altitude} is too far away from initial altitude {ORBIT_RADIUS}"
+        );
+        assert!(
+            (speed_frac - 1.0).abs() < TOLERANCE,
+            "Speed {vessel_speed} is too far away from initial speed of {}",
+            vessel_init_sv.velocity.length()
+        );
     }
-
-    let vessel_pos = app
-        .world()
-        .get::<RootSpacePosition>(vessel)
-        .expect("Vessel should have root position");
-    let vessel_vel = app
-        .world()
-        .get::<RootSpaceLinearVelocity>(vessel)
-        .expect("Vessel should have RSLV");
-
-    dbg!(vessel_pos, vessel_vel);
-
-    let vessel_altitude = vessel_pos.0.length();
-    let vessel_speed = vessel_vel.0.length();
-
-    let altitude_frac = vessel_altitude / ORBIT_RADIUS;
-    let speed_frac = vessel_speed / vessel_init_sv.velocity.length();
-
-    assert!(
-        (altitude_frac - 1.0).abs() < TOLERANCE,
-        "Altitude {vessel_altitude} is too far away from initial altitude {ORBIT_RADIUS}"
-    );
-    assert!(
-        (speed_frac - 1.0).abs() < TOLERANCE,
-        "Speed {vessel_speed} is too far away from initial speed of {}",
-        vessel_init_sv.velocity.length()
-    );
 }
 
 #[test]
@@ -185,7 +186,7 @@ fn test_equal_to_simplified() {
                 mesh: mesh.clone(),
                 material: material.clone(),
                 angle: 0.0,
-                mass: BODY_MASS as f32,
+                mass: BODY_MASS,
                 radius: BODY_RADIUS as f32,
             }
             .build_with_terrain(Terrain {

@@ -16,7 +16,7 @@ use bevy_rapier2d::prelude::*;
 use keplerian_sim::{Orbit2D, OrbitTrait2D};
 
 const CELESTIAL_RADIUS: f32 = 6_371_137.0;
-const CELESTIAL_MASS: f32 = 5.972_168e24;
+const CELESTIAL_MASS: f64 = 5.972_168e24;
 const ALTITUDE: f32 = CELESTIAL_RADIUS + 100e3;
 
 pub(crate) fn init_game(
@@ -57,7 +57,7 @@ pub(crate) fn init_game(
     let orbit = Orbit2D::new_circular(
         f64::from(ALTITUDE),
         0.0,
-        f64::from(CELESTIAL_MASS) * GRAVITATIONAL_CONSTANT,
+        CELESTIAL_MASS * GRAVITATIONAL_CONSTANT,
     );
     let vessel_init_sv = orbit.get_state_vectors_at_true_anomaly(PI / 2.0);
     let vessel_pos = RootSpacePosition(vessel_init_sv.position);
