@@ -1,7 +1,6 @@
 //! Newtonian gravity application for loaded vessels
 
-use bevy::{ecs::query::QueryData, math::DVec2, prelude::*};
-use bevy_rapier2d::prelude::*;
+use bevy::{ecs::query::QueryData, prelude::*};
 
 use crate::{
     components::main_game::{
@@ -39,8 +38,6 @@ fn apply_gravity_inner(
         return;
     };
 
-    eprintln!("Applying gravity for {} using Velocity Verlet", vessel.name);
-
     let parent_mass = parent.body_data.mass;
     let parent_mu = parent_mass * GRAVITATIONAL_CONSTANT;
 
@@ -52,21 +49,16 @@ fn apply_gravity_inner(
     // p(t + Δt) = p(t) + v(t) * Δt + 0.5a(t) * Δt^2;
     // v(t + Δt) = v(t) + 0.5 * (a(t) + a(t + Δt)) * Δt;
 
-    eprintln!("Initial pos: {:?}", vessel.pos);
     let r_sq = rel_pos.length_squared().max(GRAVITY_MIN_RADIUS);
     let accel = -parent_mu * rel_pos / (r_sq.sqrt() * r_sq);
     vessel.pos.0 += vessel.vel.0 * delta_secs + 0.5 * accel * delta_secs.powi(2);
-    dbg!(*vessel.pos);
 
-    eprintln!("Initial vel: {:?}", vessel.vel);
-    dbg!(*vessel.vel);
     // We assume the parent's orbit, if any, has negligible local curvature
     let new_parent_pos = RootSpacePosition(parent.pos.0 + parent.vel.0 * delta_secs);
     let new_rel_pos = vessel.pos.0 - new_parent_pos.0;
     let new_r_sq = new_rel_pos.length_squared().max(GRAVITY_MIN_RADIUS);
     let new_accel = -parent_mu * new_rel_pos / (new_r_sq.sqrt() * new_r_sq);
     vessel.vel.0 += 0.5 * (accel + new_accel) * delta_secs;
-    dbg!(*vessel.vel);
 }
 
 pub(crate) fn apply_gravity_and_velocity(

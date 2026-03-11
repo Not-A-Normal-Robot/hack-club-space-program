@@ -26,7 +26,7 @@ fn test_writing_to_orbit_rails() {
     let (mesh, material) = common::empty_mesh_material(&mut app);
 
     let body_mass = 10.0;
-    let body_mu = f64::from(body_mass) * GRAVITATIONAL_CONSTANT;
+    let body_mu = body_mass * GRAVITATIONAL_CONSTANT;
 
     let body = app
         .world_mut()

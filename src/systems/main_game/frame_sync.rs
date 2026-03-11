@@ -98,16 +98,6 @@ pub(crate) fn write_rigid_vel_to_root(
     }
 }
 
-/// Shifts all entities' [`RootSpacePosition`] based on its [`RootSpaceLinearVelocity`]
-/// (if any).
-pub(crate) fn apply_root_velocity(
-    vels: Query<(&RootSpaceLinearVelocity, &mut RootSpacePosition), FilterLoadedVessels>,
-    time: Res<Time>,
-) {
-    vels.into_iter()
-        .for_each(|(root_vel, mut root_pos)| root_pos.0 += root_vel.0 * time.delta_secs_f64());
-}
-
 /// Updates the last tick position and last parent body of the active vessel.
 pub(crate) fn update_active_vessel_resource(
     query: Query<(

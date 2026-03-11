@@ -15,9 +15,9 @@ use bevy::{asset::RenderAssetUsages, math::DVec2, mesh::PrimitiveTopology, prelu
 use bevy_rapier2d::prelude::*;
 use keplerian_sim::{Orbit2D, OrbitTrait2D};
 
-const CELESTIAL_RADIUS: f32 = 6_371_137.0;
+const CELESTIAL_RADIUS: f64 = 6_371_137.0;
 const CELESTIAL_MASS: f64 = 5.972_168e24;
-const ALTITUDE: f32 = CELESTIAL_RADIUS + 100e3;
+const ALTITUDE: f64 = CELESTIAL_RADIUS + 100e3;
 
 pub(crate) fn init_game(
     mut commands: Commands,
@@ -36,7 +36,8 @@ pub(crate) fn init_game(
 
     let body = CelestialBodyBuilder {
         name: Name::new("Body"),
-        radius: CELESTIAL_RADIUS,
+        #[expect(clippy::cast_possible_truncation)]
+        radius: CELESTIAL_RADIUS as f32,
         mass: CELESTIAL_MASS,
         angle: 0.0,
         mesh: Mesh2d(mesh),
@@ -48,17 +49,13 @@ pub(crate) fn init_game(
         frequency: 400.0,
         gain: 0.4,
         lacunarity: 0.6,
-        offset: f64::from(CELESTIAL_RADIUS),
-        multiplier: f64::from(CELESTIAL_RADIUS) * 0.001,
+        offset: CELESTIAL_RADIUS,
+        multiplier: CELESTIAL_RADIUS * 0.001,
         subdivs: 6,
     });
     let body = commands.spawn(body).id();
 
-    let orbit = Orbit2D::new_circular(
-        f64::from(ALTITUDE),
-        0.0,
-        CELESTIAL_MASS * GRAVITATIONAL_CONSTANT,
-    );
+    let orbit = Orbit2D::new_circular(ALTITUDE, 0.0, CELESTIAL_MASS * GRAVITATIONAL_CONSTANT);
     let vessel_init_sv = orbit.get_state_vectors_at_true_anomaly(PI / 2.0);
     let vessel_pos = RootSpacePosition(vessel_init_sv.position);
     let vessel_vel = RootSpaceLinearVelocity(vessel_init_sv.velocity);
@@ -67,6 +64,7 @@ pub(crate) fn init_game(
 
     let mesh = Mesh2d(meshes.add(Rectangle::new(vessel_half_x * 2.0, vessel_half_y * 2.0)));
 
+    dbg!(vessel_init_sv);
     let vessel = VesselBuilder {
         name: Name::new("Vessel"),
         collider: Collider::cuboid(vessel_half_x, vessel_half_y),

@@ -217,7 +217,8 @@ fn test_equal_to_simplified() {
         .spawn(
             VesselBuilder {
                 name: Name::new("Satellite"),
-                collider: Collider::ball(0.0),
+                // collider: Collider::ball(0.0),
+                collider: Collider::cuboid(2.0, 4.0),
                 mass: AdditionalMassProperties::Mass(1.0),
                 parent: CelestialParent { entity: body },
                 rail_mode: RailMode::None,
@@ -225,7 +226,7 @@ fn test_equal_to_simplified() {
                 linvel: RootSpaceLinearVelocity(vessel_init_sv.velocity),
                 mesh,
                 material,
-                angvel: 0.0,
+                angvel: 0.5,
                 angle: 0.0,
             }
             .build_rigid(),
