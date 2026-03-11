@@ -25,8 +25,8 @@ fn test_writing_to_orbit_rails() {
 
     let (mesh, material) = common::empty_mesh_material(&mut app);
 
-    let body_mass = 10.0f32;
-    let body_mu = f64::from(body_mass) * GRAVITATIONAL_CONSTANT;
+    let body_mass = 10.0;
+    let body_mu = body_mass * GRAVITATIONAL_CONSTANT;
 
     let body = app
         .world_mut()
@@ -112,7 +112,7 @@ fn test_writing_to_surface_rails() {
 
     let (mesh, material) = common::empty_mesh_material(&mut app);
 
-    let body_mass = 10.0f32;
+    let body_mass = 10.0;
 
     let body = app
         .world_mut()
@@ -233,7 +233,7 @@ fn test_rail_to_sv() {
             CelestialBodyBuilder {
                 name: Name::new("Alpha"),
                 radius: ALPHA_RADIUS as f32,
-                mass: ALPHA_MASS as f32,
+                mass: ALPHA_MASS,
                 angle: 0.0,
                 mesh: mesh.clone(),
                 material: material.clone(),
@@ -292,7 +292,7 @@ fn test_rail_to_sv() {
             CelestialBodyBuilder {
                 name: Name::new("Beta"),
                 radius: BETA_RADIUS as f32,
-                mass: BETA_MASS as f32,
+                mass: BETA_MASS,
                 angle: 0.0,
                 mesh: mesh.clone(),
                 material: material.clone(),

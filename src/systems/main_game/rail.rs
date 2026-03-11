@@ -169,7 +169,7 @@ fn convert_rail_to_relative_sv(rail: RailMode, time: Duration) -> RelativeStateV
 }
 
 /// For every node's child:
-/// - Try to find it using the `on_rails_query``
+/// - Try to find it using the `on_rails_query`
 ///   - Calculate new SV using `RailMode` and `parent_sv`
 ///   - Calculate SV difference
 ///   - Recurse, changing the `parent_sv` and `accum_shift`

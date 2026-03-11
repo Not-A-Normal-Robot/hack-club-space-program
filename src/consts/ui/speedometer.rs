@@ -38,9 +38,6 @@ impl SpeedometerFormat {
     /// Gets the formatted speedometer values from the given
     /// horizontal, vertical, and total speed values, in m/s.
     pub(crate) fn from_speeds(hspd: f64, vspd: f64, tspd: f64) -> Self {
-        debug_assert!(tspd >= hspd);
-        debug_assert!(tspd >= vspd);
-
         let unit = SpeedometerUnit::from_speed(tspd);
         let mult = unit.multiplier();
 

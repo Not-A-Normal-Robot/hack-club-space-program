@@ -33,10 +33,16 @@ pub(crate) struct CelestialBody {
     /// To calculate the minimum or maximum radius,
     /// use this alongside the terrain multiplier.
     pub(crate) base_radius: f32,
+    /// The high-precision mass of a celestial body,
+    /// in kilograms.
+    pub(crate) mass: f64,
 }
 
 impl Default for CelestialBody {
     fn default() -> Self {
-        Self { base_radius: 1.0 }
+        Self {
+            base_radius: 1.0,
+            mass: 1.0,
+        }
     }
 }
