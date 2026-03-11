@@ -408,7 +408,7 @@ async function copyAssets(): Promise<void>
     if (await fs.exists(ASSETS_PATH))
     {
         console.log("Copying assets folder...");
-        await fs.copy(ASSETS_PATH, OUT_DIR);
+        await fs.copy(ASSETS_PATH, OUT_DIR, { overwrite: true });
         console.log("Finished copying assets folder");
     }
 
