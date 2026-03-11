@@ -131,7 +131,11 @@ fn update_collider(
     let idx_ranges = gen_idx_ranges(&theta_ranges, verts);
 
     if idx_ranges.is_empty() {
-        return; // No nearby vessels, just ignore
+        // No nearby vessels, just use no collider
+        if celestial.collider.as_ball().is_none() {
+            *celestial.collider = Collider::ball(f32::NEG_INFINITY);
+        }
+        return;
     }
 
     let is_range_changed = celestial.prev_ranges.is_none_or(|rs| *rs.0 == *idx_ranges);
