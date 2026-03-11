@@ -80,7 +80,9 @@ i18n-embed = { version = "0.16.0", features = ["fluent-system"] }
 i18n-embed-fl = { version = "0.10.0", features = ["dashmap"] }
 keplerian_sim = "0.7.3"
 pastey = "0.2.1"
+rand = "0.10.0"
 rust-embed = "8.11.0"
+serde = { version = "1.0.228", features = ["derive"] }
 strum = { version = "0.28.0", features = ["derive"] }
 unic-langid = "0.9.6"
 

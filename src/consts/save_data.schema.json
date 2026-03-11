@@ -1,0 +1,291 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "id": "https://not-a-normal-robot.github.io/hack-club-space-program/save-schema-v1.json",
+    "title": "HCSP Save Data",
+    "description": "A schema to save Hack Club Space Program's save data.",
+    "type": "object",
+    "properties": {
+        "root_node": {
+            "description": "The celestial body identifier to use as the root node.",
+            "type": "string",
+            "$ref": "#/definitions/identifier"
+        },
+        "celestials": {
+            "description": "A map of celestial bodies.\nIf this body can get its orbital data from the NASA Horizons API, use a hex representation of its Horizons ID. If it shouldn't, use an ID of greater than `0xFFFF_FFFF` to skip it.",
+            "type": "object",
+            "patternProperties": {
+                "^[0-9a-fA-F]{32}$": {
+                    "type": "object",
+                    "$ref": "#/definitions/celestialBody"
+                }
+            },
+            "minProperties": 1,
+            "additionalProperties": false
+        },
+        "vessels": {
+            "description": "A map of vessels.",
+            "type": "object",
+            "patternProperties": {
+                "^[0-9a-fA-F]{32}$": {
+                    "type": "object",
+                    "$ref": "#/definitions/vessel"
+                }
+            },
+            "additionalProperties": false
+        }
+    },
+    "required": [
+        "root_node",
+        "celestials",
+        "vessels"
+    ],
+    "additionalProperties": false,
+    "definitions": {
+        "identifier": {
+            "description": "A 128-bit integer encoded in hexadecimal, used for identifying objects.",
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{32}$"
+        },
+        "celestialBody": {
+            "description": "A celestial body.",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "description": "The name to give this celestial body.",
+                    "type": "string"
+                },
+                "mass": {
+                    "description": "The mass of this celestial body, in kilograms.",
+                    "type": "number"
+                },
+                "radius": {
+                    "description": "The base/sea-level radius of this celestial body, in metres.",
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMinimum": true
+                },
+                "color": {
+                    "description": "The sRGB color of this celestial body, in six-char hex.",
+                    "default": "#ffffff",
+                    "pattern": "^#[0-9a-fA-F]{6}$",
+                    "minLength": 7,
+                    "maxLength": 7,
+                    "type": "string"
+                },
+                "orbit": {
+                    "description": "The orbit that this orbit follows around its parent body, if any.",
+                    "type": "object",
+                    "$ref": "#/definitions/orbitData"
+                },
+                "terrain": {
+                    "description": "The terrain parameters that this celestial body uses, if any.",
+                    "type": "object",
+                    "$ref": "#/definitions/terrainData",
+                    "default": {
+                        "seed": 2401,
+                        "octaves": 6,
+                        "frequency": 400,
+                        "gain": 0.4,
+                        "lacunarity": 0.6,
+                        "offset": 6371137,
+                        "multiplier": 6371.137,
+                        "subdivs": 6
+                    }
+                },
+                "celestial_children": {
+                    "description": "A list of celestial body IDs that orbit this celestial body.",
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "$ref": "#/definitions/identifier"
+                    },
+                    "uniqueItems": true,
+                    "additionalItems": false
+                },
+                "vessel_children": {
+                    "description": "A list of vessel IDs that orbit this celestial body.",
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "$ref": "#/definitions/identifier"
+                    },
+                    "uniqueItems": true,
+                    "additionalItems": false
+                }
+            },
+            "required": [
+                "name",
+                "mass",
+                "radius",
+                "color"
+            ],
+            "additionalProperties": false
+        },
+        "vessel": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "description": "The (non-unique) name that this vessel is assigned.",
+                    "type": "string"
+                },
+                "rail": {
+                    "description": "The rail that this vessel is on.",
+                    "type": "object",
+                    "$ref": "#/definitions/rail"
+                }
+            },
+            "required": [
+                "name",
+                "rail"
+            ]
+        },
+        "rail": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "rail_mode": {
+                            "description": "The rail that attaches this vessel to a planetary surface.",
+                            "type": "string",
+                            "default": "surface_attachment",
+                            "pattern": "^surface_attachment$"
+                        },
+                        "inner": {
+                            "type": "object",
+                            "$ref": "#/definitions/surfaceAttachment"
+                        }
+                    },
+                    "required": [
+                        "rail_mode",
+                        "inner"
+                    ],
+                    "additionalProperties": false
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "rail_mode": {
+                            "description": "The rail that attaches this vessel to a Keplerian orbit.",
+                            "type": "string",
+                            "pattern": "^orbit$"
+                        },
+                        "inner": {
+                            "type": "object",
+                            "$ref": "#/definitions/orbitData"
+                        }
+                    },
+                    "required": [
+                        "rail_mode",
+                        "inner"
+                    ],
+                    "additionalProperties": false
+                }
+            ]
+        },
+        "orbitData": {
+            "type": "object",
+            "properties": {
+                "eccentricity": {
+                    "description": "The eccentricity of the orbit.",
+                    "type": "number",
+                    "minimum": 0
+                },
+                "periapsis": {
+                    "description": "The periapsis of the orbit, in metres from the celestial centre.",
+                    "type": "number",
+                    "minimum": 0
+                },
+                "arg_pe": {
+                    "description": "The argument of periapsis of the orbit, in radians.",
+                    "type": "number"
+                },
+                "mean_anomaly": {
+                    "description": "The mean anomaly of the orbit, in radians.",
+                    "type": "number"
+                }
+            },
+            "required": [
+                "eccentricity",
+                "periapsis",
+                "arg_pe",
+                "mean_anomaly"
+            ],
+            "additionalProperties": false
+        },
+        "surfaceAttachment": {
+            "type": "object",
+            "properties": {
+                "angle": {
+                    "description": "The longitude where this vessel is attached to the celestial body.",
+                    "type": "number"
+                },
+                "radius": {
+                    "description": "The distance to the celestial centre, in metres, that this vessel is attached to the celestial body.",
+                    "type": "number",
+                    "minimum": 0
+                }
+            },
+            "required": [
+                "angle",
+                "radius"
+            ],
+            "additionalProperties": false
+        },
+        "terrainData": {
+            "description": "The parameters for terrain generation.",
+            "type": "object",
+            "properties": {
+                "seed": {
+                    "description": "The seed given to the noise generator.",
+                    "type": "integer",
+                    "minimum": -32768,
+                    "maximum": 32767
+                },
+                "octaves": {
+                    "description": "The amount of octaves for the noise generator.",
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 255
+                },
+                "frequency": {
+                    "description": "The base frequency for the noise generator.",
+                    "type": "number"
+                },
+                "gain": {
+                    "description": "The gain for the noise generator.",
+                    "type": "number"
+                },
+                "lacunarity": {
+                    "description": "The lacunarity for the noise generator.",
+                    "type": "number"
+                },
+                "offset": {
+                    "description": "The offset to give to the noise generator output.",
+                    "type": "number",
+                    "minimum": 0
+                },
+                "multiplier": {
+                    "description": "The multiplier to give to the noise generator output.",
+                    "type": "number"
+                },
+                "subdivs": {
+                    "description": "The amount of subdivisions for mesh generation.",
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 255
+                }
+            },
+            "required": [
+                "seed",
+                "octaves",
+                "frequency",
+                "gain",
+                "lacunarity",
+                "offset",
+                "multiplier",
+                "subdivs"
+            ],
+            "additionalProperties": false
+        }
+    }
+}

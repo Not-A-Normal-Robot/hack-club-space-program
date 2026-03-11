@@ -1,0 +1,50 @@
+#:schema ./save_data.schema.json
+root_node = "00000000000000000000000000000000"
+
+[celestials.0000000000000000000000000000000A]
+name = "The Sun"
+mass = 1.989e30
+radius = 6.9634e8
+color = "#fff3ea"
+celestial_children = []
+vessel_children = []
+
+[celestials.0000000000000000000000000000018F]
+name = "Earth"
+mass = 5.972e24
+radius = 6.371e6
+color = "#9adaeb"
+orbit.eccentricity = 0.0169383477558015596576
+orbit.periapsis = 1.47116234025380615234e11
+orbit.arg_pe = 4.96966285450645450794
+orbit.mean_anomaly = 4.61837973661737599684
+celestial_children = ["0000000000000000000000000000012D"]
+vessel_children = ["497dcba3ecbf4587a2dd5eb0665e6880"]
+
+[celestials.0000000000000000000000000000012D]
+name = "Luna"
+mass = 7.342e22
+radius = 1.7371e6
+color = "#a19f9d"
+orbit.eccentricity = 0.0640319437221805315419
+orbit.periapsis = 3.56739122426563858986e8
+orbit.arg_pe = 1.15833369565504473719
+orbit.mean_anomaly = 3.42916122080155005847
+celestial_children = []
+vessel_children = []
+
+[vessels.497dcba3ecbf4587a2dd5eb0665e6880]
+name = "Foo"
+rail.rail_mode = "surface_attachment"
+rail.inner.angle = 0
+rail.inner.radius = 6.371e6
+
+
+# I am unused!
+[vessels.99999999999999999999999999999999]
+name = "Foo"
+rail.rail_mode = "orbit"
+rail.inner.eccentricity = 0
+rail.inner.periapsis = 2e6
+rail.inner.arg_pe = 0
+rail.inner.mean_anomaly = 0
