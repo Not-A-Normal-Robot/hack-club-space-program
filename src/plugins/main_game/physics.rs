@@ -7,7 +7,7 @@ use crate::{
             apply_root_velocity, post_rapier_frame_switch, pre_rapier_frame_switch,
             update_active_vessel_resource, write_rigid_pos_to_root, write_rigid_vel_to_root,
         },
-        gravity::{apply_gravity, unapply_gravity_to_unloaded},
+        gravity::apply_gravity_and_velocity,
         rail::{write_rail_to_sv, write_sv_to_rail},
         terrain::collider::update_terrain_colliders,
     },
@@ -20,10 +20,13 @@ impl Plugin for GamePhysicsPlugin {
         app.add_systems(
             FixedPreUpdate,
             (
-                (apply_gravity, unapply_gravity_to_unloaded, write_rail_to_sv),
-                apply_root_velocity,
+                write_rail_to_sv,
+                apply_gravity_and_velocity,
                 update_active_vessel_resource,
-                (pre_rapier_frame_switch, update_terrain_colliders),
+                (
+                    pre_rapier_frame_switch,
+                    //update_terrain_colliders
+                ),
             )
                 .chain()
                 .run_if(in_state(GameScene::InGame)),

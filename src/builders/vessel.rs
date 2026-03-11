@@ -31,10 +31,6 @@ impl<M: Material2d> VesselBuilder<M> {
             Friction::coefficient(0.9),
             Restitution::coefficient(0.02),
             Ccd { enabled: true },
-            ExternalForce {
-                force: Vec2::ZERO,
-                torque: 0.0,
-            },
             Focusable,
         )
     }

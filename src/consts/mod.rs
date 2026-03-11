@@ -39,3 +39,5 @@ pub(crate) const TAB_FOCUS_OUTLINE: Outline = Outline {
 
 pub(crate) static FLUENT_LANGUAGE_LOADER: LazyLock<FluentLanguageLoader> =
     LazyLock::new(|| fluent_language_loader!());
+
+pub const GRAVITY_MIN_RADIUS: f64 = 1e-9;
