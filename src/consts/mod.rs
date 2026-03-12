@@ -9,7 +9,7 @@ use i18n_embed::fluent::{FluentLanguageLoader, fluent_language_loader};
 pub(crate) mod about;
 pub(crate) mod colors;
 pub(crate) mod controls;
-pub(crate) mod loading;
+pub(crate) mod saves;
 pub(crate) mod si;
 pub(crate) mod terrain;
 pub(crate) mod ui;

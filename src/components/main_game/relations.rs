@@ -3,6 +3,7 @@ use core::{error::Error, fmt::Display};
 use bevy::prelude::*;
 use derive_more::{Deref, IsVariant};
 use keplerian_sim::{Orbit2D, OrbitTrait2D};
+use serde::{Deserialize, Serialize};
 
 /// Marks this entity's relation with a parent celestial body.
 #[derive(Clone, Copy, Component, Debug)]
@@ -103,7 +104,7 @@ impl Display for RailMode {
 }
 
 /// Denotes an attachment of a vessel relative to a body's surface.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SurfaceAttachment {
     /// The angle from the +x axis line that this
     /// vessel is landed on.

@@ -1,8 +1,9 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::RigidBody;
+use serde::{Deserialize, Serialize};
 
 /// The terrain parameters of a celestial body.
-#[derive(Clone, Copy, Component, Debug, Default)]
+#[derive(Clone, Copy, Component, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[require(CelestialBody)]
 pub struct Terrain {
     /// The seed given to the noise generator.

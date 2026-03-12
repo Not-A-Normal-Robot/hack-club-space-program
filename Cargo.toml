@@ -73,17 +73,18 @@ bevy = { version = "0.18.0", default-features = false, features = [
     "sysinfo_plugin",
     "zstd_rust",
 ] }
-bevy_rapier2d = { version = "0.33.0", features = ["simd-stable"] }
+bevy_rapier2d = { version = "0.33.0", features = ["serde-serialize", "simd-stable"] }
 derive_more = { version = "2.1.1", features = ["is_variant"] }
 fastnoise-lite = { version = "1.1.1", features = ["std", "f64"] }
 i18n-embed = { version = "0.16.0", features = ["fluent-system"] }
 i18n-embed-fl = { version = "0.10.0", features = ["dashmap"] }
-keplerian_sim = "0.7.3"
+keplerian_sim = { version = "0.7.3", features = ["serde"] }
 pastey = "0.2.1"
 rand = "0.10.0"
 rust-embed = "8.11.0"
 serde = { version = "1.0.228", features = ["derive"] }
 strum = { version = "0.28.0", features = ["derive"] }
+toml = "1.0.6"
 unic-langid = "0.9.6"
 
 [profile.dev]
@@ -114,3 +115,6 @@ web-sys = { version = "0.3", features = [
 png = "0.18.1"
 resvg = "0.47.0"
 texture_packer = "0.30.0"
+
+[dev-dependencies]
+serde_test = "1.0.177"

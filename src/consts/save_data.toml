@@ -35,7 +35,7 @@ vessel_children = []
 
 [vessels.497dcba3ecbf4587a2dd5eb0665e6880]
 name = "Foo"
-rail.rail_mode = "surface_attachment"
+rail.rail_mode = "surface"
 rail.inner.angle = 0
 rail.inner.radius = 6.371e6
 

@@ -10,6 +10,11 @@
             "type": "string",
             "$ref": "#/definitions/identifier"
         },
+        "active_vessel": {
+            "description": "The vessel identifier to use as the active vessel.",
+            "type": "string",
+            "$ref": "#/definitions/identifier"
+        },
         "celestials": {
             "description": "A map of celestial bodies.\nIf this body can get its orbital data from the NASA Horizons API, use a hex representation of its Horizons ID. If it shouldn't, use an ID of greater than `0xFFFF_FFFF` to skip it.",
             "type": "object",
@@ -36,6 +41,7 @@
     },
     "required": [
         "root_node",
+        "active_vessel",
         "celestials",
         "vessels"
     ],
@@ -147,8 +153,8 @@
                         "rail_mode": {
                             "description": "The rail that attaches this vessel to a planetary surface.",
                             "type": "string",
-                            "default": "surface_attachment",
-                            "pattern": "^surface_attachment$"
+                            "default": "surface",
+                            "pattern": "^surface$"
                         },
                         "inner": {
                             "type": "object",
