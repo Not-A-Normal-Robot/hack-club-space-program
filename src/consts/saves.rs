@@ -1,7 +1,9 @@
-use bevy::{
-    platform::collections::{HashMap, HashSet},
-    prelude::*,
-};
+//! Save data structures and the like.
+//!
+//! # BEWARE OF THE PIPELINE
+//! `TOML` --serde-> `UnvalidatedSaveData` --validation-> `ValidatedSaveData`
+
+use bevy::{platform::collections::HashMap, prelude::*};
 use core::{fmt::Display, marker::PhantomData};
 use derive_more::{Deref, DerefMut, Display, Error};
 use keplerian_sim::{CompactOrbit2D, Orbit2D};
@@ -392,7 +394,7 @@ pub struct CelestialData {
     /// A list of this celestial body's vessel children's IDs.
     vessel_children: Box<[SavedId]>,
     /// This celestial body's terrain parameters.
-    terrain: Terrain,
+    terrain: Option<Terrain>,
 }
 
 /// Holds static information about celestial bodies' orbits.
@@ -481,6 +483,7 @@ impl RailData {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bevy::platform::collections::HashSet;
     use rand::{RngExt, SeedableRng};
     use serde::{Deserialize, Serialize};
     use serde_test::{Token, assert_de_tokens, assert_de_tokens_error};
@@ -626,5 +629,306 @@ mod tests {
                 "The save file contains vessels without a parent: [{str_referrer}, {str_referrer_2}]"
             )
         );
+    }
+
+    fn gen_celestial_data() -> CelestialData {
+        CelestialData {
+            name: String::new(),
+            mass: 9.0,
+            radius: 10.0,
+            color: Color::WHITE,
+            orbit: None,
+            celestial_children: Box::new([]),
+            vessel_children: Box::new([]),
+            terrain: None,
+        }
+    }
+
+    fn gen_vessel_data() -> VesselData {
+        VesselData {
+            name: String::new(),
+            rail: gen_rail_data(),
+        }
+    }
+
+    fn gen_rail_data() -> RailData {
+        RailData::Orbit(gen_orbital_data())
+    }
+
+    fn gen_orbital_data() -> OrbitalData {
+        OrbitalData {
+            eccentricity: 0.0,
+            periapsis: 100.0,
+            arg_pe: 1.0,
+            mean_anomaly: 2.0,
+        }
+    }
+
+    #[test]
+    fn save_data_validation() {
+        let root_not_found = UnvalidatedSaveData(RawSaveData {
+            root_node: SavedId(0),
+            active_vessel: SavedId(0),
+            celestials: [(
+                SavedId(1),
+                CelestialData {
+                    vessel_children: Box::from([SavedId(0)]),
+                    ..gen_celestial_data()
+                },
+            )]
+            .into(),
+            vessels: [(SavedId(0), gen_vessel_data())].into(),
+        })
+        .validate();
+        assert_eq!(root_not_found, Err(SaveDataError::RootCelestialNotFound));
+
+        let active_vessel_not_found = UnvalidatedSaveData(RawSaveData {
+            root_node: SavedId(0),
+            active_vessel: SavedId(0),
+            celestials: [(
+                SavedId(0),
+                CelestialData {
+                    vessel_children: Box::from([SavedId(1)]),
+                    ..gen_celestial_data()
+                },
+            )]
+            .into(),
+            vessels: [(SavedId(1), gen_vessel_data())].into(),
+        })
+        .validate();
+        assert_eq!(
+            active_vessel_not_found,
+            Err(SaveDataError::ActiveVesselNotFound)
+        );
+
+        let celestial_not_found = UnvalidatedSaveData(RawSaveData {
+            root_node: SavedId(200),
+            active_vessel: SavedId(0),
+            celestials: [(
+                SavedId(200),
+                CelestialData {
+                    celestial_children: Box::from([SavedId(404)]),
+                    vessel_children: Box::from([SavedId(0)]),
+                    ..gen_celestial_data()
+                },
+            )]
+            .into(),
+            vessels: [(SavedId(0), gen_vessel_data())].into(),
+        })
+        .validate();
+        assert_eq!(
+            celestial_not_found,
+            Err(SaveDataError::CelestialNotFound {
+                referrer: SavedId(200),
+                not_found: SavedId(404)
+            })
+        );
+
+        let vessel_not_found = UnvalidatedSaveData(RawSaveData {
+            root_node: SavedId(200),
+            active_vessel: SavedId(0),
+            celestials: [(
+                SavedId(200),
+                CelestialData {
+                    vessel_children: Box::from([SavedId(0), SavedId(404)]),
+                    ..gen_celestial_data()
+                },
+            )]
+            .into(),
+            vessels: [(SavedId(0), gen_vessel_data())].into(),
+        })
+        .validate();
+        assert_eq!(
+            vessel_not_found,
+            Err(SaveDataError::VesselNotFound {
+                referrer: SavedId(200),
+                not_found: SavedId(400)
+            }),
+        );
+
+        let duplicate_root_celestial = UnvalidatedSaveData(RawSaveData {
+            root_node: SavedId(0),
+            active_vessel: SavedId(0),
+            celestials: [(
+                SavedId(0),
+                CelestialData {
+                    vessel_children: Box::from([SavedId(0)]),
+                    celestial_children: Box::from([SavedId(0)]),
+                    ..gen_celestial_data()
+                },
+            )]
+            .into(),
+            vessels: [(SavedId(0), gen_vessel_data())].into(),
+        })
+        .validate();
+        assert_eq!(
+            duplicate_root_celestial,
+            Err(SaveDataError::DuplicateCelestial {
+                duplicated: SavedId(0),
+                first_referrer: None,
+                second_referrer: SavedId(0)
+            }),
+        );
+
+        let duplicate_celestial = UnvalidatedSaveData(RawSaveData {
+            root_node: SavedId(0),
+            active_vessel: SavedId(0),
+            celestials: [
+                (
+                    SavedId(0),
+                    CelestialData {
+                        vessel_children: Box::from([SavedId(0)]),
+                        celestial_children: Box::from([SavedId(1)]),
+                        ..gen_celestial_data()
+                    },
+                ),
+                (SavedId(1), gen_celestial_data()),
+                (
+                    SavedId(2),
+                    CelestialData {
+                        celestial_children: Box::from([SavedId(1)]),
+                        ..gen_celestial_data()
+                    },
+                ),
+            ]
+            .into(),
+            vessels: [(SavedId(0), gen_vessel_data())].into(),
+        })
+        .validate()
+        .unwrap_err();
+        match duplicate_celestial {
+            SaveDataError::DuplicateCelestial {
+                duplicated,
+                first_referrer,
+                second_referrer,
+            } => {
+                assert_eq!(duplicated, SavedId(1));
+                let first_referrer = first_referrer.unwrap();
+                let error_referrers = HashSet::from([first_referrer, second_referrer]);
+                let expected_referrers = HashSet::from([SavedId(0), SavedId(2)]);
+                assert_eq!(error_referrers, expected_referrers);
+            }
+            _ => panic!(
+                "duplicate_celestial ({duplicate_celestial:?}) is not of variant DuplicateCelestial"
+            ),
+        }
+
+        let duplicate_vessel = UnvalidatedSaveData(RawSaveData {
+            root_node: SavedId(0),
+            active_vessel: SavedId(0),
+            celestials: [
+                (
+                    SavedId(0),
+                    CelestialData {
+                        celestial_children: Box::from([SavedId(1)]),
+                        vessel_children: Box::from([SavedId(0)]),
+                        ..gen_celestial_data()
+                    },
+                ),
+                (
+                    SavedId(1),
+                    CelestialData {
+                        vessel_children: Box::from([SavedId(0)]),
+                        ..gen_celestial_data()
+                    },
+                ),
+            ]
+            .into(),
+            vessels: [(SavedId(0), gen_vessel_data())].into(),
+        })
+        .validate()
+        .unwrap_err();
+        match duplicate_vessel {
+            SaveDataError::DuplicateVessel {
+                duplicated,
+                first_referrer,
+                second_referrer,
+            } => {
+                assert_eq!(duplicated, SavedId(0));
+                let error_referrers = HashSet::from([first_referrer, second_referrer]);
+                let expected_referrers = HashSet::from([SavedId(0), SavedId(1)]);
+                assert_eq!(error_referrers, expected_referrers);
+            }
+            _ => {
+                panic!("duplicate_vessel ({duplicate_vessel:?}) is not of variant DuplicateVessel")
+            }
+        }
+
+        let orphaned_celestials = UnvalidatedSaveData(RawSaveData {
+            root_node: SavedId(0),
+            active_vessel: SavedId(0),
+            celestials: [
+                (
+                    SavedId(0),
+                    CelestialData {
+                        vessel_children: Box::from([SavedId(0)]),
+                        ..gen_celestial_data()
+                    },
+                ),
+                (SavedId(1), gen_celestial_data()),
+                (SavedId(2), gen_celestial_data()),
+            ]
+            .into(),
+            vessels: [(SavedId(0), gen_vessel_data())].into(),
+        })
+        .validate();
+
+        let Err(SaveDataError::OrphanedCelestials(orphans)) = orphaned_celestials else {
+            panic!(
+                "Expected {orphaned_celestials:?} to be of variant Err(SaveDataError::OrphanedCelestials)"
+            );
+        };
+
+        assert_eq!(
+            orphans.into_iter().collect::<HashSet<_>>(),
+            HashSet::from([SavedId(1), SavedId(2)])
+        );
+
+        let orphaned_vessels = UnvalidatedSaveData(RawSaveData {
+            root_node: SavedId(0),
+            active_vessel: SavedId(0),
+            celestials: [(
+                SavedId(0),
+                CelestialData {
+                    vessel_children: Box::from([SavedId(0)]),
+                    ..gen_celestial_data()
+                },
+            )]
+            .into(),
+            vessels: [
+                (SavedId(0), gen_vessel_data()),
+                (SavedId(1), gen_vessel_data()),
+                (SavedId(2), gen_vessel_data()),
+            ]
+            .into(),
+        })
+        .validate();
+
+        let Err(SaveDataError::OrphanedVessels(orphans)) = orphaned_vessels else {
+            panic!(
+                "Expected {orphaned_vessels:?} to be of variant Err(SaveDataError::OrphanedVessels)"
+            );
+        };
+
+        assert_eq!(
+            orphans.into_iter().collect::<HashSet<_>>(),
+            HashSet::from([SavedId(1), SavedId(2)])
+        );
+
+        UnvalidatedSaveData(RawSaveData {
+            root_node: SavedId(0),
+            active_vessel: SavedId(0),
+            celestials: [(
+                SavedId(0),
+                CelestialData {
+                    vessel_children: Box::from([SavedId(0)]),
+                    ..gen_celestial_data()
+                },
+            )]
+            .into(),
+            vessels: [(SavedId(0), gen_vessel_data())].into(),
+        })
+        .validate()
+        .unwrap();
     }
 }
