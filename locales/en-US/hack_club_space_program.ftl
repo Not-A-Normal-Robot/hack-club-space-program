@@ -1,5 +1,23 @@
 general__back = back
 
+error__saveData__rootCelestialNotFound = Couldn't find root celestial body.
+error__saveData__activeVesselNotFound = Couldn't find active vessel.
+error__saveData__celestialNotFound =
+    Celestial body with ID { $referrer } had a reference to a nonexistent celestial body with ID { $not_found }.
+error__saveData__vesselNotFound =
+    Celestial body with ID { $referrer } had a reference to a nonexistent vessel with ID { $not_found }.
+error__saveData__duplicateCelestial =
+    Celestial body with ID { $duplicated } appears more than once in references: { $first_referrer ->
+        [none] it's referenced as the root element and the child of the celestial body with ID { $second_referrer }.
+        *[some] it's referenced as a child of celestial bodies with IDs { $first_referrer } and { $second_referrer }.
+    }
+error__saveData__duplicateVessel =
+    Vessel with ID { $duplicated } appears more than once in references: it's referenced as a child of celestial bodies with IDs { $first_referrer } and { $second_referrer }.
+error__saveData__orphanedCelestials =
+    The save file contains celestial bodies without a parent: { $list }
+error__saveData__orphanedVessels =
+    The save file contains vessels without a parent: { $list }
+
 mainMenu__playButton__text = play
 mainMenu__aboutButton__text = about
 mainMenu__quitButton__text = quit
