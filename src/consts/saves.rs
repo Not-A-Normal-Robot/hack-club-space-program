@@ -1,0 +1,630 @@
+use bevy::{
+    platform::collections::{HashMap, HashSet},
+    prelude::*,
+};
+use core::{fmt::Display, marker::PhantomData};
+use derive_more::{Deref, DerefMut, Display, Error};
+use keplerian_sim::{CompactOrbit2D, Orbit2D};
+use serde::{Deserialize, Serialize, de::Visitor};
+use std::{borrow::Cow, fmt::Write};
+
+use crate::{
+    components::main_game::{
+        celestial::Terrain,
+        relations::{RailMode, SurfaceAttachment},
+    },
+    consts::GRAVITATIONAL_CONSTANT,
+    fl,
+};
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Deref, DerefMut)]
+#[repr(transparent)]
+pub struct SavedId(#[deref] pub u128);
+
+impl SavedId {
+    /// The amount of characters the saaved ID takes to represent itself
+    /// as a hexadecimal-encoded string.
+    pub const CHARS: u32 = u128::BITS / 4;
+}
+
+impl From<u128> for SavedId {
+    fn from(value: u128) -> Self {
+        Self(value)
+    }
+}
+
+impl From<SavedId> for u128 {
+    fn from(value: SavedId) -> Self {
+        value.0
+    }
+}
+
+impl Display for SavedId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:032x}", self.0)
+    }
+}
+
+impl Serialize for SavedId {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&format!("{:032x}", self.0))
+    }
+}
+
+impl<'de> Deserialize<'de> for SavedId {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct IdVisitor;
+
+        impl IdVisitor {
+            const CHARS: u32 = <Self as Visitor>::Value::CHARS;
+        }
+
+        impl Visitor<'_> for IdVisitor {
+            type Value = SavedId;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                write!(
+                    formatter,
+                    "a hexadecimal u128 value with {} bytes/ASCII bytes",
+                    Self::Value::CHARS
+                )
+            }
+
+            fn visit_str<E>(self, v: &str) -> std::result::Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                if v.len() != Self::Value::CHARS as usize {
+                    return Err(serde::de::Error::invalid_length(v.len(), &self));
+                }
+
+                u128::from_str_radix(v, 16)
+                    .map(SavedId)
+                    .map_err(|e| serde::de::Error::custom(e))
+            }
+        }
+
+        deserializer.deserialize_str(IdVisitor)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub(crate) struct RawSaveData {
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // ================== MEMO ==================
+    //  DO NOT FORGET TO UPDATE THE SCHEMA FILE
+    //        AT `./save_data.schema.json`
+    //         IF YOU ARE EDITING THIS!
+    // ==========================================
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    /// The celestial body identifier to use as the root node.
+    pub(crate) root_node: SavedId,
+    /// The vessel identifier to use as the active vessel.
+    pub(crate) active_vessel: SavedId,
+    /// A map of celestial bodies.
+    ///
+    /// If this body can get its orbital data from the NASA Horizons API,
+    /// use a hex representation of its Horizons ID.
+    ///
+    /// If it shouldn't, use an ID of greater than `0xFFFF_FFFF` to skip it.
+    pub(crate) celestials: HashMap<SavedId, CelestialData>,
+    /// A map of vessels.
+    pub(crate) vessels: HashMap<SavedId, VesselData>,
+}
+
+impl RawSaveData {
+    fn validate(&self) -> Result<(), SaveDataError> {
+        if !self.celestials.contains_key(&self.root_node) {
+            return Err(SaveDataError::RootCelestialNotFound);
+        }
+
+        if !self.vessels.contains_key(&self.active_vessel) {
+            return Err(SaveDataError::ActiveVesselNotFound);
+        }
+
+        let mut to_traverse = vec![self.root_node];
+
+        // Maps between celestial objects and its parent
+        let mut celestial_map: HashMap<SavedId, Option<SavedId>> =
+            HashMap::with_capacity(self.celestials.len());
+        let mut vessel_map: HashMap<SavedId, SavedId> = HashMap::with_capacity(self.vessels.len());
+        celestial_map.insert(self.root_node, None);
+
+        while let Some(cel_id) = to_traverse.pop() {
+            let celestial =
+                self.celestials
+                    .get(&cel_id)
+                    .ok_or(SaveDataError::CelestialNotFound {
+                        not_found: cel_id,
+                        referrer: celestial_map[&cel_id].expect("this should have been in the set"),
+                    })?;
+
+            for child in &celestial.celestial_children {
+                if let Some(first_referrer) = celestial_map.get(child).copied() {
+                    return Err(SaveDataError::DuplicateCelestial {
+                        duplicated: *child,
+                        first_referrer,
+                        second_referrer: cel_id,
+                    });
+                }
+                celestial_map.insert(*child, Some(cel_id));
+            }
+
+            to_traverse.extend_from_slice(&celestial.celestial_children);
+
+            for vessel in &celestial.vessel_children {
+                if !self.vessels.contains_key(vessel) {
+                    return Err(SaveDataError::VesselNotFound {
+                        not_found: *vessel,
+                        referrer: cel_id,
+                    });
+                }
+                if let Some(parent) = vessel_map.get(vessel).copied() {
+                    return Err(SaveDataError::DuplicateVessel {
+                        duplicated: *vessel,
+                        first_referrer: parent,
+                        second_referrer: cel_id,
+                    });
+                }
+                vessel_map.insert(*vessel, cel_id);
+            }
+        }
+
+        if celestial_map.len() != self.celestials.len() {
+            let orphans: Box<[SavedId]> = self
+                .celestials
+                .keys()
+                .copied()
+                .filter(|c| !celestial_map.contains_key(c))
+                .collect();
+            return Err(SaveDataError::OrphanedCelestials(orphans));
+        }
+
+        if vessel_map.len() != self.vessels.len() {
+            let orphans: Box<[SavedId]> = self
+                .vessels
+                .keys()
+                .copied()
+                .filter(|c| !vessel_map.contains_key(c))
+                .collect();
+            return Err(SaveDataError::OrphanedVessels(orphans));
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize)]
+pub struct UnvalidatedSaveData(RawSaveData);
+
+impl UnvalidatedSaveData {
+    pub fn validate(self) -> Result<ValidatedSaveData, SaveDataError> {
+        self.0.validate().map(|()| ValidatedSaveData(self.0))
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct ValidatedSaveData(RawSaveData);
+
+/// An error indicating an invalid save data.
+#[derive(Clone, Debug, PartialEq, Eq, Error)]
+pub enum SaveDataError {
+    /// The `root_node` didn't resolve to any celestial.
+    RootCelestialNotFound,
+    /// The `active_vessel` didn't resolve to any vessel.
+    ActiveVesselNotFound,
+    /// There was a reference to a nonexistent celestial.
+    CelestialNotFound {
+        /// The parent celestial body with the invalid reference.
+        referrer: SavedId,
+        /// The celestial body ID which wasn't found.
+        not_found: SavedId,
+    },
+    /// There was a reference to a nonexistent vessel.
+    VesselNotFound {
+        /// The parent celestial body with the invalid reference.
+        referrer: SavedId,
+        /// The vessel ID which wasn't found.
+        not_found: SavedId,
+    },
+    /// There was a duplicate celestial body in the universe tree.
+    DuplicateCelestial {
+        /// The celestial body ID which appeared more than once
+        /// in the universe tree.
+        duplicated: SavedId,
+        /// The celestial body ID which referred to this one
+        /// for the first time, or [`None`] if this is the
+        /// root node.
+        first_referrer: Option<SavedId>,
+        /// The celestial body ID which referred to this one
+        /// for the second time.
+        second_referrer: SavedId,
+    },
+    /// There was a duplicate vessel in the universe tree.
+    DuplicateVessel {
+        /// The vessel ID which appeared more than once in the
+        /// universe tree.
+        duplicated: SavedId,
+        /// The celestial body ID which referred to this
+        /// vessel for the first time.
+        first_referrer: SavedId,
+        /// The celestial body ID which referred to this
+        /// vessel for the second time.
+        second_referrer: SavedId,
+    },
+    /// There were some orphaned celestials.
+    OrphanedCelestials(#[error(ignore)] Box<[SavedId]>),
+    /// There were some orphaned vessels.
+    OrphanedVessels(#[error(ignore)] Box<[SavedId]>),
+}
+
+impl Display for SaveDataError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::RootCelestialNotFound => {
+                write!(f, "{}", fl!("error__saveData__rootCelestialNotFound"))
+            }
+            Self::ActiveVesselNotFound => {
+                write!(f, "{}", fl!("error__saveData__activeVesselNotFound"))
+            }
+            Self::CelestialNotFound {
+                referrer,
+                not_found,
+            } => write!(
+                f,
+                "{}",
+                fl!(
+                    "error__saveData__celestialNotFound",
+                    referrer = referrer.to_string(),
+                    not_found = not_found.to_string()
+                )
+            ),
+            Self::VesselNotFound {
+                referrer,
+                not_found,
+            } => write!(
+                f,
+                "{}",
+                fl!(
+                    "error__saveData__vesselNotFound",
+                    referrer = referrer.to_string(),
+                    not_found = not_found.to_string()
+                )
+            ),
+            Self::DuplicateCelestial {
+                duplicated,
+                first_referrer,
+                second_referrer,
+            } => write!(
+                f,
+                "{}",
+                fl!(
+                    "error__saveData__duplicateCelestial",
+                    duplicated = duplicated.to_string(),
+                    first_referrer = first_referrer
+                        .map_or(Cow::Borrowed("none"), |id| Cow::Owned(id.to_string())),
+                    second_referrer = second_referrer.to_string(),
+                )
+            ),
+            Self::DuplicateVessel {
+                duplicated,
+                first_referrer,
+                second_referrer,
+            } => write!(
+                f,
+                "{}",
+                fl!(
+                    "error__saveData__duplicateVessel",
+                    duplicated = duplicated.to_string(),
+                    first_referrer = first_referrer.to_string(),
+                    second_referrer = second_referrer.to_string(),
+                )
+            ),
+            Self::OrphanedCelestials(saved_ids) => {
+                let mut list = String::with_capacity((34 * saved_ids.len()).min(2));
+                list.push('[');
+
+                for id in saved_ids.iter().take(saved_ids.len() - 1) {
+                    write!(&mut list, "{id}, ").expect("formatting should work");
+                }
+                if let Some(id) = saved_ids.last() {
+                    write!(&mut list, "{id}]").expect("formatting should work");
+                }
+
+                write!(
+                    f,
+                    "{}",
+                    fl!("error__saveData__orphanedCelestials", list = list)
+                )
+            }
+            Self::OrphanedVessels(saved_ids) => {
+                let mut list = String::with_capacity((34 * saved_ids.len()).min(2));
+                list.push('[');
+
+                for id in saved_ids.iter().take(saved_ids.len() - 1) {
+                    write!(&mut list, "{id}, ").expect("formatting should work");
+                }
+                if let Some(id) = saved_ids.last() {
+                    write!(&mut list, "{id}]").expect("formatting should work");
+                }
+
+                write!(
+                    f,
+                    "{}",
+                    fl!("error__saveData__orphanedVessels", list = list)
+                )
+            }
+        }
+    }
+}
+
+/// Holds static information about celestial bodies.
+///
+/// Should be in sync with `./save_data.schema.json`.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct CelestialData {
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // ================== MEMO ==================
+    //  DO NOT FORGET TO UPDATE THE SCHEMA FILE
+    //        AT `./save_data.schema.json`
+    //         IF YOU ARE EDITING THIS!
+    // ==========================================
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    /// The name of this celestial body.
+    name: String,
+    /// The mass of this celestial body, in kilograms.
+    mass: f64,
+    /// The radius of this celestial body, in metres.
+    radius: f64,
+    /// The color of this celestial body.
+    color: Color,
+    /// Information about this celestial body's orbital
+    /// parameters, if any.
+    orbit: Option<OrbitalData>,
+    /// A list of this celestial body's celestial children's IDs.
+    celestial_children: Box<[SavedId]>,
+    /// A list of this celestial body's vessel children's IDs.
+    vessel_children: Box<[SavedId]>,
+    /// This celestial body's terrain parameters.
+    terrain: Terrain,
+}
+
+/// Holds static information about celestial bodies' orbits.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct OrbitalData {
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // ================== MEMO ==================
+    //  DO NOT FORGET TO UPDATE THE SCHEMA FILE
+    //        AT `./save_data.schema.json`
+    //         IF YOU ARE EDITING THIS!
+    // ==========================================
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    /// The ecccentricity of this celestial body's
+    /// orbit.
+    pub eccentricity: f64,
+    /// The periapsis of this celestial body's orbit,
+    /// in metres.
+    pub periapsis: f64,
+    /// The argument of periapsis of this celestial
+    /// body's orbit, in radians.
+    pub arg_pe: f64,
+    /// The mean anomaly at epoch of this celestial
+    /// body's orbit, in radians.
+    pub mean_anomaly: f64,
+}
+
+impl OrbitalData {
+    #[inline]
+    #[must_use]
+    pub const fn to_compact_orbit(self, parent_mass: f64) -> CompactOrbit2D {
+        CompactOrbit2D {
+            eccentricity: self.eccentricity,
+            periapsis: self.eccentricity,
+            arg_pe: self.arg_pe,
+            mean_anomaly: self.mean_anomaly,
+            mu: parent_mass * GRAVITATIONAL_CONSTANT,
+        }
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn to_cached_orbit(self, parent_mass: f64) -> Orbit2D {
+        self.to_compact_orbit(parent_mass).into()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct VesselData {
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // ================== MEMO ==================
+    //  DO NOT FORGET TO UPDATE THE SCHEMA FILE
+    //        AT `./save_data.schema.json`
+    //         IF YOU ARE EDITING THIS!
+    // ==========================================
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    /// The (non-unique) name that this vessel is assigned.
+    name: String,
+    /// The rail that this vessel is on.
+    rail: RailData,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "rail_mode", content = "inner")]
+#[serde(rename_all = "snake_case")]
+pub enum RailData {
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // ================== MEMO ==================
+    //  DO NOT FORGET TO UPDATE THE SCHEMA FILE
+    //        AT `./save_data.schema.json`
+    //         IF YOU ARE EDITING THIS!
+    // ==========================================
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Orbit(OrbitalData),
+    Surface(SurfaceAttachment),
+}
+
+impl RailData {
+    pub fn instantiate(&self, parent_mass: f64) -> RailMode {
+        match self {
+            Self::Orbit(o) => RailMode::Orbit(o.to_cached_orbit(parent_mass)),
+            Self::Surface(s) => RailMode::Surface(*s),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rand::{RngExt, SeedableRng};
+    use serde::{Deserialize, Serialize};
+    use serde_test::{Token, assert_de_tokens, assert_de_tokens_error};
+
+    // Tests for the custom SavedId struct's ser/de
+
+    #[test]
+    fn test_length_fail() {
+        assert_de_tokens_error::<SavedId>(
+            &[Token::Str("0000000000000000000000000000000")],
+            "invalid length 31, expected a hexadecimal u128 value with 32 bytes/ASCII bytes",
+        );
+        assert_de_tokens(
+            &SavedId(0),
+            &[Token::Str("00000000000000000000000000000000")],
+        );
+        assert_de_tokens_error::<SavedId>(
+            &[Token::Str("000000000000000000000000000000000")],
+            "invalid length 33, expected a hexadecimal u128 value with 32 bytes/ASCII bytes",
+        );
+    }
+
+    #[test]
+    fn test_bounds() {
+        assert_de_tokens(
+            &SavedId(u128::MAX),
+            &[Token::Str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")],
+        );
+        assert_de_tokens(
+            &SavedId(u128::MAX),
+            &[Token::Str("ffffffffffffffffffffffffffffffff")],
+        );
+    }
+
+    #[test]
+    fn test_roundtrip() {
+        const ITERS: usize = 100_000;
+
+        let mut rng = rand::rngs::Xoshiro256PlusPlus::seed_from_u64(12_345_678_901_234_567_890);
+
+        let mut string = String::with_capacity(SavedId::CHARS as usize + 2);
+
+        for _ in 0..ITERS {
+            let id: u128 = rng.random();
+            let id = SavedId(id);
+            string.clear();
+
+            let serializer = toml::ser::ValueSerializer::new(&mut string);
+            id.serialize(serializer).expect("serialization should work");
+
+            assert_eq!(&string, &format!("\"{:032x}\"", id.0));
+
+            let deserializer = toml::de::ValueDeserializer::parse(&string)
+                .expect("deserializer construction should work");
+            let parsed = SavedId::deserialize(deserializer).expect("deserialization should work");
+
+            assert_eq!(id, parsed);
+        }
+    }
+
+    #[test]
+    fn save_data_error_l10n() {
+        let [referrer, referrer_2, subject] = [
+            0x4bfc_85f1_3889_e1a3_d876_e402_f0c5_6970,
+            0x99d7_462a_2c4d_120e_dbcd_38c3_f0a5_890b,
+            0x3cc2_a87c_5557_28bb_001c_ae59_8635_4a2c,
+        ]
+        .map(SavedId);
+        let [str_referrer, str_referrer_2, str_subject] =
+            [referrer, referrer_2, subject].map(|id| id.to_string());
+
+        assert_eq!(
+            SaveDataError::CelestialNotFound {
+                referrer,
+                not_found: subject
+            }
+            .to_string(),
+            format!(
+                "Celestial body with ID {str_referrer} had a reference to a nonexistent celestial body with ID {str_subject}."
+            )
+        );
+
+        assert_eq!(
+            SaveDataError::VesselNotFound {
+                referrer,
+                not_found: subject
+            }
+            .to_string(),
+            format!(
+                "Celestial body with ID {str_referrer} had a reference to a nonexistent vessel with ID {str_subject}."
+            )
+        );
+
+        assert_eq!(
+            SaveDataError::DuplicateCelestial {
+                duplicated: subject,
+                first_referrer: Some(referrer),
+                second_referrer: referrer_2
+            }
+            .to_string(),
+            format!(
+                "Celestial body with ID {str_subject} appears more than once in references: \
+                it's referenced as a child of celestial bodies with IDs {str_referrer} and {str_referrer_2}."
+            )
+        );
+
+        assert_eq!(
+            SaveDataError::DuplicateCelestial {
+                duplicated: subject,
+                first_referrer: None,
+                second_referrer: referrer_2
+            }
+            .to_string(),
+            format!(
+                "Celestial body with ID {str_subject} appears more than once in references: \
+                it's referenced as the root element and the child of the celestial body with ID {str_referrer_2}."
+            )
+        );
+
+        assert_eq!(
+            SaveDataError::DuplicateVessel {
+                duplicated: subject,
+                first_referrer: referrer,
+                second_referrer: referrer_2
+            }
+            .to_string(),
+            format!(
+                "Vessel with ID {str_subject} appears more than once in references: \
+                it's referenced as a child of celestial bodies with IDs {str_referrer} and {str_referrer_2}."
+            )
+        );
+
+        assert_eq!(
+            SaveDataError::OrphanedCelestials(Box::new([referrer, referrer_2])).to_string(),
+            format!(
+                "The save file contains celestial bodies without a parent: [{str_referrer}, {str_referrer_2}]"
+            )
+        );
+
+        assert_eq!(
+            SaveDataError::OrphanedVessels(Box::new([referrer, referrer_2])).to_string(),
+            format!(
+                "The save file contains vessels without a parent: [{str_referrer}, {str_referrer_2}]"
+            )
+        );
+    }
+}
