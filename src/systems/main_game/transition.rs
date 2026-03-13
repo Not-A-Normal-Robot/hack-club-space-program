@@ -64,7 +64,6 @@ pub(crate) fn init_game(
 
     let mesh = Mesh2d(meshes.add(Rectangle::new(vessel_half_x * 2.0, vessel_half_y * 2.0)));
 
-    dbg!(vessel_init_sv);
     let vessel = VesselBuilder {
         name: Name::new("Vessel"),
         collider: Collider::cuboid(vessel_half_x, vessel_half_y),
