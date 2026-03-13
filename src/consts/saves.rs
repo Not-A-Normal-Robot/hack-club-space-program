@@ -4,8 +4,8 @@
 //! `TOML` --serde-> `UnvalidatedSaveData` --validation-> `ValidatedSaveData`
 
 use bevy::{platform::collections::HashMap, prelude::*};
-use core::{fmt::Display, marker::PhantomData};
-use derive_more::{Deref, DerefMut, Display, Error};
+use core::fmt::Display;
+use derive_more::{Deref, DerefMut, Error};
 use keplerian_sim::{CompactOrbit2D, Orbit2D};
 use serde::{Deserialize, Serialize, de::Visitor};
 use std::{borrow::Cow, fmt::Write};
@@ -62,10 +62,6 @@ impl<'de> Deserialize<'de> for SavedId {
         D: serde::Deserializer<'de>,
     {
         struct IdVisitor;
-
-        impl IdVisitor {
-            const CHARS: u32 = <Self as Visitor>::Value::CHARS;
-        }
 
         impl Visitor<'_> for IdVisitor {
             type Value = SavedId;
@@ -139,13 +135,15 @@ impl RawSaveData {
         celestial_map.insert(self.root_node, None);
 
         while let Some(cel_id) = to_traverse.pop() {
-            let celestial =
-                self.celestials
-                    .get(&cel_id)
-                    .ok_or(SaveDataError::CelestialNotFound {
+            let celestial = self.celestials.get(&cel_id).ok_or_else(|| {
+                celestial_map.get(&cel_id).copied().flatten().map_or(
+                    SaveDataError::RootCelestialNotFound,
+                    |referrer| SaveDataError::CelestialNotFound {
+                        referrer,
                         not_found: cel_id,
-                        referrer: celestial_map[&cel_id].expect("this should have been in the set"),
-                    })?;
+                    },
+                )
+            })?;
 
             for child in &celestial.celestial_children {
                 if let Some(first_referrer) = celestial_map.get(child).copied() {
@@ -183,7 +181,7 @@ impl RawSaveData {
                 .celestials
                 .keys()
                 .copied()
-                .filter(|c| !celestial_map.contains_key(c))
+                .filter(|id| !celestial_map.contains_key(id))
                 .collect();
             return Err(SaveDataError::OrphanedCelestials(orphans));
         }
@@ -193,7 +191,7 @@ impl RawSaveData {
                 .vessels
                 .keys()
                 .copied()
-                .filter(|c| !vessel_map.contains_key(c))
+                .filter(|id| !vessel_map.contains_key(id))
                 .collect();
             return Err(SaveDataError::OrphanedVessels(orphans));
         }
@@ -482,6 +480,8 @@ impl RailData {
 
 #[cfg(test)]
 mod tests {
+    use crate::plugins::i18n::load_localizations;
+
     use super::*;
     use bevy::platform::collections::HashSet;
     use rand::{RngExt, SeedableRng};
@@ -544,6 +544,16 @@ mod tests {
         }
     }
 
+    fn assert_eq_l10n<S: AsRef<str>>(lhs: S, rhs: S) {
+        let [lhs, rhs] = [lhs, rhs].map(|s| {
+            s.as_ref()
+                .chars()
+                .filter(|c| !['\u{2068}', '\u{2069}'].contains(c))
+                .collect::<String>()
+        });
+        assert_eq!(lhs, rhs);
+    }
+
     #[test]
     fn save_data_error_l10n() {
         let [referrer, referrer_2, subject] = [
@@ -555,79 +565,81 @@ mod tests {
         let [str_referrer, str_referrer_2, str_subject] =
             [referrer, referrer_2, subject].map(|id| id.to_string());
 
-        assert_eq!(
+        load_localizations();
+
+        assert_eq_l10n(
             SaveDataError::CelestialNotFound {
                 referrer,
-                not_found: subject
+                not_found: subject,
             }
             .to_string(),
             format!(
                 "Celestial body with ID {str_referrer} had a reference to a nonexistent celestial body with ID {str_subject}."
-            )
+            ),
         );
 
-        assert_eq!(
+        assert_eq_l10n(
             SaveDataError::VesselNotFound {
                 referrer,
-                not_found: subject
+                not_found: subject,
             }
             .to_string(),
             format!(
                 "Celestial body with ID {str_referrer} had a reference to a nonexistent vessel with ID {str_subject}."
-            )
+            ),
         );
 
-        assert_eq!(
+        assert_eq_l10n(
             SaveDataError::DuplicateCelestial {
                 duplicated: subject,
                 first_referrer: Some(referrer),
-                second_referrer: referrer_2
+                second_referrer: referrer_2,
             }
             .to_string(),
             format!(
                 "Celestial body with ID {str_subject} appears more than once in references: \
                 it's referenced as a child of celestial bodies with IDs {str_referrer} and {str_referrer_2}."
-            )
+            ),
         );
 
-        assert_eq!(
+        assert_eq_l10n(
             SaveDataError::DuplicateCelestial {
                 duplicated: subject,
                 first_referrer: None,
-                second_referrer: referrer_2
+                second_referrer: referrer_2,
             }
             .to_string(),
             format!(
                 "Celestial body with ID {str_subject} appears more than once in references: \
                 it's referenced as the root element and the child of the celestial body with ID {str_referrer_2}."
-            )
+            ),
         );
 
-        assert_eq!(
+        assert_eq_l10n(
             SaveDataError::DuplicateVessel {
                 duplicated: subject,
                 first_referrer: referrer,
-                second_referrer: referrer_2
+                second_referrer: referrer_2,
             }
             .to_string(),
             format!(
                 "Vessel with ID {str_subject} appears more than once in references: \
                 it's referenced as a child of celestial bodies with IDs {str_referrer} and {str_referrer_2}."
-            )
+            ),
         );
 
-        assert_eq!(
+        assert_eq_l10n(
             SaveDataError::OrphanedCelestials(Box::new([referrer, referrer_2])).to_string(),
             format!(
                 "The save file contains celestial bodies without a parent: [{str_referrer}, {str_referrer_2}]"
-            )
+            ),
         );
 
-        assert_eq!(
+        assert_eq_l10n(
             SaveDataError::OrphanedVessels(Box::new([referrer, referrer_2])).to_string(),
             format!(
                 "The save file contains vessels without a parent: [{str_referrer}, {str_referrer_2}]"
-            )
+            ),
         );
     }
 
@@ -665,6 +677,7 @@ mod tests {
     }
 
     #[test]
+    #[expect(clippy::too_many_lines)]
     fn save_data_validation() {
         let root_not_found = UnvalidatedSaveData(RawSaveData {
             root_node: SavedId(0),
@@ -742,7 +755,7 @@ mod tests {
             vessel_not_found,
             Err(SaveDataError::VesselNotFound {
                 referrer: SavedId(200),
-                not_found: SavedId(400)
+                not_found: SavedId(404)
             }),
         );
 
@@ -778,7 +791,7 @@ mod tests {
                     SavedId(0),
                     CelestialData {
                         vessel_children: Box::from([SavedId(0)]),
-                        celestial_children: Box::from([SavedId(1)]),
+                        celestial_children: Box::from([SavedId(1), SavedId(2)]),
                         ..gen_celestial_data()
                     },
                 ),

@@ -11,11 +11,15 @@ pub(in crate::plugins) struct I18nPlugin;
 
 impl Plugin for I18nPlugin {
     fn build(&self, _app: &mut App) {
-        FLUENT_LANGUAGE_LOADER
-            .load_languages(
-                &Localizations,
-                &[FLUENT_LANGUAGE_LOADER.fallback_language().clone()],
-            )
-            .expect("Error loading languages");
+        load_localizations();
     }
+}
+
+pub(crate) fn load_localizations() {
+    FLUENT_LANGUAGE_LOADER
+        .load_languages(
+            &Localizations,
+            &[FLUENT_LANGUAGE_LOADER.fallback_language().clone()],
+        )
+        .expect("Error loading languages");
 }
