@@ -5,6 +5,15 @@
     "description": "A schema to save Hack Club Space Program's save data.",
     "type": "object",
     "properties": {
+        "$schema": {
+            "type": "string"
+        },
+        "schema_version": {
+            "description": "The version of this save schema.",
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMinimum": true
+        },
         "root_node": {
             "description": "The celestial body identifier to use as the root node.",
             "type": "string",
@@ -40,6 +49,7 @@
         }
     },
     "required": [
+        "schema_version",
         "root_node",
         "active_vessel",
         "celestials",

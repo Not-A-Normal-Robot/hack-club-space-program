@@ -1,6 +1,6 @@
 use crate::{
     resources::scene::GameScene,
-    systems::main_game::transition::{exit_game, init_game},
+    systems::main_game::transition::{exit_game, load_game},
 };
 use bevy::prelude::*;
 
@@ -8,7 +8,7 @@ use bevy::prelude::*;
 pub(crate) struct GameTransitionPlugin;
 impl Plugin for GameTransitionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameScene::InGame), init_game);
+        app.add_systems(OnEnter(GameScene::InGame), load_game);
         app.add_systems(OnExit(GameScene::InGame), exit_game);
     }
 }

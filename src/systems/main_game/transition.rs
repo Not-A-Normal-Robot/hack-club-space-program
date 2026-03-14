@@ -19,7 +19,7 @@ const CELESTIAL_RADIUS: f64 = 6_371_137.0;
 const CELESTIAL_MASS: f64 = 5.972_168e24;
 const ALTITUDE: f64 = CELESTIAL_RADIUS + 100e3;
 
-pub(crate) fn init_game(
+pub(crate) fn load_game(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,

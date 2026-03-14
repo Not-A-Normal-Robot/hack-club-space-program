@@ -24,7 +24,7 @@ use crate::{
 pub struct SavedId(#[deref] pub u128);
 
 impl SavedId {
-    /// The amount of characters the saaved ID takes to represent itself
+    /// The amount of characters the saved ID takes to represent itself
     /// as a hexadecimal-encoded string.
     pub const CHARS: u32 = u128::BITS / 4;
 }
@@ -209,7 +209,7 @@ impl UnvalidatedSaveData {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ValidatedSaveData(RawSaveData);
 
 /// An error indicating an invalid save data.
@@ -485,7 +485,6 @@ mod tests {
     use super::*;
     use bevy::platform::collections::HashSet;
     use rand::{RngExt, SeedableRng};
-    use serde::{Deserialize, Serialize};
     use serde_test::{Token, assert_de_tokens, assert_de_tokens_error};
 
     // Tests for the custom SavedId struct's ser/de
@@ -524,21 +523,16 @@ mod tests {
 
         let mut rng = rand::rngs::Xoshiro256PlusPlus::seed_from_u64(12_345_678_901_234_567_890);
 
-        let mut string = String::with_capacity(SavedId::CHARS as usize + 2);
-
         for _ in 0..ITERS {
             let id: u128 = rng.random();
             let id = SavedId(id);
-            string.clear();
 
-            let serializer = toml::ser::ValueSerializer::new(&mut string);
-            id.serialize(serializer).expect("serialization should work");
+            let string = serde_json::to_string(&id).expect("serialization should work");
 
             assert_eq!(&string, &format!("\"{:032x}\"", id.0));
 
-            let deserializer = toml::de::ValueDeserializer::parse(&string)
-                .expect("deserializer construction should work");
-            let parsed = SavedId::deserialize(deserializer).expect("deserialization should work");
+            let parsed: SavedId =
+                serde_json::from_str(&string).expect("deserialization should work");
 
             assert_eq!(id, parsed);
         }
