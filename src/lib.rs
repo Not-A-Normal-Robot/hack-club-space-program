@@ -6,6 +6,7 @@ pub mod macros;
 pub(crate) mod math;
 pub mod plugins;
 pub mod resources;
+pub(crate) mod storage;
 pub(crate) mod systems;
 pub(crate) mod terrain;
 #[cfg(target_family = "wasm")]

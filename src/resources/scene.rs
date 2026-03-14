@@ -7,4 +7,5 @@ pub enum GameScene {
     MainMenu,
     AboutMenu,
     InGame,
+    LoadingGame,
 }
