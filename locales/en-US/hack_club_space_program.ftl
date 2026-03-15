@@ -1,5 +1,11 @@
 general__back = back
 
+error__saveGeneral__noSaveDir =
+    We couldn't determine a reasonable location for save files.
+error__saveGeneral__ioError =
+    There was an I/O error trying to read the save file:
+    { $inner }
+
 error__saveData__rootCelestialNotFound = Couldn't find root celestial body.
 error__saveData__activeVesselNotFound = Couldn't find active vessel.
 error__saveData__celestialNotFound =
