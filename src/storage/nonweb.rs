@@ -5,7 +5,6 @@ use std::{
     io::{self, Read},
     path::PathBuf,
 };
-
 use thiserror::Error;
 
 use crate::{
@@ -37,21 +36,47 @@ pub(super) enum SaveListError {
     /// Couldn't fetch file metadata
     MetadataFetchError { path: PathBuf, error: io::Error },
     /// Save file is empty
-    EmptyFile(PathBuf),
+    FileEmpty(PathBuf),
 }
 
 impl Display for SaveListError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::NoSaveDir => f.write_str(&fl!("error__saveGeneral__noSaveDir")),
-            _ => todo!("Display impl for other `SaveListError`s"),
+            Self::DirCreationError(inner) => f.write_str(&fl!(
+                "error__saveList__dirCreation",
+                inner = inner.to_string()
+            )),
+            Self::ReadDirError(inner) => {
+                f.write_str(&fl!("error__saveList__readDir", inner = inner.to_string()))
+            }
+            Self::DirEntryError(inner) => {
+                f.write_str(&fl!("error__saveList__dirEntry", inner = inner.to_string()))
+            }
+            Self::FileTypeError { path, error } => f.write_str(&fl!(
+                "error__saveList__fileType",
+                path = path.to_string_lossy(),
+                inner = error.to_string()
+            )),
+            Self::NotAFile(path) => f.write_str(&fl!(
+                "error__saveList__notFile",
+                path = path.to_string_lossy()
+            )),
+            Self::MetadataFetchError { path, error } => f.write_str(&fl!(
+                "error__saveList__metadataFetch",
+                path = path.to_string_lossy(),
+                inner = error.to_string()
+            )),
+            Self::FileEmpty(path) => f.write_str(&fl!(
+                "error__saveList__fileEmpty",
+                path = path.to_string_lossy()
+            )),
         }
     }
 }
 
-// TODO: Make this async
 #[expect(dead_code)]
-pub(super) async fn get_save_list() -> SaveList {
+pub(super) fn get_save_list() -> SaveList {
     let Some(dir) = get_save_dir() else {
         return SaveList {
             saves: Box::from([]),
@@ -113,7 +138,7 @@ pub(super) async fn get_save_list() -> SaveList {
         };
 
         if metadata.len() == 0 {
-            errors.push(SaveListError::EmptyFile(path));
+            errors.push(SaveListError::FileEmpty(path));
             continue;
         }
 
@@ -122,22 +147,16 @@ pub(super) async fn get_save_list() -> SaveList {
 
     SaveList {
         saves: saves.into_boxed_slice(),
-        errors: errors
-            .into_iter()
-            .map(|e| SaveListErrorWrapper(e))
-            .collect(),
+        errors: errors.into_iter().map(SaveListErrorWrapper).collect(),
     }
 }
 
-pub(super) async fn load(save_name: &OsStr) -> Result<UnvalidatedSaveData, SaveReadError> {
+pub(super) fn load(save_name: &OsStr) -> Result<UnvalidatedSaveData, SaveReadError> {
     let dir = get_save_dir().ok_or(SaveReadError::NoSaveDir)?;
-    let savefile = dir.join(save_name);
 
     let savefile_path = dir.join(save_name);
     let mut savefile = fs::File::open(savefile_path)?;
-    savefile.lock();
 
-    // TODO: Make this async
     let mut save_str = String::with_capacity(
         savefile
             .metadata()

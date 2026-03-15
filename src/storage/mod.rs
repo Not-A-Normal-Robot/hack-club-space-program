@@ -79,7 +79,7 @@ static UI_CALLER_SET: Mutex<HashSet<String>> = Mutex::new(HashSet::new());
 impl SaveListErrors {
     #[cold]
     fn warn_ui_once(caller: &core::panic::Location) {
-        let called = UI_CALLER_SET.try_lock().map_or(false, |mut set| {
+        let called = UI_CALLER_SET.try_lock().is_ok_and(|mut set| {
             let file = caller.file();
             if set.contains(file) {
                 return true;
@@ -123,21 +123,24 @@ impl Display for SaveListErrors {
 
 #[derive(Error)]
 #[repr(transparent)]
-pub(crate) struct SaveListError(
-    #[cfg(not(target_family = "wasm"))] nonweb::SaveListError,
-    #[cfg(target_family = "wasm")] web::SaveListError,
-);
+pub(crate) struct SaveListError(SaveListErrorInner);
+
+#[cfg(not(target_family = "wasm"))]
+type SaveListErrorInner = nonweb::SaveListError;
+
+#[cfg(target_family = "wasm")]
+type SaveListErrorInner = web::SaveListError;
 
 impl Debug for SaveListError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        <Self as Debug>::fmt(self, f)
+        <SaveListErrorInner as Debug>::fmt(&self.0, f)
     }
 }
 
 impl Display for SaveListError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // self.0.fmt(f)
-        <Self as Display>::fmt(self, f)
+        <SaveListErrorInner as Display>::fmt(&self.0, f)
     }
 }
 
@@ -158,15 +161,21 @@ impl Display for SaveReadError {
             Self::NoSaveDir => f.write_str(&fl!("error__saveGeneral__noSaveDir")),
             #[cfg(not(target_family = "wasm"))]
             Self::IoError(e) => {
-                f.write_str(&fl!("error__saveGeneral__ioError", inner = format!("{e}")))
+                f.write_str(&fl!("error__saveRead__ioError", inner = format!("{e}")))
             }
             Self::InvalidState(e) => <SaveDataError as Display>::fmt(e, f),
-            Self::ParseError(error) => todo!(),
+            Self::ParseError(error) => f.write_str(&fl!(
+                "error__saveRead__parseError",
+                inner = format!("{error}")
+            )),
         }
     }
 }
 
-#[expect(clippy::unused_async, reason = "This function will be async soon")]
+/// # Blocking
+/// This function may block.
+/// Please run this in an [`IoTaskPool`][bevy::tasks::IoTaskPool]
+#[allow(clippy::unused_async, reason = "This fn uses async functions in WASM")]
 pub(crate) async fn get_save_list() -> Result<SaveList, SaveListError> {
     // TODO: Actually fetch save list
     Ok(SaveList {
@@ -175,11 +184,15 @@ pub(crate) async fn get_save_list() -> Result<SaveList, SaveListError> {
     })
 }
 
+/// # Blocking
+/// This function may block.
+/// Please run this in an [`IoTaskPool`][bevy::tasks::IoTaskPool]
+#[allow(clippy::unused_async, reason = "This fn uses async functions in WASM")]
 pub(crate) async fn load(save_name: &SaveName) -> Result<ValidatedSaveData, SaveReadError> {
     #[cfg(target_family = "wasm")]
     let unvalidated = web::load(&save_name.0).await;
     #[cfg(not(target_family = "wasm"))]
-    let unvalidated = nonweb::load(&save_name.0).await;
+    let unvalidated = nonweb::load(&save_name.0);
 
     Ok(unvalidated?.validate()?)
 }

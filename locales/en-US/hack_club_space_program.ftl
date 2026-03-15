@@ -2,9 +2,6 @@ general__back = back
 
 error__saveGeneral__noSaveDir =
     We couldn't determine a reasonable location for save files.
-error__saveGeneral__ioError =
-    There was an I/O error trying to read the save file:
-    { $inner }
 
 error__saveData__rootCelestialNotFound = Couldn't find root celestial body.
 error__saveData__activeVesselNotFound = Couldn't find active vessel.
@@ -23,6 +20,33 @@ error__saveData__orphanedCelestials =
     The save file contains celestial bodies without a parent: { $list }
 error__saveData__orphanedVessels =
     The save file contains vessels without a parent: { $list }
+
+error__saveList__dirCreation =
+    There was an I/O error trying to create the save directory:
+    { $inner }
+error__saveList__readDir =
+    There was an I/O error trying to read from the save directory:
+    { $inner }
+error__saveList__dirEntry =
+    There was an I/O error trying to read from an entry in the save directory:
+    { $inner }
+error__saveList__fileType =
+    There was an I/O error trying to determine the type of '{ $path }':
+    { $inner }
+error__saveList__notFile =
+    The directory entry at { $path } is not a file.
+error__saveList__metadataFetch =
+    There was an I/O error trying to read the metadata of '{ $path }':
+    { $inner }
+error__saveList__fileEmpty =
+    The file at { $path } is empty.
+
+error__saveRead__ioError =
+    There was an I/O error trying to read the save file:
+    { $inner }
+error__saveRead__parseError =
+    There was an issue parsing the save file:
+    { $inner }
 
 mainMenu__playButton__text = play
 mainMenu__aboutButton__text = about
