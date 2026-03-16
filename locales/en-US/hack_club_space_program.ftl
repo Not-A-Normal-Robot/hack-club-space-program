@@ -3,6 +3,10 @@ general__back = back
 error__saveGeneral__noSaveDir =
     We couldn't determine a reasonable location for save files.
 
+error__saveInit__dirCreation =
+    There was an I/O error trying to create the save directory:
+    { $inner }
+
 error__saveData__rootCelestialNotFound = Couldn't find root celestial body.
 error__saveData__activeVesselNotFound = Couldn't find active vessel.
 error__saveData__celestialNotFound =
@@ -21,9 +25,6 @@ error__saveData__orphanedCelestials =
 error__saveData__orphanedVessels =
     The save file contains vessels without a parent: { $list }
 
-error__saveList__dirCreation =
-    There was an I/O error trying to create the save directory:
-    { $inner }
 error__saveList__readDir =
     There was an I/O error trying to read from the save directory:
     { $inner }

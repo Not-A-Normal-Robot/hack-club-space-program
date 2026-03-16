@@ -10,7 +10,7 @@ use thiserror::Error;
 use crate::{
     fl,
     storage::{
-        SaveList, SaveListError as SaveListErrorWrapper, SaveName, SaveReadError,
+        SaveInitError, SaveList, SaveListError as SaveListErrorWrapper, SaveName, SaveReadError,
         save_data::UnvalidatedSaveData,
     },
 };
@@ -19,12 +19,15 @@ fn get_save_dir() -> Option<PathBuf> {
     dirs::data_dir().map(|dir| dir.join("hack-club-space-program/saves"))
 }
 
+pub(super) fn init_saves() -> Result<(), SaveInitError> {
+    let dir = get_save_dir().ok_or(SaveInitError::NoSaveDir)?;
+    fs::create_dir_all(dir).map_err(SaveInitError::DirCreation)
+}
+
 #[derive(Debug, Error)]
 pub(super) enum SaveListError {
     /// Couldn't decide on a save dir
     NoSaveDir,
-    /// Couldn't create the save dir
-    DirCreationError(io::Error),
     /// Couldn't read the save dir
     ReadDirError(io::Error),
     /// Couldn't read a save dir entry
@@ -43,10 +46,6 @@ impl Display for SaveListError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::NoSaveDir => f.write_str(&fl!("error__saveGeneral__noSaveDir")),
-            Self::DirCreationError(inner) => f.write_str(&fl!(
-                "error__saveList__dirCreation",
-                inner = inner.to_string()
-            )),
             Self::ReadDirError(inner) => {
                 f.write_str(&fl!("error__saveList__readDir", inner = inner.to_string()))
             }
@@ -83,13 +82,6 @@ pub(super) fn get_save_list() -> SaveList {
             errors: Box::new([SaveListErrorWrapper(SaveListError::NoSaveDir)]),
         };
     };
-
-    if let Err(e) = fs::create_dir_all(&dir) {
-        return SaveList {
-            saves: Box::from([]),
-            errors: Box::from([SaveListErrorWrapper(SaveListError::DirCreationError(e))]),
-        };
-    }
 
     let read_dir = match fs::read_dir(&dir) {
         Ok(rd) => rd,
