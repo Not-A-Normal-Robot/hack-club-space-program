@@ -1,37 +1,50 @@
-use crate::storage::{self, SaveInitError};
+use crate::{
+    fl,
+    storage::{self, SaveInitError},
+    systems::general::popup::{Popup, spawn_popup},
+};
 use bevy::{
     prelude::*,
     tasks::{IoTaskPool, Task, futures::check_ready},
 };
-use std::time::Duration;
 type StorageInitTaskResult = Result<(), SaveInitError>;
-type StorageInitTask = Task<StorageInitTaskResult>;
 
-pub(crate) fn setup_storage(mut local: Local<Option<StorageInitTask>>) {
-    let task = IoTaskPool::get().spawn(storage::init_saves());
-    *local = Some(task);
+#[derive(Resource)]
+#[doc(hidden)]
+pub(crate) struct StorageInitTask(Task<StorageInitTaskResult>);
+
+pub(crate) fn setup_storage(mut commands: Commands) {
+    commands.insert_resource(StorageInitTask(
+        IoTaskPool::get().spawn(storage::init_saves()),
+    ));
 }
 
-pub(crate) fn poll_storage_setup(mut local: Local<Option<StorageInitTask>>) {
-    let Some(mut task) = local.take() else { return };
+pub(crate) fn poll_storage_setup(mut commands: Commands, task: Option<ResMut<StorageInitTask>>) {
+    let Some(mut task) = task else { return };
 
-    let error = match check_ready(&mut task) {
+    let error = match check_ready(&mut task.0) {
         Some(Ok(())) => {
-            drop(task);
+            info!("Save storage initialized");
+            commands.remove_resource::<StorageInitTask>();
             return;
         }
         Some(Err(e)) => {
-            drop(task);
+            commands.remove_resource::<StorageInitTask>();
             e
         }
         None => {
             // Not finished, we poll again later
-            *local = Some(task);
             return;
         }
     };
 
     error!("{error}");
 
-    todo!("proper error handling");
+    commands.run_system_cached_with(
+        spawn_popup,
+        Popup {
+            title: fl!("popup__saveInitError__title"),
+            body: fl!("popup__saveInitError__body", inner = error.to_string()),
+        },
+    );
 }

@@ -36,7 +36,7 @@ mod tests {
 
     #[test]
     fn test_uris() {
-        let uris = [URI_ICON_PROGRADE];
+        let uris = [URI_ICON_PROGRADE, URI_ICON_RETROGRADE];
         let mut app = min_app();
         app.init_asset::<Image>();
         app.get_asset_server()

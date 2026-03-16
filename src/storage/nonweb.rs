@@ -21,6 +21,8 @@ fn get_save_dir() -> Option<PathBuf> {
 
 pub(super) fn init_saves() -> Result<(), SaveInitError> {
     let dir = get_save_dir().ok_or(SaveInitError::NoSaveDir)?;
+    // DEBUG: Force init failure
+    fs::create_dir_all("/aorisetnoairesntoiraents/ra//////").map_err(SaveInitError::DirCreation)?;
     fs::create_dir_all(dir).map_err(SaveInitError::DirCreation)
 }
 

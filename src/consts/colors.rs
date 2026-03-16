@@ -68,6 +68,14 @@ pub(crate) const SPEEDOMETER_HSPD: Color = hex_to_color(b"#6bb1ff");
 pub(crate) const SPEEDOMETER_VSPD: Color = hex_to_color(b"#ef8b39");
 pub(crate) const SPEEDOMETER_TSPD: Color = hex_to_color(b"#91be83");
 pub(crate) const SPEEDOMETER_DOTS: Color = SPEEDOMETER_TSPD;
+pub(crate) const POPUP_BACKGROUND_COLOR: Color = scheme::SURFACE;
+pub(crate) const POPUP_BORDER_COLOR: Color = scheme::SURFACE_BRIGHT;
+pub(crate) const POPUP_BODY_BACKGROUND_COLOR: Color = shades::TERTIARY_5;
+pub(crate) const POPUP_BODY_BORDER_COLOR: Color = shades::TERTIARY_10;
+pub(crate) const POPUP_TITLE_COLOR: Color = scheme::PRIMARY;
+pub(crate) const POPUP_DISMISS_COLOR: Color = shades::PRIMARY_80;
+pub(crate) const POPUP_DISMISS_HOVER_COLOR: Color = shades::PRIMARY_90;
+pub(crate) const POPUP_DISMISS_ACTIVE_COLOR: Color = shades::PRIMARY_70;
 
 pub(crate) mod icons {
     use crate::consts::colors::hex_to_color;

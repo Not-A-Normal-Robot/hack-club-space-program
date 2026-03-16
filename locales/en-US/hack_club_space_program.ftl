@@ -1,5 +1,14 @@
 general__back = back
 
+
+popup__general__dismiss = Dismiss
+
+popup__saveInitError__title =
+    Save Init Error
+popup__saveInitError__body =
+    We couldn't initialize the save subsystem.
+    { $inner }
+
 error__saveGeneral__noSaveDir =
     We couldn't determine a reasonable location for save files.
 
