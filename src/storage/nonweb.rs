@@ -7,7 +7,7 @@ use std::{
 use thiserror::Error;
 
 use crate::{
-    consts::saves::{DEFAULT_SAVE, SAVE_DIR, SAVE_NAME_STR},
+    consts::saves::{DEFAULT_SAVE, SAVE_NAME_STR, nonweb::SAVE_DIR},
     fl,
     storage::{
         SaveInitError, SaveList, SaveListError as SaveListErrorWrapper, SaveName, SaveReadError,

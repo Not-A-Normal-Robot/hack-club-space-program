@@ -23,21 +23,43 @@ pub(crate) trait Storage: Copy + Sized + Send + Sync {
     /// # Blocking
     /// This function may block.
     /// Please run this in an [`IoTaskPool`][bevy::tasks::IoTaskPool]
+    #[cfg(not(target_family = "wasm"))]
     fn init_saves(self) -> impl Future<Output = Result<(), SaveInitError>> + Send;
 
     /// # Blocking
     /// This function may block.
     /// Please run this in an [`IoTaskPool`][bevy::tasks::IoTaskPool]
+    #[cfg(target_family = "wasm")]
+    async fn init_saves(self) -> Result<(), SaveInitError>;
+
+    /// # Blocking
+    /// This function may block.
+    /// Please run this in an [`IoTaskPool`][bevy::tasks::IoTaskPool]
     // async fn get_save_list(&self) -> SaveList;
+    #[cfg(not(target_family = "wasm"))]
     fn get_save_list(self) -> impl Future<Output = SaveList> + Send;
 
     /// # Blocking
     /// This function may block.
     /// Please run this in an [`IoTaskPool`][bevy::tasks::IoTaskPool]
+    // async fn get_save_list(&self) -> SaveList;
+    #[cfg(target_family = "wasm")]
+    async fn get_save_list(self) -> SaveList;
+
+    /// # Blocking
+    /// This function may block.
+    /// Please run this in an [`IoTaskPool`][bevy::tasks::IoTaskPool]
+    #[cfg(not(target_family = "wasm"))]
     fn load(
         self,
         save_name: &SaveName,
     ) -> impl Future<Output = Result<UnvalidatedSaveData, SaveReadError>> + Send;
+
+    /// # Blocking
+    /// This function may block.
+    /// Please run this in an [`IoTaskPool`][bevy::tasks::IoTaskPool]
+    #[cfg(target_family = "wasm")]
+    async fn load(self, save_name: &SaveName) -> Result<UnvalidatedSaveData, SaveReadError>;
 }
 
 pub(crate) fn get_storage() -> impl Storage {
@@ -59,8 +81,20 @@ pub(crate) enum SaveInitError {
     NoSaveDir,
     #[cfg(not(target_family = "wasm"))]
     DirCreation(io::Error),
+    /// Something went wrong while trying to initialize the idb
+    /// factory
     #[cfg(target_family = "wasm")]
-    WasmError(core::convert::Infallible), // TODO
+    FactoryInit(idb::Error),
+    /// Something went wrong while requesting the db to be opened
+    #[cfg(target_family = "wasm")]
+    DbOpenRequest(idb::Error),
+    /// Something went wrong while opening the db
+    #[cfg(target_family = "wasm")]
+    DbOpen(idb::Error),
+    /// Something went wrong while initializing or
+    /// upgrading the db
+    #[cfg(target_family = "wasm")]
+    UpgradeError(idb::Error),
 }
 
 impl Display for SaveInitError {
@@ -74,7 +108,7 @@ impl Display for SaveInitError {
                 inner = inner.to_string()
             )),
             #[cfg(target_family = "wasm")]
-            Self::WasmError(inf) => todo!("WASM error handling"),
+            _ => todo!("WASM error handling"),
         }
     }
 }
