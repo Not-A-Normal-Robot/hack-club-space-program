@@ -95,6 +95,12 @@ unic-langid = "0.9.6"
 [profile.dev]
 opt-level = 0
 
+# HACK: This is a workaround for rust-embed reading from FS
+# in debug builds. This should be worked around by using
+# a separate hcsp-i18n internal crate as to not skip all other
+# debug assertions in debug builds.
+debug-assertions = false
+
 [profile.dev.package."*"]
 opt-level = 3
 

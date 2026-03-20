@@ -24,5 +24,6 @@ fn main() {
 #[wasm_bindgen(start)]
 fn web_start() {
     hack_club_space_program::web::panic_handler::init_panic_handler();
+    #[expect(clippy::main_recursion)]
     main();
 }

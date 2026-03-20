@@ -21,6 +21,7 @@ use crate::{
 #[cfg(feature = "trace")]
 use bevy::log::Level;
 use bevy::{
+    app::PanicHandlerPlugin,
     input_focus::{InputDispatchPlugin, tab_navigation::TabNavigationPlugin},
     log::LogPlugin,
     prelude::*,
@@ -52,7 +53,8 @@ impl Plugin for GameSetupPlugin {
                         ..Default::default()
                     }),
                     ..Default::default()
-                }),
+                })
+                .disable::<PanicHandlerPlugin>(),
         );
         app.add_plugins((InputDispatchPlugin, TabNavigationPlugin));
         initialize_assets(app);

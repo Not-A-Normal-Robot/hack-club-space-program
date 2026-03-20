@@ -17,9 +17,6 @@ impl Plugin for I18nPlugin {
 
 pub(crate) fn load_localizations() {
     FLUENT_LANGUAGE_LOADER
-        .load_languages(
-            &Localizations,
-            &[FLUENT_LANGUAGE_LOADER.fallback_language().clone()],
-        )
+        .load_fallback_language(&Localizations)
         .expect("Error loading languages");
 }
