@@ -7,7 +7,7 @@ use std::{
 use thiserror::Error;
 
 use crate::{
-    consts::saves::{DEFAULT_SAVE, SAVE_NAME_STR},
+    consts::saves::{DEFAULT_SAVE, SAVE_DIR, SAVE_NAME_STR},
     fl,
     storage::{
         SaveInitError, SaveList, SaveListError as SaveListErrorWrapper, SaveName, SaveReadError,
@@ -16,7 +16,7 @@ use crate::{
 };
 
 fn get_save_dir() -> Option<PathBuf> {
-    dirs::data_dir().map(|dir| dir.join("hack-club-space-program/saves"))
+    dirs::data_dir().map(|dir| dir.join(SAVE_DIR))
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
