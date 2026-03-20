@@ -1,6 +1,6 @@
 use crate::{
     fl,
-    storage::{self, SaveInitError},
+    storage::{self, SaveInitError, Storage},
     systems::general::popup::{Popup, spawn_popup},
 };
 use bevy::{
@@ -15,7 +15,7 @@ pub(crate) struct StorageInitTask(Task<StorageInitTaskResult>);
 
 pub(crate) fn setup_storage(mut commands: Commands) {
     commands.insert_resource(StorageInitTask(
-        IoTaskPool::get().spawn(storage::init_saves()),
+        IoTaskPool::get().spawn(storage::get_storage().init_saves()),
     ));
 }
 

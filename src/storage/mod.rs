@@ -1,15 +1,15 @@
-use core::fmt::{Debug, Display};
-use std::{borrow::Cow, ffi::OsString, sync::Mutex};
-
 #[cfg(not(target_family = "wasm"))]
 use bevy::tasks::futures_lite::io;
 use bevy::{log::warn, platform::collections::HashSet};
+use core::fmt::{Debug, Display};
+#[cfg(not(target_family = "wasm"))]
+use std::ffi::OsString;
+use std::{borrow::Cow, sync::Mutex};
 use thiserror::Error;
 
 use crate::{
-    consts::saves::DEFAULT_SAVE,
     fl,
-    storage::save_data::{SaveDataError, ValidatedSaveData},
+    storage::save_data::{SaveDataError, UnvalidatedSaveData},
 };
 
 pub(crate) mod save_data;
@@ -19,6 +19,40 @@ mod nonweb;
 #[cfg(target_family = "wasm")]
 mod web;
 
+pub(crate) trait Storage: Copy + Sized + Send + Sync {
+    /// # Blocking
+    /// This function may block.
+    /// Please run this in an [`IoTaskPool`][bevy::tasks::IoTaskPool]
+    fn init_saves(self) -> impl Future<Output = Result<(), SaveInitError>> + Send;
+
+    /// # Blocking
+    /// This function may block.
+    /// Please run this in an [`IoTaskPool`][bevy::tasks::IoTaskPool]
+    // async fn get_save_list(&self) -> SaveList;
+    fn get_save_list(self) -> impl Future<Output = SaveList> + Send;
+
+    /// # Blocking
+    /// This function may block.
+    /// Please run this in an [`IoTaskPool`][bevy::tasks::IoTaskPool]
+    fn load(
+        self,
+        save_name: &SaveName,
+    ) -> impl Future<Output = Result<UnvalidatedSaveData, SaveReadError>> + Send;
+}
+
+pub(crate) fn get_storage() -> impl Storage {
+    #[cfg(target_family = "wasm")]
+    {
+        return web::WebStorage;
+    }
+
+    #[cfg(not(target_family = "wasm"))]
+    {
+        nonweb::NonWebStorage
+    }
+}
+
+#[non_exhaustive]
 #[derive(Debug, Error)]
 pub(crate) enum SaveInitError {
     #[cfg(not(target_family = "wasm"))]
@@ -103,21 +137,21 @@ pub(crate) struct SaveListErrors(pub(crate) Box<[SaveListError]>);
 
 impl SaveListErrors {
     #[cold]
-    fn warn_ui_once(caller: &core::panic::Location) {
+    fn warn_ui_once(location: &core::panic::Location) {
         static UI_CALLER_SET: Mutex<HashSet<String>> = Mutex::new(HashSet::new());
 
-        let called = UI_CALLER_SET.try_lock().is_ok_and(|mut set| {
-            let file = caller.file();
+        let first_call = UI_CALLER_SET.try_lock().is_ok_and(|mut set| {
+            let file = location.file();
             if set.contains(file) {
-                return true;
+                return false;
             }
 
-            !set.insert(file.to_owned())
+            set.insert(file.to_owned())
         });
 
-        if !called {
+        if first_call {
             warn!(
-                "<{} as Display>::fmt called from {caller};
+                "<{} as Display>::fmt called from {location};
                 for UI, please traverse the list manually and make
                 a bullet list instead of relying on the Display
                 impl, because this Display impl is not localized",
@@ -197,52 +231,4 @@ impl Display for SaveReadError {
             )),
         }
     }
-}
-
-/// # Blocking
-/// This function may block.
-/// Please run this in an [`IoTaskPool`][bevy::tasks::IoTaskPool]
-#[cfg_attr(
-    not(target_family = "wasm"),
-    expect(clippy::unused_async, reason = "This fn uses async functions in WASM")
-)]
-pub(crate) async fn init_saves() -> Result<(), SaveInitError> {
-    #[cfg(target_family = "wasm")]
-    web::init_saves().await?;
-
-    #[cfg(not(target_family = "wasm"))]
-    nonweb::init_saves()?;
-
-    Ok(())
-}
-
-/// # Blocking
-/// This function may block.
-/// Please run this in an [`IoTaskPool`][bevy::tasks::IoTaskPool]
-#[cfg_attr(
-    not(target_family = "wasm"),
-    expect(clippy::unused_async, reason = "This fn uses async functions in WASM")
-)]
-pub(crate) async fn get_save_list() -> Result<SaveList, SaveListError> {
-    // TODO: Actually fetch save list
-    Ok(SaveList {
-        saves: Box::from([SaveName(DEFAULT_SAVE.into())]),
-        errors: Box::from([]),
-    })
-}
-
-/// # Blocking
-/// This function may block.
-/// Please run this in an [`IoTaskPool`][bevy::tasks::IoTaskPool]
-#[cfg_attr(
-    not(target_family = "wasm"),
-    expect(clippy::unused_async, reason = "This fn uses async functions in WASM")
-)]
-pub(crate) async fn load(save_name: &SaveName) -> Result<ValidatedSaveData, SaveReadError> {
-    #[cfg(target_family = "wasm")]
-    let unvalidated = web::load(&save_name.0).await;
-    #[cfg(not(target_family = "wasm"))]
-    let unvalidated = nonweb::load(&save_name.0);
-
-    Ok(unvalidated?.validate()?)
 }

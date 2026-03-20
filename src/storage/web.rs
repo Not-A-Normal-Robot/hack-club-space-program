@@ -1,20 +1,24 @@
 use crate::storage::{
-    SaveInitError, SaveList, SaveName, SaveReadError, save_data::UnvalidatedSaveData,
+    SaveInitError, SaveList, SaveName, SaveReadError, Storage, save_data::UnvalidatedSaveData,
 };
 use core::fmt::Display;
 use thiserror::Error;
 
-pub(super) async fn init_saves() -> Result<(), SaveInitError> {
-    todo!("web::init_saves");
-}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) struct WebStorage;
 
-#[expect(dead_code)]
-pub(super) fn get_save_list() -> SaveList {
-    todo!("web::get_save_list");
-}
+impl Storage for WebStorage {
+    async fn init_saves(self) -> Result<(), SaveInitError> {
+        todo!("web::init_saves");
+    }
 
-pub(super) async fn load(save_name: &str) -> Result<UnvalidatedSaveData, SaveReadError> {
-    todo!("web::load");
+    async fn get_save_list(self) -> SaveList {
+        todo!("web::get_save_list");
+    }
+
+    async fn load(self, save_name: &SaveName) -> Result<UnvalidatedSaveData, SaveReadError> {
+        todo!("web::load");
+    }
 }
 
 #[derive(Debug, Error)]
