@@ -1,13 +1,18 @@
 #[cfg(not(target_family = "wasm"))]
 use bevy::tasks::futures_lite::io;
-use bevy::{log::warn, platform::collections::HashSet};
-use core::fmt::{Debug, Display};
+use bevy::{log::warn, platform::collections::HashSet, tasks::futures_lite::future::yield_now};
+use core::{
+    fmt::{Debug, Display},
+    sync::atomic::{AtomicU8, Ordering},
+};
+use derive_more::{Deref, DerefMut};
+use std::{borrow::Cow, sync::Mutex, time::Instant};
 #[cfg(not(target_family = "wasm"))]
-use std::ffi::OsString;
-use std::{borrow::Cow, sync::Mutex};
+use std::{ffi::OsString, path::PathBuf};
 use thiserror::Error;
 
 use crate::{
+    consts::saves::INIT_TIMEOUT,
     fl,
     storage::save_data::{SaveDataError, UnvalidatedSaveData},
 };
@@ -19,7 +24,111 @@ mod nonweb;
 #[cfg(target_family = "wasm")]
 mod web;
 
-pub(crate) trait Storage: Copy + Sized + Send + Sync {
+#[derive(Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+enum InitStatus {
+    NotInitialized = 0,
+    Initialized = 1,
+    Failed = 2,
+}
+
+impl InitStatus {
+    const fn discriminant(self) -> u8 {
+        self as u8
+    }
+}
+
+/// Uses the discriminants for [`InitStatus`].
+static STORAGE_INITIALIZATION_STATUS: AtomicU8 =
+    AtomicU8::new(InitStatus::NotInitialized.discriminant());
+
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct Storage(
+    #[cfg(target_family = "wasm")] web::WebStorage,
+    #[cfg(not(target_family = "wasm"))] nonweb::NonWebStorage,
+);
+
+#[derive(Clone, Copy, Debug, Error)]
+pub(crate) enum StorageNotInitialized {
+    /// Save initialization took too long
+    TimedOut,
+    /// Save initialization errored out
+    InitError,
+}
+
+impl Display for StorageNotInitialized {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // f.write_str(&fl!("error__saveGeneral__initTimeout"))
+        match self {
+            Self::TimedOut => f.write_str(&fl!("error__saveGeneral__initTimeout")),
+            Self::InitError => f.write_str(&fl!("error__saveGeneral__initFailed")),
+        }
+    }
+}
+
+impl Storage {
+    /// # Blocking
+    /// This function may block.
+    /// Please run this in an [`IoTaskPool`][bevy::tasks::IoTaskPool]
+    pub(crate) async fn init_saves(self) -> Result<(), SaveInitError> {
+        let res = self.0.init_saves().await;
+        if res.is_ok() {
+            STORAGE_INITIALIZATION_STATUS
+                .store(InitStatus::Initialized.discriminant(), Ordering::Relaxed);
+        }
+
+        res
+    }
+
+    pub(crate) async fn await_save_init(self) -> Result<(), StorageNotInitialized> {
+        let start = Instant::now();
+        let timeout_end = start + INIT_TIMEOUT;
+
+        loop {
+            let state = STORAGE_INITIALIZATION_STATUS.load(Ordering::Relaxed);
+            if state == InitStatus::Failed.discriminant() {
+                return Err(StorageNotInitialized::InitError);
+            } else if state == InitStatus::Initialized.discriminant() {
+                return Ok(());
+            }
+
+            if timeout_end < Instant::now() {
+                return Err(StorageNotInitialized::TimedOut);
+            }
+
+            yield_now().await;
+        }
+    }
+
+    /// # Blocking
+    /// This function may block.
+    /// Please run this in an [`IoTaskPool`][bevy::tasks::IoTaskPool]
+    // async fn get_save_list(&self) -> SaveList;
+    pub(crate) async fn get_save_list(self) -> SaveList {
+        if let Err(e) = self.await_save_init().await {
+            return SaveList {
+                saves: Box::from([]),
+                errors: SaveListError::StorageNotInitialized(e).into(),
+            };
+        }
+
+        self.0.get_save_list().await
+    }
+
+    /// # Blocking
+    /// This function may block.
+    /// Please run this in an [`IoTaskPool`][bevy::tasks::IoTaskPool]
+    pub(crate) async fn load(
+        self,
+        save_name: &SaveName,
+    ) -> Result<UnvalidatedSaveData, SaveReadError> {
+        self.await_save_init().await?;
+
+        self.0.load(save_name).await
+    }
+}
+
+trait StorageImpl: Copy + Sized + Send + Sync {
     /// # Blocking
     /// This function may block.
     /// Please run this in an [`IoTaskPool`][bevy::tasks::IoTaskPool]
@@ -32,6 +141,11 @@ pub(crate) trait Storage: Copy + Sized + Send + Sync {
     #[cfg(target_family = "wasm")]
     async fn init_saves(self) -> Result<(), SaveInitError>;
 
+    /// Gets the save list.
+    ///
+    /// # Initialized
+    /// You may assume that the save subsystem has been initialized.
+    ///
     /// # Blocking
     /// This function may block.
     /// Please run this in an [`IoTaskPool`][bevy::tasks::IoTaskPool]
@@ -39,6 +153,11 @@ pub(crate) trait Storage: Copy + Sized + Send + Sync {
     #[cfg(not(target_family = "wasm"))]
     fn get_save_list(self) -> impl Future<Output = SaveList> + Send;
 
+    /// Gets the save list.
+    ///
+    /// # Initialized
+    /// You may assume that the save subsystem has been initialized.
+    ///
     /// # Blocking
     /// This function may block.
     /// Please run this in an [`IoTaskPool`][bevy::tasks::IoTaskPool]
@@ -46,6 +165,11 @@ pub(crate) trait Storage: Copy + Sized + Send + Sync {
     #[cfg(target_family = "wasm")]
     async fn get_save_list(self) -> SaveList;
 
+    /// Loads a save.
+    ///
+    /// # Initialized
+    /// You may assume that the save subsystem has been initialized.
+    ///
     /// # Blocking
     /// This function may block.
     /// Please run this in an [`IoTaskPool`][bevy::tasks::IoTaskPool]
@@ -55,6 +179,11 @@ pub(crate) trait Storage: Copy + Sized + Send + Sync {
         save_name: &SaveName,
     ) -> impl Future<Output = Result<UnvalidatedSaveData, SaveReadError>> + Send;
 
+    /// Loads a save.
+    ///
+    /// # Initialized
+    /// You may assume that the save subsystem has been initialized.
+    ///
     /// # Blocking
     /// This function may block.
     /// Please run this in an [`IoTaskPool`][bevy::tasks::IoTaskPool]
@@ -62,15 +191,15 @@ pub(crate) trait Storage: Copy + Sized + Send + Sync {
     async fn load(self, save_name: &SaveName) -> Result<UnvalidatedSaveData, SaveReadError>;
 }
 
-pub(crate) fn get_storage() -> impl Storage {
+pub(crate) fn get_storage() -> Storage {
     #[cfg(target_family = "wasm")]
     {
-        return web::WebStorage;
+        Storage(web::WebStorage)
     }
 
     #[cfg(not(target_family = "wasm"))]
     {
-        nonweb::NonWebStorage
+        Storage(nonweb::NonWebStorage)
     }
 }
 
@@ -147,7 +276,7 @@ impl From<String> for SaveName {
     fn from(value: String) -> Self {
         #[cfg(target_family = "wasm")]
         {
-            return Self(value);
+            Self(value)
         }
 
         #[cfg(not(target_family = "wasm"))]
@@ -161,7 +290,7 @@ impl SaveName {
     pub(crate) fn to_str(&self) -> Cow<'_, str> {
         #[cfg(target_family = "wasm")]
         {
-            return Cow::Borrowed(&self.0);
+            Cow::Borrowed(&self.0)
         }
 
         #[cfg(not(target_family = "wasm"))]
@@ -180,11 +309,29 @@ impl Display for SaveName {
 #[derive(Debug)]
 pub(crate) struct SaveList {
     pub(crate) saves: Box<[SaveName]>,
-    pub(crate) errors: Box<[SaveListError]>,
+    pub(crate) errors: SaveListErrors,
 }
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Deref, DerefMut)]
 pub(crate) struct SaveListErrors(pub(crate) Box<[SaveListError]>);
+
+impl From<Box<[SaveListError]>> for SaveListErrors {
+    fn from(value: Box<[SaveListError]>) -> Self {
+        Self(value)
+    }
+}
+
+impl From<Vec<SaveListError>> for SaveListErrors {
+    fn from(value: Vec<SaveListError>) -> Self {
+        Self(value.into_boxed_slice())
+    }
+}
+
+impl From<SaveListError> for SaveListErrors {
+    fn from(value: SaveListError) -> Self {
+        Self(Box::from([value]))
+    }
+}
 
 impl SaveListErrors {
     #[cold]
@@ -233,31 +380,89 @@ impl Display for SaveListErrors {
     }
 }
 
-#[derive(Error)]
-#[repr(transparent)]
-pub(crate) struct SaveListError(SaveListErrorInner);
-
-#[cfg(not(target_family = "wasm"))]
-type SaveListErrorInner = nonweb::SaveListError;
-
-#[cfg(target_family = "wasm")]
-type SaveListErrorInner = web::SaveListError;
-
-impl Debug for SaveListError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        <SaveListErrorInner as Debug>::fmt(&self.0, f)
-    }
+#[derive(Debug, Error)]
+pub(crate) enum SaveListError {
+    /// Storage wasn't initialized properly
+    StorageNotInitialized(#[from] StorageNotInitialized),
+    /// Couldn't decide on a save dir
+    #[cfg(not(target_family = "wasm"))]
+    NoSaveDir,
+    /// Couldn't read the save dir
+    #[cfg(not(target_family = "wasm"))]
+    ReadDirError(io::Error),
+    /// Couldn't read a save dir entry
+    #[cfg(not(target_family = "wasm"))]
+    DirEntryError(io::Error),
+    /// Couldn't read an entry's file type
+    #[cfg(not(target_family = "wasm"))]
+    FileTypeError { path: PathBuf, error: io::Error },
+    /// Dir entry isn't a file
+    #[cfg(not(target_family = "wasm"))]
+    NotAFile(PathBuf),
+    /// Couldn't fetch file metadata
+    #[cfg(not(target_family = "wasm"))]
+    MetadataFetchError { path: PathBuf, error: io::Error },
+    /// Save file is empty
+    #[cfg(not(target_family = "wasm"))]
+    FileEmpty(PathBuf),
+    /// Something went wrong while trying to initialize the idb
+    /// factory
+    #[cfg(target_family = "wasm")]
+    FactoryInit(idb::Error),
+    /// Something went wrong while requesting the db to be opened
+    #[cfg(target_family = "wasm")]
+    DbOpenRequest(idb::Error),
+    /// Something went wrong while opening the db
+    #[cfg(target_family = "wasm")]
+    DbOpen(idb::Error),
 }
+// pub(crate) struct SaveListError(SaveListErrorInner);
 
 impl Display for SaveListError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // self.0.fmt(f)
-        <SaveListErrorInner as Display>::fmt(&self.0, f)
+        match self {
+            Self::StorageNotInitialized(inner) => <StorageNotInitialized as Display>::fmt(inner, f),
+            #[cfg(not(target_family = "wasm"))]
+            Self::NoSaveDir => f.write_str(&fl!("error__saveGeneral__noSaveDir")),
+            #[cfg(not(target_family = "wasm"))]
+            Self::ReadDirError(inner) => {
+                f.write_str(&fl!("error__saveList__readDir", inner = inner.to_string()))
+            }
+            #[cfg(not(target_family = "wasm"))]
+            Self::DirEntryError(inner) => {
+                f.write_str(&fl!("error__saveList__dirEntry", inner = inner.to_string()))
+            }
+            #[cfg(not(target_family = "wasm"))]
+            Self::FileTypeError { path, error } => f.write_str(&fl!(
+                "error__saveList__fileType",
+                path = path.to_string_lossy(),
+                inner = error.to_string()
+            )),
+            #[cfg(not(target_family = "wasm"))]
+            Self::NotAFile(path) => f.write_str(&fl!(
+                "error__saveList__notFile",
+                path = path.to_string_lossy()
+            )),
+            #[cfg(not(target_family = "wasm"))]
+            Self::MetadataFetchError { path, error } => f.write_str(&fl!(
+                "error__saveList__metadataFetch",
+                path = path.to_string_lossy(),
+                inner = error.to_string()
+            )),
+            #[cfg(not(target_family = "wasm"))]
+            Self::FileEmpty(path) => f.write_str(&fl!(
+                "error__saveList__fileEmpty",
+                path = path.to_string_lossy()
+            )),
+            #[cfg(target_family = "wasm")]
+            _ => todo!("<SaveListError as Display>::fmt()"),
+        }
     }
 }
 
 #[derive(Debug, Error)]
 pub(crate) enum SaveReadError {
+    StorageNotInitialized(#[from] StorageNotInitialized),
     #[cfg(not(target_family = "wasm"))]
     NoSaveDir,
     #[cfg(not(target_family = "wasm"))]
@@ -269,6 +474,7 @@ pub(crate) enum SaveReadError {
 impl Display for SaveReadError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::StorageNotInitialized(inner) => <StorageNotInitialized as Display>::fmt(inner, f),
             #[cfg(not(target_family = "wasm"))]
             Self::NoSaveDir => f.write_str(&fl!("error__saveGeneral__noSaveDir")),
             #[cfg(not(target_family = "wasm"))]

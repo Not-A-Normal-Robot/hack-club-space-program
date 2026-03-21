@@ -11,6 +11,10 @@ popup__saveInitError__body =
 
 error__saveGeneral__noSaveDir =
     We couldn't determine a reasonable location for save files.
+error__saveGeneral__initFailed =
+    The save subsystem failed to initialize.
+error__saveGeneral__initTimeout =
+    Initializing the save subsystem took too long.
 
 error__saveInit__dirCreation =
     There was an I/O error trying to create the save directory:

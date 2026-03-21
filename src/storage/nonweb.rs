@@ -1,17 +1,10 @@
-use core::fmt::Display;
-use std::{
-    fs,
-    io::{self, Read},
-    path::PathBuf,
-};
-use thiserror::Error;
+use std::{fs, io::Read, path::PathBuf};
 
 use crate::{
     consts::saves::{DEFAULT_SAVE, SAVE_NAME_STR, nonweb::SAVE_DIR},
-    fl,
     storage::{
-        SaveInitError, SaveList, SaveListError as SaveListErrorWrapper, SaveName, SaveReadError,
-        Storage, save_data::UnvalidatedSaveData,
+        SaveInitError, SaveList, SaveListError, SaveListErrors, SaveName, SaveReadError,
+        StorageImpl, save_data::UnvalidatedSaveData,
     },
 };
 
@@ -22,7 +15,7 @@ fn get_save_dir() -> Option<PathBuf> {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) struct NonWebStorage;
 
-impl Storage for NonWebStorage {
+impl StorageImpl for NonWebStorage {
     async fn init_saves(self) -> Result<(), SaveInitError> {
         let dir = get_save_dir().ok_or(SaveInitError::NoSaveDir)?;
         fs::create_dir_all(&dir).map_err(SaveInitError::DirCreation)?;
@@ -37,7 +30,7 @@ impl Storage for NonWebStorage {
         let Some(dir) = get_save_dir() else {
             return SaveList {
                 saves: Box::from([]),
-                errors: Box::new([SaveListErrorWrapper(SaveListError::NoSaveDir)]),
+                errors: SaveListError::NoSaveDir.into(),
             };
         };
 
@@ -46,7 +39,7 @@ impl Storage for NonWebStorage {
             Err(e) => {
                 return SaveList {
                     saves: Box::from([]),
-                    errors: Box::from([SaveListErrorWrapper(SaveListError::ReadDirError(e))]),
+                    errors: SaveListError::ReadDirError(e).into(),
                 };
             }
         };
@@ -96,8 +89,8 @@ impl Storage for NonWebStorage {
         }
 
         SaveList {
-            saves: saves.into_boxed_slice(),
-            errors: errors.into_iter().map(SaveListErrorWrapper).collect(),
+            saves: saves.into(),
+            errors: errors.into(),
         }
     }
 
@@ -119,55 +112,5 @@ impl Storage for NonWebStorage {
         savefile.read_to_string(&mut save_str)?;
 
         Ok(serde_json::from_str(&save_str)?)
-    }
-}
-
-#[derive(Debug, Error)]
-pub(super) enum SaveListError {
-    /// Couldn't decide on a save dir
-    NoSaveDir,
-    /// Couldn't read the save dir
-    ReadDirError(io::Error),
-    /// Couldn't read a save dir entry
-    DirEntryError(io::Error),
-    /// Couldn't read an entry's file type
-    FileTypeError { path: PathBuf, error: io::Error },
-    /// Dir entry isn't a file
-    NotAFile(PathBuf),
-    /// Couldn't fetch file metadata
-    MetadataFetchError { path: PathBuf, error: io::Error },
-    /// Save file is empty
-    FileEmpty(PathBuf),
-}
-
-impl Display for SaveListError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::NoSaveDir => f.write_str(&fl!("error__saveGeneral__noSaveDir")),
-            Self::ReadDirError(inner) => {
-                f.write_str(&fl!("error__saveList__readDir", inner = inner.to_string()))
-            }
-            Self::DirEntryError(inner) => {
-                f.write_str(&fl!("error__saveList__dirEntry", inner = inner.to_string()))
-            }
-            Self::FileTypeError { path, error } => f.write_str(&fl!(
-                "error__saveList__fileType",
-                path = path.to_string_lossy(),
-                inner = error.to_string()
-            )),
-            Self::NotAFile(path) => f.write_str(&fl!(
-                "error__saveList__notFile",
-                path = path.to_string_lossy()
-            )),
-            Self::MetadataFetchError { path, error } => f.write_str(&fl!(
-                "error__saveList__metadataFetch",
-                path = path.to_string_lossy(),
-                inner = error.to_string()
-            )),
-            Self::FileEmpty(path) => f.write_str(&fl!(
-                "error__saveList__fileEmpty",
-                path = path.to_string_lossy()
-            )),
-        }
     }
 }

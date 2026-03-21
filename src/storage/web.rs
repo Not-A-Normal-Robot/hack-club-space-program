@@ -1,4 +1,4 @@
-//! Web storage using IndexedDB.
+//! Web storage using `IndexedDB`.
 //!
 //! We create a database and an object store for saves.
 //! The web save wrapper schema looks like this:
@@ -16,23 +16,17 @@
 //! `src/consts/save_data.schema.json`.
 
 use crate::{
-    consts::saves::{
-        DEFAULT_SAVE, SAVE_NAME_STR,
-        web::{
-            DEFAULT_WRAPPED_SAVE, KEY_SAVE_NAME, SAVE_OBJECT_STORE, STORAGE_DB, STORAGE_DB_VERSION,
-        },
+    consts::saves::web::{
+        DEFAULT_WRAPPED_SAVE, KEY_SAVE_NAME, SAVE_OBJECT_STORE, STORAGE_DB, STORAGE_DB_VERSION,
     },
     storage::{
-        SaveInitError, SaveList, SaveName, SaveReadError, Storage, save_data::UnvalidatedSaveData,
+        SaveInitError, SaveList, SaveListError as SaveListErrorWrapper, SaveName, SaveReadError,
+        StorageImpl, save_data::UnvalidatedSaveData,
     },
 };
-use core::fmt::Display;
 use idb::{DatabaseEvent, Factory, ObjectStoreParams, TransactionMode, event::VersionChangeEvent};
 use serde::Serialize;
 use std::sync::mpsc::SyncSender;
-use thiserror::Error;
-use wasm_bindgen::JsValue;
-use web_sys::js_sys::Object;
 
 fn handle_upgrade_inner(event: VersionChangeEvent) -> Result<(), SaveInitError> {
     let db = event.database().map_err(SaveInitError::UpgradeError)?;
@@ -61,7 +55,7 @@ fn create_upgrade_handler(tx: SyncSender<SaveInitError>) -> impl Fn(VersionChang
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) struct WebStorage;
 
-impl Storage for WebStorage {
+impl StorageImpl for WebStorage {
     async fn init_saves(self) -> Result<(), SaveInitError> {
         let factory = Factory::new().map_err(SaveInitError::FactoryInit)?;
         let mut open_req = factory
@@ -72,7 +66,7 @@ impl Storage for WebStorage {
 
         open_req.on_upgrade_needed(create_upgrade_handler(err_tx));
 
-        let mut db = open_req.await.map_err(SaveInitError::DbOpen)?;
+        let db = open_req.await.map_err(SaveInitError::DbOpen)?;
 
         if let Ok(err) = err_rx.try_recv() {
             return Err(err);
@@ -100,23 +94,36 @@ impl Storage for WebStorage {
 
         store.put(&obj, None).map_err(SaveInitError::DbOpen)?;
 
+        trans.commit().map_err(SaveInitError::DbOpen)?;
+
         Ok(())
     }
 
     async fn get_save_list(self) -> SaveList {
-        todo!("web::get_save_list");
+        let factory = match Factory::new() {
+            Ok(f) => f,
+            Err(e) => {
+                return SaveList {
+                    saves: Box::from([]),
+                    errors: SaveListErrorWrapper::FactoryInit(e).into(),
+                };
+            }
+        };
+
+        let db = match factory.open(STORAGE_DB, Some(STORAGE_DB_VERSION)) {
+            Ok(db) => db,
+            Err(e) => {
+                return SaveList {
+                    saves: Box::from([]),
+                    errors: SaveListErrorWrapper::DbOpenRequest(e).into(),
+                };
+            }
+        };
+
+        todo!();
     }
 
     async fn load(self, _save_name: &SaveName) -> Result<UnvalidatedSaveData, SaveReadError> {
         todo!("web::load");
-    }
-}
-
-#[derive(Debug, Error)]
-pub(super) struct SaveListError {}
-
-impl Display for SaveListError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        Ok(())
     }
 }
