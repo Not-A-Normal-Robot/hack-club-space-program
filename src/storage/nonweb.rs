@@ -9,7 +9,11 @@ use crate::{
 };
 
 fn get_save_dir() -> Option<PathBuf> {
-    dirs::data_dir().map(|dir| dir.join(SAVE_DIR))
+    if cfg!(test) {
+        Some(PathBuf::from("./target/testing-save-dir"))
+    } else {
+        dirs::data_dir().map(|dir| dir.join(SAVE_DIR))
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

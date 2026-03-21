@@ -209,3 +209,21 @@ impl StorageImpl for WebStorage {
         )?)
     }
 }
+
+/// This module is public because `wasm_bindgen_test` requires it to.
+#[cfg(test)]
+#[doc(hidden)]
+pub mod _tests {
+    use wasm_bindgen::JsValue;
+    use wasm_bindgen_test::wasm_bindgen_test;
+
+    #[wasm_bindgen_test]
+    fn it_works() {
+        web_sys::console::log_1(&JsValue::from_str("It works!"));
+    }
+
+    #[wasm_bindgen_test]
+    fn this_doesnt() {
+        panic!("oh no!");
+    }
+}

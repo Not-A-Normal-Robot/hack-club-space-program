@@ -21,7 +21,11 @@ pub(crate) mod nonweb {
 #[cfg(target_family = "wasm")]
 pub(crate) mod web {
     /// The save `IndexedDB` database name.
-    pub(crate) static STORAGE_DB: &str = "io.github.not-a-normal-robot.hack-club-space-program";
+    pub(crate) static STORAGE_DB: &str = if cfg!(test) {
+        "io.github.not-a-normal-robot.hack-club-space-program.testing-db"
+    } else {
+        "io.github.not-a-normal-robot.hack-club-space-program"
+    };
 
     /// The current version fo the `IndexedDB` database.
     pub(crate) const STORAGE_DB_VERSION: u32 = 1;

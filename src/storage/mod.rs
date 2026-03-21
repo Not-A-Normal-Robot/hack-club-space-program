@@ -21,8 +21,9 @@ pub(crate) mod save_data;
 
 #[cfg(not(target_family = "wasm"))]
 mod nonweb;
+/// This module is public because `wasm_bindgen_test` requires it to.
 #[cfg(target_family = "wasm")]
-mod web;
+pub mod web;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]

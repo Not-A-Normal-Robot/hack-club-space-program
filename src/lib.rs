@@ -6,7 +6,8 @@ pub mod macros;
 pub(crate) mod math;
 pub mod plugins;
 pub mod resources;
-pub(crate) mod storage;
+/// This module is public because `wasm_bindgen_test` requires it to.
+pub mod storage;
 pub(crate) mod systems;
 pub(crate) mod terrain;
 #[cfg(target_family = "wasm")]
