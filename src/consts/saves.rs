@@ -1,12 +1,15 @@
 use core::time::Duration;
 
 // TODO: Remove this when we implement saving and multi-save-files
+#[allow(dead_code)]
 pub(crate) static SAVE_NAME_STR: &str = "demo";
 
 // TODO: Remove this when we implement starting a new game
+#[allow(dead_code)]
 pub(crate) static DEFAULT_SAVE: &str = include_str!("./save_data.json");
 
 /// How long to wait for save subsystem initialization to finish.
+#[expect(dead_code)]
 pub(crate) const INIT_TIMEOUT: Duration = Duration::from_secs(60);
 
 #[cfg(not(target_family = "wasm"))]
@@ -24,7 +27,7 @@ pub(crate) mod web {
     pub(crate) const STORAGE_DB_VERSION: u32 = 1;
 
     /// The name of the saves object store in the `IndexedDB` database.
-    pub(crate) static SAVE_OBJECT_STORE: &str = "saves";
+    pub(crate) static SAVE_OBJECT_STORE_NAME: &str = "saves";
 
     pub(crate) static KEY_SAVE_NAME: &str = "name";
     pub(crate) static KEY_SAVE_VALUE: &str = "data";

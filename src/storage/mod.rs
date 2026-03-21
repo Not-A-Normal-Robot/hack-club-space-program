@@ -106,10 +106,7 @@ impl Storage {
     // async fn get_save_list(&self) -> SaveList;
     pub(crate) async fn get_save_list(self) -> SaveList {
         if let Err(e) = self.await_save_init().await {
-            return SaveList {
-                saves: Box::from([]),
-                errors: SaveListError::StorageNotInitialized(e).into(),
-            };
+            return SaveListError::StorageNotInitialized(e).into();
         }
 
         self.0.get_save_list().await
@@ -238,18 +235,19 @@ impl Display for SaveInitError {
             )),
             #[cfg(target_family = "wasm")]
             Self::FactoryInit(inner) => f.write_str(&fl!(
-                "error__saveInit__factoryInit",
+                "error__saveGeneral__factoryInit",
                 inner = inner.to_string()
             )),
             #[cfg(target_family = "wasm")]
             Self::DbOpenRequest(inner) => f.write_str(&fl!(
-                "error__saveInit__dbOpenRequest",
+                "error__saveGeneral__dbOpenRequest",
                 inner = inner.to_string()
             )),
             #[cfg(target_family = "wasm")]
-            Self::DbOpen(inner) => {
-                f.write_str(&fl!("error__saveInit__dbOpen", inner = inner.to_string()))
-            }
+            Self::DbOpen(inner) => f.write_str(&fl!(
+                "error__saveGeneral__dbOpen",
+                inner = inner.to_string()
+            )),
             #[cfg(target_family = "wasm")]
             Self::UpgradeError(inner) => f.write_str(&fl!(
                 "error__saveInit__upgradeError",
@@ -310,6 +308,15 @@ impl Display for SaveName {
 pub(crate) struct SaveList {
     pub(crate) saves: Box<[SaveName]>,
     pub(crate) errors: SaveListErrors,
+}
+
+impl From<SaveListError> for SaveList {
+    fn from(value: SaveListError) -> Self {
+        Self {
+            saves: Box::from([]),
+            errors: value.into(),
+        }
+    }
 }
 
 #[derive(Debug, Error, Deref, DerefMut)]
@@ -415,6 +422,24 @@ pub(crate) enum SaveListError {
     /// Something went wrong while opening the db
     #[cfg(target_family = "wasm")]
     DbOpen(idb::Error),
+    /// Something went wrong requesting a transaction
+    #[cfg(target_family = "wasm")]
+    TransactionRequest(idb::Error),
+    /// Something went wrong requesting the object store
+    #[cfg(target_family = "wasm")]
+    ObjectStoreRequest(idb::Error),
+    /// Something went wrong requesting a read from the object store
+    #[cfg(target_family = "wasm")]
+    ObjectStoreReadRequest(idb::Error),
+    /// Something went wrong reading from the object store
+    #[cfg(target_family = "wasm")]
+    ObjectStoreRead(idb::Error),
+    /// Something went wrong extracting the save name key.
+    #[cfg(target_family = "wasm")]
+    NameExtraction(wasm_bindgen::JsValue),
+    /// The save name key is not valid UTF-8
+    #[cfg(target_family = "wasm")]
+    InvalidSaveName,
 }
 // pub(crate) struct SaveListError(SaveListErrorInner);
 
@@ -455,7 +480,47 @@ impl Display for SaveListError {
                 path = path.to_string_lossy()
             )),
             #[cfg(target_family = "wasm")]
-            _ => todo!("<SaveListError as Display>::fmt()"),
+            Self::FactoryInit(inner) => f.write_str(&fl!(
+                "error__saveGeneral__factoryInit",
+                inner = inner.to_string()
+            )),
+            #[cfg(target_family = "wasm")]
+            Self::DbOpenRequest(inner) => f.write_str(&fl!(
+                "error__saveGeneral__dbOpenRequest",
+                inner = inner.to_string()
+            )),
+            #[cfg(target_family = "wasm")]
+            Self::DbOpen(inner) => f.write_str(&fl!(
+                "error__saveGeneral__dbOpen",
+                inner = inner.to_string()
+            )),
+            #[cfg(target_family = "wasm")]
+            Self::TransactionRequest(inner) => f.write_str(&fl!(
+                "error__saveGeneral__transactionRequest",
+                inner = inner.to_string()
+            )),
+            #[cfg(target_family = "wasm")]
+            Self::ObjectStoreRequest(inner) => f.write_str(&fl!(
+                "error__saveGeneral__objectStoreRequest",
+                inner = inner.to_string()
+            )),
+            #[cfg(target_family = "wasm")]
+            Self::ObjectStoreReadRequest(inner) => f.write_str(&fl!(
+                "error__saveGeneral__objectStoreReadRequest",
+                inner = inner.to_string()
+            )),
+            #[cfg(target_family = "wasm")]
+            Self::ObjectStoreRead(inner) => f.write_str(&fl!(
+                "error__saveGeneral__objectStoreRead",
+                inner = inner.to_string()
+            )),
+            #[cfg(target_family = "wasm")]
+            Self::NameExtraction(inner) => f.write_str(&fl!(
+                "error__saveList__nameExtraction",
+                inner = format!("{inner:?}"),
+            )),
+            #[cfg(target_family = "wasm")]
+            Self::InvalidSaveName => f.write_str(&fl!("error__saveList__invalidSaveName")),
         }
     }
 }
@@ -467,7 +532,39 @@ pub(crate) enum SaveReadError {
     NoSaveDir,
     #[cfg(not(target_family = "wasm"))]
     IoError(#[from] io::Error),
+    #[cfg(not(target_family = "wasm"))]
     ParseError(#[from] serde_json::Error),
+    /// Something went wrong while trying to initialize the idb
+    /// factory
+    #[cfg(target_family = "wasm")]
+    FactoryInit(idb::Error),
+    /// Something went wrong while requesting the db to be opened
+    #[cfg(target_family = "wasm")]
+    DbOpenRequest(idb::Error),
+    /// Something went wrong while opening the db
+    #[cfg(target_family = "wasm")]
+    DbOpen(idb::Error),
+    /// Something went wrong requesting a transaction
+    #[cfg(target_family = "wasm")]
+    TransactionRequest(idb::Error),
+    /// Something went wrong requesting the object store
+    #[cfg(target_family = "wasm")]
+    ObjectStoreRequest(idb::Error),
+    /// Something went wrong requesting a read from the object store
+    #[cfg(target_family = "wasm")]
+    ObjectStoreReadRequest(idb::Error),
+    /// Something went wrong reading from the object store
+    #[cfg(target_family = "wasm")]
+    ObjectStoreRead(idb::Error),
+    /// The object store read resulted in nothing
+    #[cfg(target_family = "wasm")]
+    EmptyReadResult,
+    /// Something went wrong extracting the save data from the object.
+    #[cfg(target_family = "wasm")]
+    ValueExtraction(wasm_bindgen::JsValue),
+    /// Something went wrong parsing the jsvalue
+    #[cfg(target_family = "wasm")]
+    ParseError(#[from] serde_wasm_bindgen::Error),
     InvalidState(#[from] SaveDataError),
 }
 
@@ -486,6 +583,8 @@ impl Display for SaveReadError {
                 "error__saveRead__parseError",
                 inner = format!("{error}")
             )),
+            #[cfg(target_family = "wasm")]
+            _ => todo!("<SaveReadError as Display>::fmt()"),
         }
     }
 }

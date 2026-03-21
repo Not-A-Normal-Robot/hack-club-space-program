@@ -15,18 +15,30 @@ error__saveGeneral__initFailed =
     The save subsystem failed to initialize.
 error__saveGeneral__initTimeout =
     Initializing the save subsystem took too long.
+error__saveGeneral__factoryInit =
+    Factory initialization failure:
+    { $inner }
+error__saveGeneral__dbOpenRequest =
+    Failed to request opening of database:
+    { $inner }
+error__saveGeneral__dbOpen =
+    Failed to open database:
+    { $inner }
+error__saveGeneral__transactionRequest =
+    Failed to request a database transaction:
+    { $inner }
+error__saveGeneral__objectStoreRequest =
+    Failed to request opening of object store:
+    { $inner }
+error__saveGeneral__objectStoreReadRequest =
+    Failed to request reading of object store:
+    { $inner }
+error__saveGeneral__objectStoreRead =
+    Failed to read contents of object store:
+    { $inner }
 
 error__saveInit__dirCreation =
     There was an I/O error trying to create the save directory:
-    { $inner }
-error__saveInit__factoryInit =
-    Factory initialization failure:
-    { $inner }
-error__saveInit__dbOpenRequest =
-    Failed to request opening of database:
-    { $inner }
-error__saveInit__dbOpen =
-    Failed to open database:
     { $inner }
 error__saveInit__upgradeError =
     Failed to upgrade database version:
@@ -66,6 +78,11 @@ error__saveList__metadataFetch =
     { $inner }
 error__saveList__fileEmpty =
     The file at { $path } is empty.
+error__saveList__nameExtraction =
+    There was an error extracting the name of one of the saves:
+    { $inner }
+error__saveList__invalidSaveName =
+    At least one of the saves has an invalid save name.
 
 error__saveRead__ioError =
     There was an I/O error trying to read the save file:
