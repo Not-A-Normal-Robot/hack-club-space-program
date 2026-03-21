@@ -23,4 +23,12 @@ pub(crate) mod web {
 
     pub(crate) static KEY_SAVE_NAME: &str = "name";
     pub(crate) static KEY_SAVE_VALUE: &str = "data";
+
+    pub(crate) static DEFAULT_WRAPPED_SAVE: &str = concat!(
+        "{\"name\":\"",
+        "demo",
+        "\",\"data\":",
+        include_str!("./save_data.json"),
+        "}",
+    );
 }

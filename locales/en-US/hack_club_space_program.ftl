@@ -15,6 +15,18 @@ error__saveGeneral__noSaveDir =
 error__saveInit__dirCreation =
     There was an I/O error trying to create the save directory:
     { $inner }
+error__saveInit__factoryInit =
+    Factory initialization failure:
+    { $inner }
+error__saveInit__dbOpenRequest =
+    Failed to request opening of database:
+    { $inner }
+error__saveInit__dbOpen =
+    Failed to open database:
+    { $inner }
+error__saveInit__upgradeError =
+    Failed to upgrade database version:
+    { $inner }
 
 error__saveData__rootCelestialNotFound = Couldn't find root celestial body.
 error__saveData__activeVesselNotFound = Couldn't find active vessel.

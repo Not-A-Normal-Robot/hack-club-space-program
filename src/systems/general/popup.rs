@@ -46,6 +46,10 @@ fn body(text: String, font: TextFont, commands: &mut Commands) -> Entity {
                 border_radius: BorderRadius::all(Val::Px(4.0)),
                 ..Default::default()
             },
+            TextLayout {
+                linebreak: LineBreak::WordOrCharacter,
+                ..Default::default()
+            },
             BackgroundColor(POPUP_BODY_BACKGROUND_COLOR),
             BorderColor::all(POPUP_BODY_BORDER_COLOR),
             children![(Text(text), font)],
@@ -66,6 +70,8 @@ fn root(
                 margin: UiRect::AUTO,
                 border: UiRect::all(Val::Px(2.0)),
                 border_radius: BorderRadius::all(Val::Px(2.0)),
+                max_width: Val::Vw(100.0),
+                max_height: Val::Vh(100.0),
                 ..Default::default()
             },
             BackgroundColor(POPUP_BACKGROUND_COLOR),

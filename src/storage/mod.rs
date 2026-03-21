@@ -108,7 +108,24 @@ impl Display for SaveInitError {
                 inner = inner.to_string()
             )),
             #[cfg(target_family = "wasm")]
-            _ => todo!("WASM error handling"),
+            Self::FactoryInit(inner) => f.write_str(&fl!(
+                "error__saveInit__factoryInit",
+                inner = inner.to_string()
+            )),
+            #[cfg(target_family = "wasm")]
+            Self::DbOpenRequest(inner) => f.write_str(&fl!(
+                "error__saveInit__dbOpenRequest",
+                inner = inner.to_string()
+            )),
+            #[cfg(target_family = "wasm")]
+            Self::DbOpen(inner) => {
+                f.write_str(&fl!("error__saveInit__dbOpen", inner = inner.to_string()))
+            }
+            #[cfg(target_family = "wasm")]
+            Self::UpgradeError(inner) => f.write_str(&fl!(
+                "error__saveInit__upgradeError",
+                inner = inner.to_string()
+            )),
         }
     }
 }

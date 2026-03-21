@@ -16,15 +16,23 @@
 //! `src/consts/save_data.schema.json`.
 
 use crate::{
-    consts::saves::web::{KEY_SAVE_NAME, SAVE_OBJECT_STORE, STORAGE_DB, STORAGE_DB_VERSION},
+    consts::saves::{
+        DEFAULT_SAVE, SAVE_NAME_STR,
+        web::{
+            DEFAULT_WRAPPED_SAVE, KEY_SAVE_NAME, SAVE_OBJECT_STORE, STORAGE_DB, STORAGE_DB_VERSION,
+        },
+    },
     storage::{
         SaveInitError, SaveList, SaveName, SaveReadError, Storage, save_data::UnvalidatedSaveData,
     },
 };
 use core::fmt::Display;
-use idb::{DatabaseEvent, Factory, ObjectStoreParams, event::VersionChangeEvent};
+use idb::{DatabaseEvent, Factory, ObjectStoreParams, TransactionMode, event::VersionChangeEvent};
+use serde::Serialize;
 use std::sync::mpsc::SyncSender;
 use thiserror::Error;
+use wasm_bindgen::JsValue;
+use web_sys::js_sys::Object;
 
 fn handle_upgrade_inner(event: VersionChangeEvent) -> Result<(), SaveInitError> {
     let db = event.database().map_err(SaveInitError::UpgradeError)?;
@@ -64,11 +72,33 @@ impl Storage for WebStorage {
 
         open_req.on_upgrade_needed(create_upgrade_handler(err_tx));
 
-        open_req.await.map_err(SaveInitError::DbOpen)?;
+        let mut db = open_req.await.map_err(SaveInitError::DbOpen)?;
 
         if let Ok(err) = err_rx.try_recv() {
             return Err(err);
         }
+
+        // TODO: Remove this when we implement saving and multi-save-files
+        bevy::log::debug!("{DEFAULT_WRAPPED_SAVE}");
+        let obj: serde_json::Value = serde_json::from_str(DEFAULT_WRAPPED_SAVE)
+            .expect("constant `DEFAULT_WRAPPED_SAVE` should be valid json");
+        bevy::log::debug!("obj: {obj}");
+        let serializer = serde_wasm_bindgen::Serializer::new()
+            .serialize_maps_as_objects(true)
+            .serialize_large_number_types_as_bigints(true);
+        let obj = obj
+            .serialize(&serializer)
+            .expect("json value should be serializable as js value");
+        web_sys::console::debug_1(&obj);
+
+        let trans = db
+            .transaction(&[SAVE_OBJECT_STORE], TransactionMode::ReadWrite)
+            .map_err(SaveInitError::DbOpen)?;
+        let store = trans
+            .object_store(SAVE_OBJECT_STORE)
+            .map_err(SaveInitError::DbOpen)?;
+
+        store.put(&obj, None).map_err(SaveInitError::DbOpen)?;
 
         Ok(())
     }
