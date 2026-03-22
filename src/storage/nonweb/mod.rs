@@ -3,8 +3,8 @@ use std::{fs, io::Read, path::PathBuf};
 use crate::{
     consts::saves::{DEFAULT_SAVE, SAVE_NAME_STR, nonweb::SAVE_DIR},
     storage::{
-        SaveInitError, SaveList, SaveListError, SaveListErrors, SaveName, SaveReadError,
-        SaveResetError, StorageImpl, save_data::UnvalidatedSaveData,
+        SaveInitError, SaveList, SaveListError, SaveName, SaveReadError, SaveResetError,
+        StorageImpl, nonweb::risk::check_path_risk, save_data::UnvalidatedSaveData,
     },
 };
 
@@ -123,6 +123,43 @@ impl StorageImpl for NonWebStorage {
     async fn reset(self) -> Result<(), SaveResetError> {
         let dir = get_save_dir().ok_or(SaveResetError::NoSaveDir)?;
 
-        todo!();
+        if let Err(e) = check_path_risk(&dir) {
+            return Err(SaveResetError::RiskyPath {
+                path: dir,
+                reason: e,
+            });
+        }
+
+        fs::remove_dir_all(dir)?;
+
+        Ok(self.init_saves().await?)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use smol_macros::test;
+
+    // Things are split into inner and tester fns for
+    // better intellisense (r-a doesn't quite like decl macros)
+
+    async fn test_saves_inner() {
+        let storage = crate::storage::get_storage();
+        storage.init_saves().await.unwrap();
+        storage.reset().await.unwrap();
+        let res = storage.get_save_list().await;
+        assert_eq!(res.errors.len(), 0);
+
+        // TODO: Remove this when we implement saving and multi-save-files
+        assert_eq!(res.saves.len(), 1);
+        let save_name = res.saves.first().unwrap();
+        let save_data = storage.load(save_name).await.unwrap();
+        save_data.validate().unwrap();
+    }
+
+    test! {
+        async fn test_saves() {
+            test_saves_inner().await;
+        }
     }
 }

@@ -657,6 +657,9 @@ pub(crate) enum SaveResetError {
         path: PathBuf,
         reason: RiskyPathReason,
     },
+    /// Failed to delete save dir
+    #[cfg(not(target_family = "wasm"))]
+    DeleteError(#[from] io::Error),
     /// Something went wrong while trying to initialize the idb
     /// factory
     #[cfg(target_family = "wasm")]

@@ -127,6 +127,9 @@ serde-wasm-bindgen = "0.6.5"
 [target.'cfg(target_family = "wasm")'.dev-dependencies]
 wasm-bindgen-test = "0.3.64"
 
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
+smol-macros = "0.1.1"
+
 [build-dependencies]
 png = "0.18.1"
 resvg = "0.47.0"

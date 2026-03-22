@@ -29,7 +29,7 @@ impl Display for RiskyPathReason {
 
 /// Returns `Err(RiskyPathReason)` if the path was deemed risky,
 /// else returns `None`.
-fn check_path_risk(path: &Path) -> Result<(), RiskyPathReason> {
+pub(super) fn check_path_risk(path: &Path) -> Result<(), RiskyPathReason> {
     let path = path.canonicalize()?;
     if cfg!(unix) {
         return check_unix_path_risk(&path);

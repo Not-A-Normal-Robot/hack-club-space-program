@@ -3138,6 +3138,7 @@ dependencies = [
  "serde-wasm-bindgen",
  "serde_json",
  "serde_test",
+ "smol-macros",
  "strum",
  "texture_packer",
  "thiserror 2.0.18",
@@ -5328,6 +5329,19 @@ dependencies = [
  "wayland-protocols-wlr",
  "wayland-scanner",
  "xkeysym",
+]
+
+[[package]]
+name = "smol-macros"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bfcaedb62e0475a6898988138995ec7b1e5d116167a72bb12c7b59d0649fbbc2"
+dependencies = [
+ "async-executor",
+ "async-io",
+ "async-lock",
+ "event-listener",
+ "futures-lite",
 ]
 
 [[package]]
