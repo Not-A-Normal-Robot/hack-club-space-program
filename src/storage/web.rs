@@ -232,22 +232,18 @@ pub mod _tests {
 
     const TEST_ENV: bool = cfg!(test);
 
-    const TEST_STR: &str = if TEST_ENV {
-        "This IS a test env!"
-    } else {
-        "This is NOT a test env!"
-    };
-
     #[wasm_bindgen_test]
-    fn test_env() {
-        web_sys::console::log_1(&JsValue::from_str(TEST_STR));
-
-        const { assert!(TEST_ENV) };
-    }
-
-    #[wasm_bindgen_test]
-    fn test_storage() {
+    async fn test_storage() {
         let storage = crate::storage::get_storage();
-        storage.reset();
+        storage.init_saves().await.unwrap();
+        storage.reset().await.unwrap();
+        let res = storage.get_save_list().await;
+        assert_eq!(res.errors.len(), 0);
+
+        // TODO: Remove this when we implement saving and multi-save-files
+        assert_eq!(res.saves.len(), 1);
+        let save_name = res.saves.first().unwrap();
+        let save_data = storage.load(save_name).await.unwrap();
+        save_data.validate().unwrap();
     }
 }

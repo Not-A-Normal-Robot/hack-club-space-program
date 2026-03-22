@@ -1,6 +1,6 @@
+use crate::fl;
 use core::fmt::Display;
 use std::{io, path::Path};
-
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -23,7 +23,16 @@ pub(crate) enum RiskyPathReason {
 
 impl Display for RiskyPathReason {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        todo!("<RiskyPathReason as Display>::fmt()");
+        match self {
+            Self::CanonicalizeFailure(inner) => f.write_str(&fl!(
+                "error__riskyPath__canonFailure",
+                inner = inner.to_string()
+            )),
+            Self::UnknownPlatform => f.write_str(&fl!("error__riskyPath__unknownPlatform")),
+            Self::RootDirectory => f.write_str(&fl!("error__riskyPath__rootDir")),
+            Self::CriticalDirectory => f.write_str(&fl!("error__riskyPath__critDir")),
+            Self::UnknownPath => f.write_str(&fl!("error__riskyPath__unknownPath")),
+        }
     }
 }
 

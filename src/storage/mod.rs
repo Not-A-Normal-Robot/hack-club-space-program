@@ -1,12 +1,15 @@
 #[cfg(not(target_family = "wasm"))]
 use bevy::tasks::futures_lite::io;
-use bevy::{log::warn, platform::collections::HashSet, tasks::futures_lite::future::yield_now};
+use bevy::{
+    log::warn, platform::collections::HashSet, platform::time::Instant,
+    tasks::futures_lite::future::yield_now,
+};
 use core::{
     fmt::{Debug, Display},
     sync::atomic::{AtomicU8, Ordering},
 };
 use derive_more::{Deref, DerefMut};
-use std::{borrow::Cow, sync::Mutex, time::Instant};
+use std::{borrow::Cow, sync::Mutex};
 #[cfg(not(target_family = "wasm"))]
 use std::{ffi::OsString, path::PathBuf};
 use thiserror::Error;
@@ -633,13 +636,53 @@ impl Display for SaveReadError {
             Self::IoError(e) => {
                 f.write_str(&fl!("error__saveRead__ioError", inner = format!("{e}")))
             }
+            #[cfg(target_family = "wasm")]
+            Self::FactoryInit(inner) => f.write_str(&fl!(
+                "error__saveGeneral__factoryInit",
+                inner = inner.to_string()
+            )),
+            #[cfg(target_family = "wasm")]
+            Self::DbOpenRequest(inner) => f.write_str(&fl!(
+                "error__saveGeneral__dbOpenRequest",
+                inner = inner.to_string()
+            )),
+            #[cfg(target_family = "wasm")]
+            Self::DbOpen(inner) => f.write_str(&fl!(
+                "error__saveGeneral__dbOpen",
+                inner = inner.to_string()
+            )),
+            #[cfg(target_family = "wasm")]
+            Self::TransactionRequest(inner) => f.write_str(&fl!(
+                "error__saveGeneral__transactionRequest",
+                inner = inner.to_string()
+            )),
+            #[cfg(target_family = "wasm")]
+            Self::ObjectStoreRequest(inner) => f.write_str(&fl!(
+                "error__saveGeneral__objectStoreRequest",
+                inner = inner.to_string()
+            )),
+            #[cfg(target_family = "wasm")]
+            Self::ObjectStoreReadRequest(inner) => f.write_str(&fl!(
+                "error__saveGeneral__objectStoreReadRequest",
+                inner = inner.to_string()
+            )),
+            #[cfg(target_family = "wasm")]
+            Self::ObjectStoreRead(inner) => f.write_str(&fl!(
+                "error__saveGeneral__objectStoreRead",
+                inner = inner.to_string()
+            )),
+            #[cfg(target_family = "wasm")]
+            Self::EmptyReadResult => f.write_str(&fl!("error__saveRead__emptyRead")),
+            #[cfg(target_family = "wasm")]
+            Self::ValueExtraction(inner) => f.write_str(&fl!(
+                "error__saveRead__valueExtraction",
+                inner = format!("{inner:?}")
+            )),
             Self::InvalidState(e) => <SaveDataError as Display>::fmt(e, f),
             Self::ParseError(error) => f.write_str(&fl!(
                 "error__saveRead__parseError",
                 inner = format!("{error}")
             )),
-            #[cfg(target_family = "wasm")]
-            _ => todo!("<SaveReadError as Display>::fmt()"),
         }
     }
 }
@@ -675,6 +718,41 @@ pub(crate) enum SaveResetError {
 
 impl Display for SaveResetError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        todo!("<SaveResetError as Display>::fmt()");
+        match self {
+            Self::StorageInitTimeout => f.write_str(&fl!("error__saveGeneral__initTimeout")),
+
+            #[cfg(not(target_family = "wasm"))]
+            Self::NoSaveDir => f.write_str(&fl!("error__saveGeneral__noSaveDir")),
+            #[cfg(not(target_family = "wasm"))]
+            Self::RiskyPath { path, reason } => f.write_str(&fl!(
+                "error__saveReset__riskyPath",
+                path = path.to_string_lossy(),
+                reason = reason.to_string()
+            )),
+            #[cfg(not(target_family = "wasm"))]
+            Self::DeleteError(inner) => f.write_str(&fl!(
+                "error__saveReset__deleteError",
+                inner = inner.to_string()
+            )),
+            #[cfg(target_family = "wasm")]
+            Self::FactoryInit(inner) => f.write_str(&fl!(
+                "error__saveGeneral__factoryInit",
+                inner = inner.to_string()
+            )),
+            #[cfg(target_family = "wasm")]
+            Self::DbDeleteRequest(inner) => f.write_str(&fl!(
+                "error__saveReset__dbDeleteRequest",
+                inner = inner.to_string()
+            )),
+            #[cfg(target_family = "wasm")]
+            Self::DbDelete(inner) => f.write_str(&fl!(
+                "error__saveReset__dbDelete",
+                inner = inner.to_string()
+            )),
+            Self::InitError(inner) => f.write_str(&fl!(
+                "error__saveReset__initError",
+                inner = inner.to_string()
+            )),
+        }
     }
 }

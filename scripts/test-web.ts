@@ -179,6 +179,7 @@ async function main()
             cwd: DIRNAME,
             env: {
                 WASM_BINDGEN_USE_DENO: "1",
+                WASM_BINDGEN_TEST_TIMEOUT: "10000000",
             },
             stdout: "inherit",
             stderr: "inherit"

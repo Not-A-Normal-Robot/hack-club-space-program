@@ -7,7 +7,10 @@ use bevy::{platform::collections::HashMap, prelude::*};
 use core::fmt::Display;
 use derive_more::{Deref, DerefMut, Error};
 use keplerian_sim::{CompactOrbit2D, Orbit2D};
-use serde::{Deserialize, Serialize, de::Visitor};
+use serde::{
+    Deserialize, Deserializer, Serialize, Serializer,
+    de::{Unexpected, Visitor},
+};
 use std::{borrow::Cow, fmt::Write};
 
 use crate::{
@@ -383,16 +386,60 @@ pub struct CelestialData {
     /// The radius of this celestial body, in metres.
     radius: f64,
     /// The color of this celestial body.
+    #[serde(
+        serialize_with = "serialize_color",
+        deserialize_with = "deserialize_color"
+    )]
     color: Color,
     /// Information about this celestial body's orbital
     /// parameters, if any.
+    #[serde(default)]
     orbit: Option<OrbitalData>,
     /// A list of this celestial body's celestial children's IDs.
+    #[serde(default)]
     celestial_children: Box<[SavedId]>,
     /// A list of this celestial body's vessel children's IDs.
+    #[serde(default)]
     vessel_children: Box<[SavedId]>,
     /// This celestial body's terrain parameters.
+    #[serde(default)]
     terrain: Option<Terrain>,
+}
+
+fn serialize_color<S: Serializer>(color: &Color, serializer: S) -> Result<S::Ok, S::Error> {
+    let srgba = color.to_srgba();
+    let [r, g, b] = [srgba.red, srgba.green, srgba.blue].map(|float| (float * 255.0).round() as u8);
+
+    serializer.serialize_str(&format!("#{r:02x}{g:02x}{b:02x}"))
+}
+
+fn deserialize_color<'de, D>(deserializer: D) -> Result<Color, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    const EXPECTED: &str = "7-byte sRGBA hex color ASCII string beginning with '#'";
+    let s = <&str>::deserialize(deserializer)?;
+
+    if s.len() != 7 {
+        return Err(serde::de::Error::invalid_length(s.len(), &EXPECTED));
+    }
+
+    if !s.is_ascii() || !s.starts_with('#') {
+        return Err(serde::de::Error::invalid_value(
+            Unexpected::Str(s),
+            &EXPECTED,
+        ));
+    }
+
+    let [r, g, b] = [&s[1..3], &s[3..5], &s[5..7]].map(|str| u8::from_str_radix(str, 16));
+
+    let [r, g, b] = [
+        r.map_err(serde::de::Error::custom)?,
+        g.map_err(serde::de::Error::custom)?,
+        b.map_err(serde::de::Error::custom)?,
+    ];
+
+    Ok(Color::srgb_u8(r, g, b))
 }
 
 /// Holds static information about celestial bodies' orbits.

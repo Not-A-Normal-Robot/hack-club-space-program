@@ -18,7 +18,7 @@ error__riskyPath__rootDir =
     This path is risky as it points to a root directory.
 error__riskyPath__critDir =
     This path is risky as it points to a critical directory.
-error__riskyPath__unknown =
+error__riskyPath__unknownPath =
     This path structure is unknown or external and so we don't know its risk.
 
 error__saveGeneral__noSaveDir =
@@ -96,11 +96,32 @@ error__saveList__nameExtraction =
 error__saveList__invalidSaveName =
     At least one of the saves has an invalid save name.
 
+error__saveRead__emptyRead =
+    This save entry is empty.
+error__saveRead__valueExtraction =
+    There was an error extracting the save data:
+    { $inner }
 error__saveRead__ioError =
     There was an I/O error trying to read the save file:
     { $inner }
 error__saveRead__parseError =
     There was an issue parsing the save file:
+    { $inner }
+
+error__saveReset__riskyPath =
+    Refusing to clear a directory ({$path}) deemed too risky to clear:
+    { $reason }
+error__saveReset__deleteError =
+    There was an I/O error trying to delete the save directory:
+    { $inner }
+error__saveReset__dbDeleteRequest =
+    There was an error requesting a save database deletion:
+    { $inner }
+error__saveReset__dbDelete =
+    There was an error deleting the save database:
+    { $inner }
+error__saveReset__initError =
+    There was an error reinitializing the save subsystem:
     { $inner }
 
 mainMenu__playButton__text = play
