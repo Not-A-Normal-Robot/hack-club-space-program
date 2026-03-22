@@ -21,8 +21,8 @@ use crate::{
         STORAGE_DB_VERSION,
     },
     storage::{
-        SaveInitError, SaveList, SaveListError, SaveName, SaveReadError, StorageImpl,
-        save_data::UnvalidatedSaveData,
+        SaveInitError, SaveList, SaveListError, SaveName, SaveReadError, SaveResetError,
+        StorageImpl, save_data::UnvalidatedSaveData,
     },
 };
 use idb::{
@@ -208,6 +208,17 @@ impl StorageImpl for WebStorage {
             value,
         )?)
     }
+
+    async fn reset(self) -> Result<(), SaveResetError> {
+        Factory::new()
+            .map_err(SaveResetError::FactoryInit)?
+            .delete(STORAGE_DB)
+            .map_err(SaveResetError::DbDeleteRequest)?
+            .await
+            .map_err(SaveResetError::DbDelete)?;
+
+        Ok(self.init_saves().await?)
+    }
 }
 
 /// This module is public because `wasm_bindgen_test` requires it to.
@@ -215,15 +226,28 @@ impl StorageImpl for WebStorage {
 #[doc(hidden)]
 pub mod _tests {
     use wasm_bindgen::JsValue;
-    use wasm_bindgen_test::wasm_bindgen_test;
+    use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
+
+    wasm_bindgen_test_configure!(run_in_browser);
+
+    const TEST_ENV: bool = cfg!(test);
+
+    const TEST_STR: &str = if TEST_ENV {
+        "This IS a test env!"
+    } else {
+        "This is NOT a test env!"
+    };
 
     #[wasm_bindgen_test]
-    fn it_works() {
-        web_sys::console::log_1(&JsValue::from_str("It works!"));
+    fn test_env() {
+        web_sys::console::log_1(&JsValue::from_str(TEST_STR));
+
+        const { assert!(TEST_ENV) };
     }
 
     #[wasm_bindgen_test]
-    fn this_doesnt() {
-        panic!("oh no!");
+    fn test_storage() {
+        let storage = crate::storage::get_storage();
+        storage.reset();
     }
 }

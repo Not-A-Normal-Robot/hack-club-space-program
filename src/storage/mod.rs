@@ -11,6 +11,8 @@ use std::{borrow::Cow, sync::Mutex, time::Instant};
 use std::{ffi::OsString, path::PathBuf};
 use thiserror::Error;
 
+#[cfg(not(target_family = "wasm"))]
+use crate::storage::nonweb::risk::RiskyPathReason;
 use crate::{
     consts::saves::INIT_TIMEOUT,
     fl,
@@ -81,6 +83,7 @@ impl Storage {
         res
     }
 
+    /// Wait for storage initialization to successfully finish.
     pub(crate) async fn await_save_init(self) -> Result<(), StorageNotInitialized> {
         let start = Instant::now();
         let timeout_end = start + INIT_TIMEOUT;
@@ -124,9 +127,40 @@ impl Storage {
 
         self.0.load(save_name).await
     }
+
+    /// # Blocking
+    /// This function may block.
+    /// Please run this in an [`IoTaskPool`][bevy::tasks::IoTaskPool]
+    pub(crate) async fn reset(self) -> Result<(), SaveResetError> {
+        match self.await_save_init().await {
+            Ok(()) | Err(StorageNotInitialized::InitError) => STORAGE_INITIALIZATION_STATUS
+                .store(InitStatus::NotInitialized.discriminant(), Ordering::Relaxed),
+            Err(StorageNotInitialized::TimedOut) => return Err(SaveResetError::StorageInitTimeout),
+        };
+
+        let res = self.0.reset().await;
+        let new_status = if res.is_err() {
+            InitStatus::Failed
+        } else {
+            InitStatus::Initialized
+        };
+
+        STORAGE_INITIALIZATION_STATUS.store(new_status.discriminant(), Ordering::Relaxed);
+
+        res
+    }
 }
 
 trait StorageImpl: Copy + Sized + Send + Sync {
+    /// This function is not to be overridden.
+    #[doc(hidden)]
+    #[deprecated = "This function is not to be ran."]
+    #[inline(never)]
+    #[cold]
+    fn __const_checks() {
+        const { assert!(core::mem::size_of::<Self>() == 0) };
+    }
+
     /// # Blocking
     /// This function may block.
     /// Please run this in an [`IoTaskPool`][bevy::tasks::IoTaskPool]
@@ -187,6 +221,26 @@ trait StorageImpl: Copy + Sized + Send + Sync {
     /// Please run this in an [`IoTaskPool`][bevy::tasks::IoTaskPool]
     #[cfg(target_family = "wasm")]
     async fn load(self, save_name: &SaveName) -> Result<UnvalidatedSaveData, SaveReadError>;
+
+    /// Resets the storage subsystem to its initial state.
+    ///
+    /// # Initialized or Failed
+    /// You may assume that the save subsystem's attempts to initialize
+    /// have finished.
+    /// This does NOT guarantee that the initialization SUCCEEDED; it
+    /// could have also failed.
+    #[cfg(not(target_family = "wasm"))]
+    fn reset(self) -> impl Future<Output = Result<(), SaveResetError>> + Send;
+
+    /// Resets the storage subsystem to its initial state.
+    ///
+    /// # Initialized or Failed
+    /// You may assume that the save subsystem's attempts to initialize
+    /// have finished.
+    /// This does NOT guarantee that the initialization SUCCEEDED; it
+    /// could have also failed.
+    #[cfg(target_family = "wasm")]
+    async fn reset(self) -> Result<(), SaveResetError>;
 }
 
 pub(crate) fn get_storage() -> Storage {
@@ -587,5 +641,37 @@ impl Display for SaveReadError {
             #[cfg(target_family = "wasm")]
             _ => todo!("<SaveReadError as Display>::fmt()"),
         }
+    }
+}
+
+#[derive(Debug, Error)]
+pub(crate) enum SaveResetError {
+    /// Storage initialization attempts hasn't finished in time
+    StorageInitTimeout,
+    /// We couldn't decide on a save directory
+    #[cfg(not(target_family = "wasm"))]
+    NoSaveDir,
+    /// Unwilling to remove risky directory
+    #[cfg(not(target_family = "wasm"))]
+    RiskyPath {
+        path: PathBuf,
+        reason: RiskyPathReason,
+    },
+    /// Something went wrong while trying to initialize the idb
+    /// factory
+    #[cfg(target_family = "wasm")]
+    FactoryInit(idb::Error),
+    /// Something went wrong while requesting db deletion
+    #[cfg(target_family = "wasm")]
+    DbDeleteRequest(idb::Error),
+    /// Something went wrong while deleting db
+    #[cfg(target_family = "wasm")]
+    DbDelete(idb::Error),
+    InitError(#[from] SaveInitError),
+}
+
+impl Display for SaveResetError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        todo!("<SaveResetError as Display>::fmt()");
     }
 }

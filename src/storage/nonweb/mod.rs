@@ -4,9 +4,11 @@ use crate::{
     consts::saves::{DEFAULT_SAVE, SAVE_NAME_STR, nonweb::SAVE_DIR},
     storage::{
         SaveInitError, SaveList, SaveListError, SaveListErrors, SaveName, SaveReadError,
-        StorageImpl, save_data::UnvalidatedSaveData,
+        SaveResetError, StorageImpl, save_data::UnvalidatedSaveData,
     },
 };
+
+pub(crate) mod risk;
 
 fn get_save_dir() -> Option<PathBuf> {
     if cfg!(test) {
@@ -116,5 +118,11 @@ impl StorageImpl for NonWebStorage {
         savefile.read_to_string(&mut save_str)?;
 
         Ok(serde_json::from_str(&save_str)?)
+    }
+
+    async fn reset(self) -> Result<(), SaveResetError> {
+        let dir = get_save_dir().ok_or(SaveResetError::NoSaveDir)?;
+
+        todo!();
     }
 }

@@ -5,6 +5,7 @@
                 "cargo",
                 "rustup",
                 "wasm-bindgen",
+                "wasm-pack",
                 "wasm-opt",
                 "java"
             ],

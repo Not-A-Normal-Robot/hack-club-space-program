@@ -9,6 +9,18 @@ popup__saveInitError__body =
     We couldn't initialize the save subsystem.
     { $inner }
 
+error__riskyPath__canonFailure =
+    Something went wrong canonicalizing the path:
+    { $inner }
+error__riskyPath__unknownPlatform =
+    This platform is unknown and so we can't check how risky a path is.
+error__riskyPath__rootDir =
+    This path is risky as it points to a root directory.
+error__riskyPath__critDir =
+    This path is risky as it points to a critical directory.
+error__riskyPath__unknown =
+    This path structure is unknown or external and so we don't know its risk.
+
 error__saveGeneral__noSaveDir =
     We couldn't determine a reasonable location for save files.
 error__saveGeneral__initFailed =
