@@ -210,6 +210,10 @@ impl UnvalidatedSaveData {
     pub fn validate(self) -> Result<ValidatedSaveData, SaveDataError> {
         self.0.validate().map(|()| ValidatedSaveData(self.0))
     }
+
+    pub(crate) fn raw(&self) -> &RawSaveData {
+        &self.0
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]

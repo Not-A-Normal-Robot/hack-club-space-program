@@ -82,9 +82,7 @@ impl StorageImpl for WebStorage {
         let obj: serde_json::Value = serde_json::from_str(DEFAULT_WRAPPED_SAVE)
             .expect("constant `DEFAULT_WRAPPED_SAVE` should be valid json");
         bevy::log::debug!("obj: {obj}");
-        let serializer = serde_wasm_bindgen::Serializer::new()
-            .serialize_maps_as_objects(true)
-            .serialize_large_number_types_as_bigints(true);
+        let serializer = serde_wasm_bindgen::Serializer::new().serialize_maps_as_objects(true);
         let obj = obj
             .serialize(&serializer)
             .expect("json value should be serializable as js value");
@@ -225,6 +223,7 @@ impl StorageImpl for WebStorage {
 #[cfg(test)]
 #[doc(hidden)]
 pub mod _tests {
+    use serde::Serialize;
     use wasm_bindgen::JsValue;
     use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
 
@@ -249,13 +248,20 @@ pub mod _tests {
 
     #[wasm_bindgen_test]
     fn test_deserialize_default_save() {
-        let expected = serde_json::from_str::<UnvalidatedSaveData>(DEFAULT_SAVE);
-        let save = JsValue::from_str(DEFAULT_SAVE);
-        let res = serde_wasm_bindgen::from_value::<UnvalidatedSaveData>(save);
+        let json_value = serde_json::from_str::<serde_json::Value>(DEFAULT_SAVE)
+            .expect("default save should be valid json");
+        let actual_save_data = serde_json::from_str::<UnvalidatedSaveData>(DEFAULT_SAVE)
+            .expect("default save should follow save data format");
+
+        let js_serializer = serde_wasm_bindgen::Serializer::new().serialize_maps_as_objects(true);
+        let save: JsValue = json_value
+            .serialize(&js_serializer)
+            .expect("json value should be serializable to js value");
+        let res = serde_wasm_bindgen::from_value::<UnvalidatedSaveData>(save)
+            .expect("js value should be deserializable to save data");
 
         assert_eq!(
-            expected.expect("serde_json deser should work"),
-            res.expect("serde_wasm_bindgen deser should work"),
+            actual_save_data, res,
             "serde_json and serde_wasm_bindgen outputs should match"
         );
     }
