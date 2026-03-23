@@ -228,9 +228,9 @@ pub mod _tests {
     use wasm_bindgen::JsValue;
     use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
 
-    wasm_bindgen_test_configure!(run_in_browser);
+    use crate::{consts::saves::DEFAULT_SAVE, storage::save_data::UnvalidatedSaveData};
 
-    const TEST_ENV: bool = cfg!(test);
+    wasm_bindgen_test_configure!(run_in_browser);
 
     #[wasm_bindgen_test]
     async fn test_storage() {
@@ -245,5 +245,18 @@ pub mod _tests {
         let save_name = res.saves.first().unwrap();
         let save_data = storage.load(save_name).await.unwrap();
         save_data.validate().unwrap();
+    }
+
+    #[wasm_bindgen_test]
+    fn test_deserialize_default_save() {
+        let expected = serde_json::from_str::<UnvalidatedSaveData>(DEFAULT_SAVE);
+        let save = JsValue::from_str(DEFAULT_SAVE);
+        let res = serde_wasm_bindgen::from_value::<UnvalidatedSaveData>(save);
+
+        assert_eq!(
+            expected.expect("serde_json deser should work"),
+            res.expect("serde_wasm_bindgen deser should work"),
+            "serde_json and serde_wasm_bindgen outputs should match"
+        );
     }
 }

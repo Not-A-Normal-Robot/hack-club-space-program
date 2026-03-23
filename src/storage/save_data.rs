@@ -408,7 +408,11 @@ pub struct CelestialData {
 
 fn serialize_color<S: Serializer>(color: &Color, serializer: S) -> Result<S::Ok, S::Error> {
     let srgba = color.to_srgba();
-    let [r, g, b] = [srgba.red, srgba.green, srgba.blue].map(|float| (float * 255.0).round() as u8);
+    let [r, g, b] = [srgba.red, srgba.green, srgba.blue].map(
+        #[expect(clippy::cast_possible_truncation)]
+        #[expect(clippy::cast_sign_loss)]
+        |float| (float * 255.0).round() as u8,
+    );
 
     serializer.serialize_str(&format!("#{r:02x}{g:02x}{b:02x}"))
 }
@@ -418,7 +422,7 @@ where
     D: Deserializer<'de>,
 {
     const EXPECTED: &str = "7-byte sRGBA hex color ASCII string beginning with '#'";
-    let s = <&str>::deserialize(deserializer)?;
+    let s = <Cow<str>>::deserialize(deserializer)?;
 
     if s.len() != 7 {
         return Err(serde::de::Error::invalid_length(s.len(), &EXPECTED));
@@ -426,7 +430,7 @@ where
 
     if !s.is_ascii() || !s.starts_with('#') {
         return Err(serde::de::Error::invalid_value(
-            Unexpected::Str(s),
+            Unexpected::Str(&s),
             &EXPECTED,
         ));
     }
@@ -527,7 +531,7 @@ impl RailData {
 
 #[cfg(test)]
 mod tests {
-    use crate::plugins::i18n::load_localizations;
+    use crate::{consts::saves::DEFAULT_SAVE, plugins::i18n::load_localizations};
 
     use super::*;
     use bevy::platform::collections::HashSet;
@@ -981,5 +985,12 @@ mod tests {
         })
         .validate()
         .unwrap();
+    }
+
+    #[test]
+    fn default_save_data_is_valid() {
+        let data = serde_json::from_str::<UnvalidatedSaveData>(DEFAULT_SAVE)
+            .expect("json deserialization should work");
+        let _ = data.validate().expect("data should be valid");
     }
 }
