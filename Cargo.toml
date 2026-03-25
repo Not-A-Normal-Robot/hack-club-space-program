@@ -77,10 +77,12 @@ bevy_rapier2d = { version = "0.33.0", features = [
     "serde-serialize",
     "simd-stable",
 ] }
+cbor4ii = { version = "1.2.2", features = ["serde1", "use_std"] }
 derive_more = { version = "2.1.1", features = ["error", "is_variant"] }
 dirs = "6.0.0"
 fastnoise-lite = { version = "1.1.1", features = ["std", "f64"] }
 fastrand = { version = "2.3.0", features = ["js"] }
+flate2 = { version = "1.1.9", default-features = false, features = ["zlib-rs"] }
 i18n-embed = { version = "0.16.0", features = ["fluent-system"] }
 i18n-embed-fl = { version = "0.10.0", features = ["dashmap"] }
 keplerian_sim = { version = "0.7.3", features = ["serde"] }
@@ -88,6 +90,7 @@ pastey = "0.2.1"
 rust-embed = "8.11.0"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
+serde_repr = "0.1.20"
 strum = { version = "0.28.0", features = ["derive"] }
 thiserror = "2.0.18"
 unic-langid = "0.9.6"
@@ -135,8 +138,11 @@ wasm-bindgen-test = "0.3.64"
 smol-macros = "0.1.1"
 
 [build-dependencies]
+cbor4ii = { version = "1.2.2", features = ["serde1", "use_std"] }
 png = "0.18.1"
 resvg = "0.47.0"
+serde = "1.0.228"
+serde_json = "1.0.149"
 texture_packer = "0.30.0"
 
 [dev-dependencies]

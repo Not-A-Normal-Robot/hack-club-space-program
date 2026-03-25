@@ -1,5 +1,4 @@
 {
-    "$schema": "./save_data.schema.json",
     "schema_version": 1,
     "root_node": "0000000000000000000000000000000A",
     "active_vessel": "497dcba3ecbf4587a2dd5eb0665e6880",
@@ -11,8 +10,7 @@
             "color": "#fff3ea",
             "celestial_children": [
                 "0000000000000000000000000000018F"
-            ],
-            "vessel_children": []
+            ]
         },
         "0000000000000000000000000000018F": {
             "name": "Earth",

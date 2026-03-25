@@ -9,7 +9,8 @@ use core::{
     sync::atomic::{AtomicU8, Ordering},
 };
 use derive_more::{Deref, DerefMut};
-use std::{borrow::Cow, sync::Mutex};
+use serde_repr::{Deserialize_repr, Serialize_repr};
+use std::{borrow::Cow, io::Write, sync::Mutex};
 #[cfg(not(target_family = "wasm"))]
 use std::{ffi::OsString, path::PathBuf};
 use thiserror::Error;
@@ -360,6 +361,13 @@ impl Display for SaveName {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&self.to_str())
     }
+}
+
+#[derive(Clone, Copy, Serialize_repr, Deserialize_repr)]
+#[repr(u8)]
+pub(crate) enum SaveDataKind {
+    MainSave = 0,
+    QuickSave = 1,
 }
 
 #[derive(Debug)]

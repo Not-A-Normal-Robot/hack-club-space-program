@@ -17,19 +17,19 @@
 
 use crate::{
     consts::saves::web::{
-        DEFAULT_WRAPPED_SAVE, KEY_SAVE_NAME, KEY_SAVE_VALUE, SAVE_OBJECT_STORE_NAME, STORAGE_DB,
-        STORAGE_DB_VERSION,
+        KEY_SAVE_NAME, KEY_SAVE_VALUE, SAVE_OBJECT_STORE_NAME, STORAGE_DB, STORAGE_DB_VERSION,
+        get_default_wrapped_save,
     },
     storage::{
-        SaveInitError, SaveList, SaveListError, SaveName, SaveReadError, SaveResetError,
-        StorageImpl, save_data::UnvalidatedSaveData,
+        SaveDataKind, SaveInitError, SaveList, SaveListError, SaveName, SaveReadError,
+        SaveResetError, StorageImpl, save_data::UnvalidatedSaveData,
     },
 };
 use idb::{
     DatabaseEvent, Factory, ObjectStoreParams, Query, TransactionMode, event::VersionChangeEvent,
 };
-use serde::Serialize;
-use std::sync::mpsc::SyncSender;
+use serde::{Deserialize, Serialize};
+use std::{borrow::Cow, sync::mpsc::SyncSender};
 use wasm_bindgen::JsValue;
 use web_sys::js_sys::Reflect;
 
@@ -78,15 +78,8 @@ impl StorageImpl for WebStorage {
         }
 
         // TODO: Remove this when we implement saving and multi-save-files
-        bevy::log::debug!("{DEFAULT_WRAPPED_SAVE}");
-        let obj: serde_json::Value = serde_json::from_str(DEFAULT_WRAPPED_SAVE)
-            .expect("constant `DEFAULT_WRAPPED_SAVE` should be valid json");
-        bevy::log::debug!("obj: {obj}");
-        let serializer = serde_wasm_bindgen::Serializer::new().serialize_maps_as_objects(true);
-        let obj = obj
-            .serialize(&serializer)
-            .expect("json value should be serializable as js value");
-        web_sys::console::debug_1(&obj);
+        let default_wrapped_save = get_default_wrapped_save();
+        bevy::log::debug!("{default_wrapped_save:?}");
 
         let trans = db
             .transaction(&[SAVE_OBJECT_STORE_NAME], TransactionMode::ReadWrite)
@@ -95,7 +88,9 @@ impl StorageImpl for WebStorage {
             .object_store(SAVE_OBJECT_STORE_NAME)
             .map_err(SaveInitError::DbOpen)?;
 
-        store.put(&obj, None).map_err(SaveInitError::DbOpen)?;
+        store
+            .put(&default_wrapped_save, None)
+            .map_err(SaveInitError::DbOpen)?;
 
         trans.commit().map_err(SaveInitError::DbOpen)?;
 
@@ -219,15 +214,19 @@ impl StorageImpl for WebStorage {
     }
 }
 
+#[derive(Clone, Serialize, Deserialize)]
+pub(crate) struct WrappedData {
+    pub(crate) save_name: String,
+    pub(crate) save_data_kind: SaveDataKind,
+    /// Zlib-compressed CBOR-encoded save data.
+    pub(crate) data: Cow<'static, [u8]>,
+}
+
 /// This module is public because `wasm_bindgen_test` requires it to.
 #[cfg(test)]
 #[doc(hidden)]
 pub mod _tests {
-    use serde::Serialize;
-    use wasm_bindgen::JsValue;
     use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
-
-    use crate::{consts::saves::DEFAULT_SAVE, storage::save_data::UnvalidatedSaveData};
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -244,25 +243,5 @@ pub mod _tests {
         let save_name = res.saves.first().unwrap();
         let save_data = storage.load(save_name).await.unwrap();
         save_data.validate().unwrap();
-    }
-
-    #[wasm_bindgen_test]
-    fn test_deserialize_default_save() {
-        let json_value = serde_json::from_str::<serde_json::Value>(DEFAULT_SAVE)
-            .expect("default save should be valid json");
-        let actual_save_data = serde_json::from_str::<UnvalidatedSaveData>(DEFAULT_SAVE)
-            .expect("default save should follow save data format");
-
-        let js_serializer = serde_wasm_bindgen::Serializer::new().serialize_maps_as_objects(true);
-        let save: JsValue = json_value
-            .serialize(&js_serializer)
-            .expect("json value should be serializable to js value");
-        let res = serde_wasm_bindgen::from_value::<UnvalidatedSaveData>(save)
-            .expect("js value should be deserializable to save data");
-
-        assert_eq!(
-            actual_save_data, res,
-            "serde_json and serde_wasm_bindgen outputs should match"
-        );
     }
 }
