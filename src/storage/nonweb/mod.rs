@@ -1,131 +1,74 @@
-use std::{fs, io::Read, path::PathBuf};
+use std::{
+    ffi::OsString,
+    fs::{self, File},
+    io::{self, BufReader, Read},
+    path::{Path, PathBuf},
+};
+
+use flate2::read::ZlibDecoder;
 
 use crate::{
-    consts::saves::{DEFAULT_SAVE, SAVE_NAME_STR, nonweb::SAVE_DIR},
+    consts::saves::{DEFAULT_SAVE_ZLIB_CBOR, SAVE_NAME_STR},
     storage::{
         SaveInitError, SaveList, SaveListError, SaveName, SaveReadError, SaveResetError,
-        StorageImpl, nonweb::risk::check_path_risk, save_data::UnvalidatedSaveData,
+        StorageImpl,
+        nonweb::{
+            dirs::{DirAbstraction, StorageDir},
+            risk::check_path_risk,
+        },
+        save_data::UnvalidatedSaveData,
     },
 };
 
+pub(crate) mod dirs;
 pub(crate) mod risk;
-
-fn get_save_dir() -> Option<PathBuf> {
-    if cfg!(test) {
-        Some(PathBuf::from("./target/testing-save-dir"))
-    } else {
-        dirs::data_dir().map(|dir| dir.join(SAVE_DIR))
-    }
-}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) struct NonWebStorage;
 
 impl StorageImpl for NonWebStorage {
     async fn init_saves(self) -> Result<(), SaveInitError> {
-        let dir = get_save_dir().ok_or(SaveInitError::NoSaveDir)?;
-        fs::create_dir_all(&dir).map_err(SaveInitError::DirCreation)?;
+        let dir = StorageDir::new().ok_or(SaveInitError::NoSaveDir)?;
+        let saves = dir.saves();
+        saves.ensure().map_err(SaveInitError::DirCreation)?;
 
-        let file = dir.join(SAVE_NAME_STR);
-
-        // TODO: Remove this when we implement saving and multi-save-files
-        fs::write(file, DEFAULT_SAVE).map_err(SaveInitError::DirCreation)
+        let save = saves.get_save(&SAVE_NAME_STR.to_string().into());
+        save.ensure().map_err(SaveInitError::DirCreation)?;
+        let main_save = save.main_save();
+        fs::write(main_save, DEFAULT_SAVE_ZLIB_CBOR).map_err(SaveInitError::DirCreation)
     }
 
     async fn get_save_list(self) -> SaveList {
-        let Some(dir) = get_save_dir() else {
-            return SaveList {
-                saves: Box::from([]),
-                errors: SaveListError::NoSaveDir.into(),
-            };
+        let Some(dir) = StorageDir::new() else {
+            return SaveListError::NoSaveDir.into();
         };
-
-        let read_dir = match fs::read_dir(&dir) {
-            Ok(rd) => rd,
-            Err(e) => {
-                return SaveList {
-                    saves: Box::from([]),
-                    errors: SaveListError::ReadDirError(e).into(),
-                };
-            }
-        };
-
-        let mut saves: Vec<SaveName> =
-            Vec::with_capacity(read_dir.size_hint().1.unwrap_or(read_dir.size_hint().0));
-        let mut errors: Vec<SaveListError> = Vec::new();
-
-        for entry in read_dir {
-            let entry = match entry {
-                Ok(e) => e,
-                Err(e) => {
-                    errors.push(SaveListError::DirEntryError(e));
-                    continue;
-                }
-            };
-
-            let path = entry.path();
-
-            let file_type = match entry.file_type() {
-                Ok(ty) => ty,
-                Err(e) => {
-                    errors.push(SaveListError::FileTypeError { path, error: e });
-                    continue;
-                }
-            };
-
-            if !file_type.is_file() {
-                errors.push(SaveListError::NotAFile(path));
-                continue;
-            }
-
-            let metadata = match fs::metadata(&path) {
-                Ok(m) => m,
-                Err(e) => {
-                    errors.push(SaveListError::MetadataFetchError { error: e, path });
-                    continue;
-                }
-            };
-
-            if metadata.len() == 0 {
-                errors.push(SaveListError::FileEmpty(path));
-                continue;
-            }
-
-            saves.push(SaveName(entry.file_name()));
-        }
-
-        SaveList {
-            saves: saves.into(),
-            errors: errors.into(),
-        }
+        let saves = dir.saves();
+        saves.list_saves()
     }
 
     async fn load(self, save_name: &SaveName) -> Result<UnvalidatedSaveData, SaveReadError> {
-        let dir = get_save_dir().ok_or(SaveReadError::NoSaveDir)?;
+        let storage = StorageDir::new().ok_or(SaveReadError::NoSaveDir)?;
+        let saves = storage.saves();
+        let save = saves.get_save(save_name);
+        let savefile_path = save.main_save();
+        let savefile = File::open(savefile_path)?;
 
-        let savefile_path = dir.join(&save_name.0);
-        let mut savefile = fs::File::open(savefile_path)?;
+        let decoder = ZlibDecoder::new(savefile);
+        let buf_decoder = BufReader::new(decoder);
 
-        let mut save_str = String::with_capacity(
-            savefile
-                .metadata()
-                .map(|m| m.len())
-                .unwrap_or_default()
-                .try_into()
-                .unwrap_or_default(),
-        );
-
-        savefile.read_to_string(&mut save_str)?;
-
-        Ok(serde_json::from_str(&save_str)?)
+        Ok(cbor4ii::serde::from_reader::<
+            UnvalidatedSaveData,
+            BufReader<ZlibDecoder<File>>,
+        >(buf_decoder)?)
     }
 
     async fn reset(self) -> Result<(), SaveResetError> {
-        let dir = get_save_dir().ok_or(SaveResetError::NoSaveDir)?;
+        let storage = StorageDir::new().ok_or(SaveResetError::NoSaveDir)?;
+        let dir = storage.get_path();
 
         if let Err(e) = check_path_risk(&dir) {
             return Err(SaveResetError::RiskyPath {
-                path: dir,
+                path: dir.to_path_buf(),
                 reason: e,
             });
         }
@@ -148,7 +91,7 @@ mod tests {
         storage.init_saves().await.unwrap();
         storage.reset().await.unwrap();
         let res = storage.get_save_list().await;
-        assert_eq!(res.errors.len(), 0);
+        assert_eq!(res.errors.len(), 0, "Save listing errored: {}", res.errors);
 
         // TODO: Remove this when we implement saving and multi-save-files
         assert_eq!(res.saves.len(), 1);

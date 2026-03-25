@@ -3145,6 +3145,7 @@ dependencies = [
  "pastey",
  "png",
  "resvg",
+ "ron",
  "rust-embed",
  "serde",
  "serde-wasm-bindgen",

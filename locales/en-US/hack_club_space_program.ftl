@@ -83,13 +83,8 @@ error__saveList__dirEntry =
 error__saveList__fileType =
     There was an I/O error trying to determine the type of '{ $path }':
     { $inner }
-error__saveList__notFile =
-    The directory entry at { $path } is not a file.
-error__saveList__metadataFetch =
-    There was an I/O error trying to read the metadata of '{ $path }':
-    { $inner }
-error__saveList__fileEmpty =
-    The file at { $path } is empty.
+error__saveList__notDir =
+    The directory entry at { $path } is not a directory.
 error__saveList__nameExtraction =
     There was an error extracting the name of one of the saves:
     { $inner }

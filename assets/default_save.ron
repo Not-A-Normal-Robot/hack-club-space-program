@@ -1,76 +1,76 @@
-{
+(
     schema_version: 1,
-    root_node: 0xA,
-    active_vessel: 0x497dcba3ecbf4587a2dd5eb0665e6880,
+    root_node: 10_u128,
+    active_vessel: 97686811116225438784444555144741152896u128,
     celestials: {
-        0xA: {
+        10_u128: (
             name: "The Sun",
-            mass: 1.989e30,
-            radius: 6.9634e8,
+            mass: 1.989e30f64,
+            radius: 6.9634e8f64,
             // #fff3ea
             color: 0xfff3ea,
             celestial_children: [
-                0x18F
+                399_u128
             ]
-        },
-        0x18F: {
+        ),
+        399_u128: (
             name: "Earth",
-            mass: 5.972e24,
-            radius: 6.371e6,
+            mass: 5.972e24f64,
+            radius: 6.371e6f64,
             // #9adaeb
             color: 0x9adaeb,
-            orbit: {
-                eccentricity: 0.0169383477558015596576,
-                periapsis: 1.47116234025380615234e11,
-                arg_pe: 4.96966285450645450794,
-                mean_anomaly: 4.61837973661737599684
-            },
+            orbit: (
+                eccentricity: 0.0169383477558015596576f64,
+                periapsis: 1.47116234025380615234e11f64,
+                arg_pe: 4.96966285450645450794f64,
+                mean_anomaly: 4.61837973661737599684f64,
+            ),
             celestial_children: [
-                0x12D
+                301_u128
             ],
             vessel_children: [
-                0x497dcba3ecbf4587a2dd5eb0665e6880
+                97686811116225438784444555144741152896u128
             ]
-        },
-        0x12D: {
+        ),
+        301_u128: (
             name: "Luna",
-            mass: 7.342e22,
-            radius: 1.7371e6,
+            mass: 7.342e22f64,
+            radius: 1.7371e6f64,
             // #a19f9d
             color: 0xa19f9d,
-            orbit: {
-                eccentricity: 0.0640319437221805315419,
-                periapsis: 3.56739122426563858986e8,
-                arg_pe: 1.15833369565504473719,
-                mean_anomaly: 3.42916122080155005847
-            },
+            orbit: (
+                eccentricity: 0.0640319437221805315419f64,
+                periapsis: 3.56739122426563858986e8f64,
+                arg_pe: 1.15833369565504473719f64,
+                mean_anomaly: 3.42916122080155005847f64,
+            ),
             vessel_children: [
-                0x99999999999999999999999999999999
+                999999999999999999999999999999999999u128
             ]
-        }
+        )
     },
     vessels: {
-        0x497dcba3ecbf4587a2dd5eb0665e6880: {
+        97686811116225438784444555144741152896u128: (
             name: "Foo",
-            rail: {
-                rail_mode: 1,
-                inner: {
-                    angle: 0,
-                    radius: 6.371e6
-                }
-            }
-        },
-        0x99999999999999999999999999999999: {
+            rail: (
+                rail_mode: "surface",
+                inner: (
+                    angle: 0f64,
+                    radius: 6.371e6f64
+                )
+            )
+        ),
+        999999999999999999999999999999999999u128: (
             name: "Bar",
-            rail: {
-                rail_mode: 0,
-                inner: {
-                    eccentricity: 0,
-                    periapsis: 2e6,
-                    arg_pe: 0,
-                    mean_anomaly: 0
-                }
-            }
-        }
+            rail: (
+                rail_mode: "orbit",
+                inner: (
+                    eccentricity: 0f64,
+                    periapsis: 2e6f64,
+                    arg_pe: 0f64,
+                    mean_anomaly: 0f64
+                )
+            )
+        )
     }
-}
+)

@@ -1,11 +1,36 @@
 fn main() {
     icons::rasterize_icons();
+    default_save::process_default_save();
 }
 
 mod default_save {
+    use flate2::{Compression, write::ZlibEncoder};
+    use std::{fs, io::Write};
+
     const INPUT_RON: &str = "assets/default_save.ron";
-    // const PROCESSED_ICONS_PATH: &str = "assets/_processed/icons";
-    const OUTPUT_PATH: &str = "assets/_processed/default_save.cbor.zz";
+    const OUTPUT_DIR: &str = "assets/_processed";
+    const OUTPUT_PATH: &str = "assets/_processed/default_save.cbor.zlib";
+
+    pub fn process_default_save() {
+        println!("cargo::rerun-if-changed={INPUT_RON}");
+
+        fs::create_dir_all(OUTPUT_DIR).expect("output dir should be accessible");
+
+        let input = fs::read_to_string(INPUT_RON).expect("input file should exist");
+
+        let ron_value: ron::Value = ron::from_str(&input).expect("input file should be valid ron");
+        let cbor_value = cbor4ii::serde::to_vec(Vec::new(), &ron_value)
+            .expect("ron should be serializable to cbor");
+
+        let mut compressed = Vec::new();
+        let mut encoder = ZlibEncoder::new(&mut compressed, Compression::best());
+        encoder
+            .write_all(&cbor_value)
+            .expect("compression should work");
+        encoder.finish().expect("compression should finish");
+
+        fs::write(OUTPUT_PATH, compressed).expect("output file should be writable");
+    }
 }
 
 mod icons {

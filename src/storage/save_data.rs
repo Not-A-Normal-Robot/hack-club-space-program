@@ -22,15 +22,23 @@ use crate::{
     fl,
 };
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Deref, DerefMut)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Deref,
+    DerefMut,
+    Serialize,
+    Deserialize,
+)]
+#[serde(transparent)]
 #[repr(transparent)]
 pub struct SavedId(#[deref] pub u128);
-
-impl SavedId {
-    /// The amount of characters the saved ID takes to represent itself
-    /// as a hexadecimal-encoded string.
-    pub const CHARS: u32 = u128::BITS / 4;
-}
 
 impl From<u128> for SavedId {
     fn from(value: u128) -> Self {
@@ -41,57 +49,6 @@ impl From<u128> for SavedId {
 impl From<SavedId> for u128 {
     fn from(value: SavedId) -> Self {
         value.0
-    }
-}
-
-impl Display for SavedId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:032x}", self.0)
-    }
-}
-
-impl Serialize for SavedId {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.serialize_str(&format!("{:032x}", self.0))
-    }
-}
-
-impl<'de> Deserialize<'de> for SavedId {
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        struct IdVisitor;
-
-        impl Visitor<'_> for IdVisitor {
-            type Value = SavedId;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                write!(
-                    formatter,
-                    "a hexadecimal u128 value with {} bytes/ASCII bytes",
-                    Self::Value::CHARS
-                )
-            }
-
-            fn visit_str<E>(self, v: &str) -> std::result::Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                if v.len() != Self::Value::CHARS as usize {
-                    return Err(serde::de::Error::invalid_length(v.len(), &self));
-                }
-
-                u128::from_str_radix(v, 16)
-                    .map(SavedId)
-                    .map_err(|e| serde::de::Error::custom(e))
-            }
-        }
-
-        deserializer.deserialize_str(IdVisitor)
     }
 }
 
@@ -338,10 +295,10 @@ impl Display for SaveDataError {
                 list.push('[');
 
                 for id in saved_ids.iter().take(saved_ids.len() - 1) {
-                    write!(&mut list, "{id}, ").expect("formatting should work");
+                    write!(&mut list, "{:032x}, ", **id).expect("formatting should work");
                 }
                 if let Some(id) = saved_ids.last() {
-                    write!(&mut list, "{id}]").expect("formatting should work");
+                    write!(&mut list, "{:032x}]", **id).expect("formatting should work");
                 }
 
                 write!(
@@ -355,10 +312,10 @@ impl Display for SaveDataError {
                 list.push('[');
 
                 for id in saved_ids.iter().take(saved_ids.len() - 1) {
-                    write!(&mut list, "{id}, ").expect("formatting should work");
+                    write!(&mut list, "{:032x}, ", **id).expect("formatting should work");
                 }
                 if let Some(id) = saved_ids.last() {
-                    write!(&mut list, "{id}]").expect("formatting should work");
+                    write!(&mut list, "{:032x}]", **id).expect("formatting should work");
                 }
 
                 write!(
@@ -417,37 +374,20 @@ fn serialize_color<S: Serializer>(color: &Color, serializer: S) -> Result<S::Ok,
         #[expect(clippy::cast_sign_loss)]
         |float| (float * 255.0).round() as u8,
     );
+    let rgb = ((r as u32) << 16) | ((g as u32) << 8) | b as u32;
 
-    serializer.serialize_str(&format!("#{r:02x}{g:02x}{b:02x}"))
+    serializer.serialize_u32(rgb)
 }
 
 fn deserialize_color<'de, D>(deserializer: D) -> Result<Color, D::Error>
 where
     D: Deserializer<'de>,
 {
-    const EXPECTED: &str = "7-byte sRGBA hex color ASCII string beginning with '#'";
-    let s = <Cow<str>>::deserialize(deserializer)?;
+    let rgb = u32::deserialize(deserializer)?;
+    #[expect(clippy::cast_possible_truncation)]
+    let (r, g, b) = ((rgb >> 16) as u8, (rgb >> 8) as u8, rgb as u8);
 
-    if s.len() != 7 {
-        return Err(serde::de::Error::invalid_length(s.len(), &EXPECTED));
-    }
-
-    if !s.is_ascii() || !s.starts_with('#') {
-        return Err(serde::de::Error::invalid_value(
-            Unexpected::Str(&s),
-            &EXPECTED,
-        ));
-    }
-
-    let [r, g, b] = [&s[1..3], &s[3..5], &s[5..7]].map(|str| u8::from_str_radix(str, 16));
-
-    let [r, g, b] = [
-        r.map_err(serde::de::Error::custom)?,
-        g.map_err(serde::de::Error::custom)?,
-        b.map_err(serde::de::Error::custom)?,
-    ];
-
-    Ok(Color::srgb_u8(r, g, b))
+    Ok(Color::Srgba(Srgba::rgb_u8(r, g, b)))
 }
 
 /// Holds static information about celestial bodies' orbits.

@@ -10,7 +10,7 @@ use core::{
 };
 use derive_more::{Deref, DerefMut};
 use serde_repr::{Deserialize_repr, Serialize_repr};
-use std::{borrow::Cow, io::Write, sync::Mutex};
+use std::{borrow::Cow, sync::Mutex};
 #[cfg(not(target_family = "wasm"))]
 use std::{ffi::OsString, path::PathBuf};
 use thiserror::Error;
@@ -163,8 +163,9 @@ trait StorageImpl: Copy + Sized + Send + Sync {
     #[deprecated = "This function is not to be ran."]
     #[inline(never)]
     #[cold]
-    fn __const_checks() {
+    fn __const_checks() -> core::convert::Infallible {
         const { assert!(core::mem::size_of::<Self>() == 0) };
+        unreachable!();
     }
 
     /// # Blocking
@@ -471,15 +472,9 @@ pub(crate) enum SaveListError {
     /// Couldn't read an entry's file type
     #[cfg(not(target_family = "wasm"))]
     FileTypeError { path: PathBuf, error: io::Error },
-    /// Dir entry isn't a file
+    /// Dir entry isn't a directory
     #[cfg(not(target_family = "wasm"))]
-    NotAFile(PathBuf),
-    /// Couldn't fetch file metadata
-    #[cfg(not(target_family = "wasm"))]
-    MetadataFetchError { path: PathBuf, error: io::Error },
-    /// Save file is empty
-    #[cfg(not(target_family = "wasm"))]
-    FileEmpty(PathBuf),
+    NotADir(PathBuf),
     /// Something went wrong while trying to initialize the idb
     /// factory
     #[cfg(target_family = "wasm")]
@@ -532,19 +527,8 @@ impl Display for SaveListError {
                 inner = error.to_string()
             )),
             #[cfg(not(target_family = "wasm"))]
-            Self::NotAFile(path) => f.write_str(&fl!(
-                "error__saveList__notFile",
-                path = path.to_string_lossy()
-            )),
-            #[cfg(not(target_family = "wasm"))]
-            Self::MetadataFetchError { path, error } => f.write_str(&fl!(
-                "error__saveList__metadataFetch",
-                path = path.to_string_lossy(),
-                inner = error.to_string()
-            )),
-            #[cfg(not(target_family = "wasm"))]
-            Self::FileEmpty(path) => f.write_str(&fl!(
-                "error__saveList__fileEmpty",
+            Self::NotADir(path) => f.write_str(&fl!(
+                "error__saveList__notDir",
                 path = path.to_string_lossy()
             )),
             #[cfg(target_family = "wasm")]
@@ -601,7 +585,7 @@ pub(crate) enum SaveReadError {
     #[cfg(not(target_family = "wasm"))]
     IoError(#[from] io::Error),
     #[cfg(not(target_family = "wasm"))]
-    ParseError(#[from] serde_json::Error),
+    ParseError(#[from] cbor4ii::serde::DecodeError<std::io::Error>),
     /// Something went wrong while trying to initialize the idb
     /// factory
     #[cfg(target_family = "wasm")]
