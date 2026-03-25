@@ -79,10 +79,12 @@ impl Storage {
     /// Please run this in an [`IoTaskPool`][bevy::tasks::IoTaskPool]
     pub(crate) async fn init_saves(self) -> Result<(), SaveInitError> {
         let res = self.0.init_saves().await;
-        if res.is_ok() {
-            STORAGE_INITIALIZATION_STATUS
-                .store(InitStatus::Initialized.discriminant(), Ordering::Relaxed);
-        }
+
+        let init_status = match &res {
+            Ok(()) => InitStatus::Initialized,
+            Err(_) => InitStatus::Failed,
+        };
+        STORAGE_INITIALIZATION_STATUS.store(init_status.discriminant(), Ordering::Relaxed);
 
         res
     }
