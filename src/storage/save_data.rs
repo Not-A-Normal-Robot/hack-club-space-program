@@ -519,12 +519,10 @@ mod tests {
             let id: u128 = fastrand::u128(..);
             let id = SavedId(id);
 
-            let string = serde_json::to_string(&id).expect("serialization should work");
+            let vec = cbor4ii::serde::to_vec(Vec::new(), &id).expect("serialization should work");
 
-            assert_eq!(&string, &format!("\"{:032x}\"", id.0));
-
-            let parsed: SavedId =
-                serde_json::from_str(&string).expect("deserialization should work");
+            let parsed =
+                cbor4ii::serde::from_slice::<SavedId>(&vec).expect("deserialization should work");
 
             assert_eq!(id, parsed);
         }

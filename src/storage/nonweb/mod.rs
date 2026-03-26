@@ -1,8 +1,6 @@
 use std::{
-    ffi::OsString,
     fs::{self, File},
-    io::{self, BufReader, Read},
-    path::{Path, PathBuf},
+    io::BufReader,
 };
 
 use flate2::read::ZlibDecoder;

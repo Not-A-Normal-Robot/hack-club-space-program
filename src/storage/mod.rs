@@ -1,5 +1,3 @@
-#[cfg(not(target_family = "wasm"))]
-use bevy::tasks::futures_lite::io;
 use bevy::{
     log::warn, platform::collections::HashSet, platform::time::Instant,
     tasks::futures_lite::future::yield_now,
