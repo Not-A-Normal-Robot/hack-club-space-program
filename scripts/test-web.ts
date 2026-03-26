@@ -6,9 +6,6 @@ if (!("Deno" in globalThis))
     throw new Error("Deno object not found; please run this script using Deno. You can get deno at https://deno.land/");
 }
 
-import * as path from "@std/path";
-import * as fs from "@std/fs";
-
 // Paths
 const DIRNAME = import.meta.dirname;
 if (!DIRNAME)
@@ -175,7 +172,7 @@ async function main()
     await new Deno.Command(
         "wasm-pack",
         {
-            args: ["test", "--headless", "--firefox"],
+            args: ["test", "--headless", "--firefox", ...Deno.args],
             cwd: DIRNAME,
             env: {
                 WASM_BINDGEN_USE_DENO: "1",

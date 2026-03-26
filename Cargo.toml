@@ -137,6 +137,9 @@ wasm-bindgen-test = "0.3.64"
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 smol-macros = "0.1.1"
 
+[target.wasm32-unknown-unknown.dependencies]
+serde_bytes = "0.11.19"
+
 [build-dependencies]
 cbor4ii = { version = "1.2.2", features = ["serde1", "use_std"] }
 png = "0.18.1"

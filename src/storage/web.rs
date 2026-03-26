@@ -26,15 +26,16 @@ use crate::{
         SaveResetError, StorageImpl, save_data::UnvalidatedSaveData,
     },
 };
+use core::num::ParseIntError;
 use flate2::read::ZlibDecoder;
 use idb::{
-    DatabaseEvent, Factory, IndexParams, KeyPath, KeyRange, ObjectStoreParams, Query,
-    TransactionMode, event::VersionChangeEvent,
+    DatabaseEvent, Factory, KeyPath, KeyRange, ObjectStoreParams, Query, TransactionMode,
+    event::VersionChangeEvent,
 };
-use serde::{Deserialize, Serialize, de::Visitor};
+use serde::{Deserialize, Serialize, Serializer, de::Visitor};
 use std::{borrow::Cow, io::Read, sync::mpsc::SyncSender};
 use wasm_bindgen::{JsCast, JsValue};
-use web_sys::js_sys::{Array, JsString, Reflect, Uint8Array};
+use web_sys::js_sys::{Array, Reflect, Uint8Array};
 
 fn handle_upgrade_inner(event: VersionChangeEvent) -> Result<(), SaveInitError> {
     let db = event.database().map_err(SaveInitError::UpgradeError)?;
@@ -172,7 +173,10 @@ impl StorageImpl for WebStorage {
 
         let range = {
             let array = Array::new();
-            array.push_many(&[JsValue::from_str(""), JsValue::from_f64(0.0)]);
+            array.push_many(&[
+                JsValue::from_f64(f64::from(SaveDataKind::MainSave.discriminant())),
+                JsValue::from_str(&SaveDataDiscrim::NONE.to_str()),
+            ]);
             let array = JsValue::from(array);
             KeyRange::only(&array)
         };
@@ -278,7 +282,7 @@ impl StorageImpl for WebStorage {
 
 /// Data that's been wrapped for `IndexedDB`.
 #[derive(Clone, Serialize, Deserialize)]
-pub(crate) struct WrappedData {
+pub(crate) struct WrappedData<'d> {
     #[serde(rename = "name")]
     pub(crate) save_name: String,
     #[serde(rename = "kind")]
@@ -286,7 +290,7 @@ pub(crate) struct WrappedData {
     #[serde(rename = "discrim")]
     pub(crate) save_data_discrim: SaveDataDiscrim,
     /// Zlib-compressed CBOR-encoded save data.
-    pub(crate) data: Cow<'static, [u8]>,
+    pub(crate) data: Cow<'d, serde_bytes::Bytes>,
 }
 
 /// A discriminator for different save objects of the same kind and
@@ -304,6 +308,27 @@ impl SaveDataDiscrim {
     ///
     /// In `IndexedDB`, this will get serialized as an empty string.
     pub(crate) const NONE: Self = Self(0);
+
+    pub(crate) fn to_str(self) -> Cow<'static, str> {
+        let num = self.0;
+
+        if num == 0 {
+            Cow::Borrowed("")
+        } else {
+            Cow::Owned(format!("{num:x}"))
+        }
+    }
+
+    pub(crate) const fn try_from_str(src: &str) -> Result<Self, ParseIntError> {
+        if src.is_empty() {
+            Ok(Self(0))
+        } else {
+            match u128::from_str_radix(src, 16) {
+                Ok(n) => Ok(Self(n)),
+                Err(e) => Err(e),
+            }
+        }
+    }
 }
 
 impl Serialize for SaveDataDiscrim {
@@ -311,12 +336,15 @@ impl Serialize for SaveDataDiscrim {
     where
         S: serde::Serializer,
     {
-        let num = self.0;
-        if num == 0 {
-            serializer.serialize_str("")
-        } else {
-            serializer.serialize_str(&format!("{num:x}"))
-        }
+        serializer.serialize_str(&self.to_str())
+    }
+}
+
+impl TryFrom<&str> for SaveDataDiscrim {
+    type Error = ParseIntError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        Self::try_from_str(value)
     }
 }
 
@@ -338,13 +366,7 @@ impl<'de> Deserialize<'de> for SaveDataDiscrim {
             where
                 E: serde::de::Error,
             {
-                if v.is_empty() {
-                    Ok(SaveDataDiscrim(0))
-                } else {
-                    u128::from_str_radix(v, 16)
-                        .map(SaveDataDiscrim)
-                        .map_err(E::custom)
-                }
+                SaveDataDiscrim::try_from_str(v).map_err(E::custom)
             }
         }
 

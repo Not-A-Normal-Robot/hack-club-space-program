@@ -37,6 +37,7 @@ pub(crate) mod web {
         SaveDataKind,
         web::{SaveDataDiscrim, WrappedData},
     };
+    use serde_bytes::Bytes;
     use wasm_bindgen::JsValue;
 
     /// The save `IndexedDB` database name.
@@ -81,7 +82,7 @@ pub(crate) mod web {
             save_name: String::from(SAVE_NAME_STR),
             save_data_kind: SaveDataKind::MainSave,
             save_data_discrim: SaveDataDiscrim::NONE,
-            data: Cow::Borrowed(DEFAULT_SAVE_ZLIB_CBOR),
+            data: Cow::Borrowed(Bytes::new(DEFAULT_SAVE_ZLIB_CBOR)),
         })
         .expect("wrapped save data should be serializable")
     }

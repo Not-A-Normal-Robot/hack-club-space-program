@@ -371,6 +371,12 @@ pub(crate) enum SaveDataKind {
     QuickSave = 1,
 }
 
+impl SaveDataKind {
+    pub(crate) const fn discriminant(self) -> u8 {
+        self as u8
+    }
+}
+
 #[derive(Debug)]
 pub(crate) struct SaveList {
     pub(crate) saves: Box<[SaveName]>,
