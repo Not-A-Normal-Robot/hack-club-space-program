@@ -5,10 +5,10 @@ use core::time::Duration;
 pub(crate) static SAVE_NAME_STR: &str = "demo";
 
 // TODO: Remove this when we implement starting a new game
-/// The default save data, cbor-encoded, zlib-compressed.
+/// The default save data, cbor-encoded, zstd-compressed.
 #[allow(dead_code)]
-pub(crate) static DEFAULT_SAVE_ZLIB_CBOR: &[u8] =
-    include_bytes!("../../assets/_processed/default_save.cbor.zlib");
+pub(crate) static DEFAULT_SAVE_ZSTD_CBOR: &[u8] =
+    include_bytes!("../../assets/_processed/default_save.cbor.zstd");
 
 /// How long to wait for save subsystem initialization to finish.
 #[expect(dead_code)]
@@ -23,20 +23,21 @@ pub(crate) static STORAGE_DIR: &str = "hack-club-space-program";
 pub(crate) static SAVES_DIR: &str = "saves";
 
 /// The main save file's name, relative to the specific save's directory.
-pub(crate) static MAIN_SAVE_FILE_NAME: &str = "main.cbor.zlib";
+pub(crate) static MAIN_SAVE_FILE_NAME: &str = "main.cbor.zstd";
 
 #[cfg(test)]
 mod tests {
     use std::io::Read;
 
-    use flate2::read::ZlibDecoder;
+    use zstd::Decoder;
 
-    use crate::{consts::saves::DEFAULT_SAVE_ZLIB_CBOR, storage::save_data::UnvalidatedSaveData};
+    use crate::{consts::saves::DEFAULT_SAVE_ZSTD_CBOR, storage::save_data::UnvalidatedSaveData};
 
     #[test]
     fn default_save_is_valid() {
         let mut decompressed = Vec::new();
-        ZlibDecoder::new(DEFAULT_SAVE_ZLIB_CBOR)
+        Decoder::new(DEFAULT_SAVE_ZSTD_CBOR)
+            .expect("decompressor init should work")
             .read_to_end(&mut decompressed)
             .expect("decompression should work");
 

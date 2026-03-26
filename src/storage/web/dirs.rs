@@ -4,9 +4,8 @@ use bevy::tasks::futures_lite::StreamExt;
 use cbor4ii::serde::DecodeError;
 use core::{convert::Infallible, fmt::Display, mem::MaybeUninit};
 use derive_more::{AsRef, Deref};
-use flate2::write::ZlibDecoder;
 use std::{
-    io::{self, Write},
+    io::{self},
     sync::LazyLock,
 };
 use thiserror::Error;
@@ -18,6 +17,10 @@ use web_sys::{
     FileSystemGetDirectoryOptions as FsGetDirOptions, FileSystemGetFileOptions as FsGetFileOptions,
     FileSystemWritableFileStream as WritableFileStream,
     js_sys::{JsString, Reflect, Uint8Array},
+};
+use zstd::{
+    stream::raw::{Decoder, Operation},
+    zstd_safe::{InBuffer, OutBuffer},
 };
 
 use crate::{
@@ -326,15 +329,19 @@ pub(crate) enum MainSaveReadError {
     StreamError(JsValue),
     /// Stream yielded wrong type
     StreamWrongType(JsValue),
+    /// Failed to init decompressor
+    DecompressorInitError(io::Error),
     /// Failed to decompress
     DecompressError(io::Error),
+    /// Failed to finish decompressor
+    DecompressFinishError(io::Error),
     /// Failed to deserialize CBOR
     DecodeError(#[from] DecodeError<Infallible>),
 }
 
 impl Display for MainSaveReadError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        todo!("<MainSaveReadError as Display>::fmt()");
+        todo!("<MainSaveReadError as Display>::fmt() | {self:?}");
     }
 }
 
@@ -352,7 +359,7 @@ pub(crate) enum MainSaveWriteError {
 
 impl Display for MainSaveWriteError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        todo!("<MainSaveWriteError as Display>::fmt()");
+        todo!("<MainSaveWriteError as Display>::fmt() | {self:?}");
     }
 }
 
@@ -373,9 +380,13 @@ impl MainSaveFile {
         let mut stream = ReadableStream::from_raw(file.stream()).into_stream();
 
         let mut decompressed = Vec::with_capacity(file_size);
-        let mut decoder = ZlibDecoder::new(&mut decompressed);
+        let mut decoder = Decoder::new().map_err(MainSaveReadError::DecompressorInitError)?;
 
         let mut uninit: Vec<MaybeUninit<u8>> = Vec::new();
+        let mut out_buf: Vec<u8> = Vec::new();
+        let mut out_buf = OutBuffer::around(&mut out_buf);
+        let mut finished_frame = true;
+
         while let Some(result) = stream.next().await {
             let arr = result
                 .map_err(MainSaveReadError::StreamError)?
@@ -383,16 +394,29 @@ impl MainSaveFile {
                 .map_err(MainSaveReadError::StreamWrongType)?;
             let len = arr.byte_length() as usize;
 
-            uninit.clear();
-            uninit.reserve_exact(len);
+            uninit.resize_with(len, || MaybeUninit::uninit());
+            let buf = arr.copy_to_uninit(uninit.as_mut_slice());
+            let mut buf = InBuffer::around(buf);
 
-            let bytes = arr.copy_to_uninit(&mut uninit[0..len]);
-            decoder
-                .write_all(bytes)
-                .map_err(MainSaveReadError::DecompressError)?;
+            while buf.pos != len {
+                let num = decoder
+                    .run(&mut buf, &mut out_buf)
+                    .map_err(MainSaveReadError::DecompressError)?;
+
+                finished_frame = num == 0;
+            }
+        }
+        drop(uninit);
+
+        loop {
+            let res = decoder
+                .finish(&mut out_buf, finished_frame)
+                .map_err(MainSaveReadError::DecompressFinishError)?;
+            if res == 0 {
+                break;
+            }
         }
 
-        drop(uninit);
         drop(decoder);
 
         Ok(cbor4ii::serde::from_slice::<UnvalidatedSaveData>(
@@ -405,7 +429,7 @@ impl MainSaveFile {
     /// This function does not check for the validity of the save data bytes.
     ///
     /// # Parameters
-    /// - `data`: The zlib-compressed, CBOR-encoded save data.
+    /// - `data`: The zstd-compressed, CBOR-encoded save data.
     pub(super) async fn write(&self, data: &[u8]) -> Result<(), MainSaveWriteError> {
         let stream = JsFuture::from(self.create_writable())
             .await

@@ -4,12 +4,12 @@ fn main() {
 }
 
 mod default_save {
-    use flate2::{Compression, write::ZlibEncoder};
-    use std::{fs, io::Write};
+    use std::fs;
+    use zstd::{compression_level_range, encode_all as compress};
 
     const INPUT_RON: &str = "assets/default_save.ron";
     const OUTPUT_DIR: &str = "assets/_processed";
-    const OUTPUT_PATH: &str = "assets/_processed/default_save.cbor.zlib";
+    const OUTPUT_PATH: &str = "assets/_processed/default_save.cbor.zstd";
 
     pub fn process_default_save() {
         println!("cargo::rerun-if-changed={INPUT_RON}");
@@ -22,12 +22,8 @@ mod default_save {
         let cbor_value = cbor4ii::serde::to_vec(Vec::new(), &ron_value)
             .expect("ron should be serializable to cbor");
 
-        let mut compressed = Vec::new();
-        let mut encoder = ZlibEncoder::new(&mut compressed, Compression::best());
-        encoder
-            .write_all(&cbor_value)
+        let compressed = compress(&*cbor_value, *compression_level_range().end())
             .expect("compression should work");
-        encoder.finish().expect("compression should finish");
 
         fs::write(OUTPUT_PATH, compressed).expect("output file should be writable");
     }

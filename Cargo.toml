@@ -82,7 +82,6 @@ derive_more = { version = "2.1.1", features = ["error", "is_variant"] }
 dirs = "6.0.0"
 fastnoise-lite = { version = "1.1.1", features = ["std", "f64"] }
 fastrand = { version = "2.3.0", features = ["js"] }
-flate2 = { version = "1.1.9", default-features = false, features = ["zlib-rs"] }
 i18n-embed = { version = "0.16.0", features = ["fluent-system"] }
 i18n-embed-fl = { version = "0.10.0", features = ["dashmap"] }
 keplerian_sim = { version = "0.7.3", features = ["serde"] }
@@ -114,6 +113,9 @@ opt-level = 3
 lto = "fat"
 strip = "debuginfo"
 
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+zstd = "0.13.3"
+
 [target.'cfg(target_family = "wasm")'.dependencies]
 wasm-bindgen = "0.2.114"
 wasm-bindgen-futures = "0.4.64"
@@ -139,6 +141,7 @@ web-sys = { version = "0.3", features = [
 ] }
 serde-wasm-bindgen = "0.6.5"
 serde_json = "1.0.149"
+zstd = { version = "0.13.3", default-features = true, features = ["wasm"] }
 
 [target.'cfg(target_family = "wasm")'.dev-dependencies]
 wasm-bindgen-test = "0.3.64"
@@ -153,7 +156,7 @@ resvg = "0.47.0"
 ron = { version = "0.12.0", features = ["integer128"] }
 serde = "1.0.228"
 texture_packer = "0.30.0"
-flate2 = { version = "1.1.9", default-features = false, features = ["zlib-rs"] }
+zstd = "0.13.3"
 
 [dev-dependencies]
 serde_test = "1.0.177"

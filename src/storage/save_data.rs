@@ -474,11 +474,10 @@ impl RailData {
 mod tests {
     use std::io::Read;
 
-    use crate::{consts::saves::DEFAULT_SAVE_ZLIB_CBOR, plugins::i18n::load_localizations};
+    use crate::{consts::saves::DEFAULT_SAVE_ZSTD_CBOR, plugins::i18n::load_localizations};
 
     use super::*;
     use bevy::platform::collections::HashSet;
-    use flate2::read::ZlibDecoder;
     use serde_test::{Token, assert_de_tokens, assert_de_tokens_error};
 
     // Tests for the custom SavedId struct's ser/de
@@ -927,18 +926,5 @@ mod tests {
         })
         .validate()
         .unwrap();
-    }
-
-    #[test]
-    fn default_save_data_is_valid() {
-        let mut decompressed = Vec::new();
-        let mut decoder = ZlibDecoder::new(DEFAULT_SAVE_ZLIB_CBOR);
-        decoder
-            .read_to_end(&mut decompressed)
-            .expect("decompression should work");
-
-        let data = cbor4ii::serde::from_slice::<UnvalidatedSaveData>(&decompressed)
-            .expect("deserialization should work");
-        let _ = data.validate().expect("data should be valid");
     }
 }

@@ -16,7 +16,7 @@
 //! `src/consts/save_data.schema.json`.
 
 use crate::{
-    consts::saves::{DEFAULT_SAVE_ZLIB_CBOR, SAVE_NAME_STR},
+    consts::saves::{DEFAULT_SAVE_ZSTD_CBOR, SAVE_NAME_STR},
     storage::{
         SaveInitError, SaveList, SaveListError, SaveName, SaveReadError, SaveResetError,
         StorageImpl, save_data::UnvalidatedSaveData,
@@ -44,7 +44,7 @@ impl StorageImpl for WebStorage {
             .await
             .expect("main save file creation should work");
         main_save_file
-            .write(DEFAULT_SAVE_ZLIB_CBOR)
+            .write(DEFAULT_SAVE_ZSTD_CBOR)
             .await
             .expect("main save file init should work");
 

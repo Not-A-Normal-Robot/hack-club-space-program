@@ -494,9 +494,13 @@ pub(crate) enum SaveReadError {
     InvalidState(#[from] SaveDataError),
     #[cfg(not(target_family = "wasm"))]
     NoSaveDir,
-    IoError(#[from] io::Error),
+    // TODO: Figure out if this should be gated
     #[cfg(not(target_family = "wasm"))]
-    ParseError(#[from] cbor4ii::serde::DecodeError<std::io::Error>),
+    IoError(io::Error),
+    #[cfg(not(target_family = "wasm"))]
+    DecompressorInitError(io::Error),
+    #[cfg(not(target_family = "wasm"))]
+    ParseError(#[from] cbor4ii::serde::DecodeError<io::Error>),
     #[cfg(target_family = "wasm")]
     StorageDirGetter(#[from] StorageDirGetterError),
     /// Error getting the saves directory

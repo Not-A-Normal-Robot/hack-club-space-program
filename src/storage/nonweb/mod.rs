@@ -1,12 +1,5 @@
-use std::{
-    fs::{self, File},
-    io::BufReader,
-};
-
-use flate2::read::ZlibDecoder;
-
 use crate::{
-    consts::saves::{DEFAULT_SAVE_ZLIB_CBOR, SAVE_NAME_STR},
+    consts::saves::{DEFAULT_SAVE_ZSTD_CBOR, SAVE_NAME_STR},
     storage::{
         SaveInitError, SaveList, SaveListError, SaveName, SaveReadError, SaveResetError,
         StorageImpl,
@@ -17,6 +10,11 @@ use crate::{
         save_data::UnvalidatedSaveData,
     },
 };
+use std::{
+    fs::{self, File},
+    io::BufReader,
+};
+use zstd::stream::read::Decoder;
 
 pub(crate) mod dirs;
 pub(crate) mod risk;
@@ -33,7 +31,7 @@ impl StorageImpl for NonWebStorage {
         let save = saves.get_save(&SAVE_NAME_STR.to_string().into());
         save.ensure().map_err(SaveInitError::DirCreation)?;
         let main_save = save.main_save();
-        fs::write(main_save, DEFAULT_SAVE_ZLIB_CBOR).map_err(SaveInitError::DirCreation)
+        fs::write(main_save, DEFAULT_SAVE_ZSTD_CBOR).map_err(SaveInitError::DirCreation)
     }
 
     async fn get_save_list(self) -> SaveList {
@@ -49,14 +47,14 @@ impl StorageImpl for NonWebStorage {
         let saves = storage.saves();
         let save = saves.get_save(save_name);
         let savefile_path = save.main_save();
-        let savefile = File::open(savefile_path)?;
+        let savefile = File::open(savefile_path).map_err(SaveReadError::IoError)?;
 
-        let decoder = ZlibDecoder::new(savefile);
+        let decoder = Decoder::new(savefile).map_err(SaveReadError::DecompressorInitError)?;
         let buf_decoder = BufReader::new(decoder);
 
         Ok(cbor4ii::serde::from_reader::<
             UnvalidatedSaveData,
-            BufReader<ZlibDecoder<File>>,
+            BufReader<Decoder<BufReader<File>>>,
         >(buf_decoder)?)
     }
 
@@ -64,7 +62,7 @@ impl StorageImpl for NonWebStorage {
         let storage = StorageDir::new().ok_or(SaveResetError::NoSaveDir)?;
         let dir = storage.get_path();
 
-        if let Err(e) = check_path_risk(&dir) {
+        if let Err(e) = check_path_risk(dir) {
             return Err(SaveResetError::RiskyPath {
                 path: dir.to_path_buf(),
                 reason: e,

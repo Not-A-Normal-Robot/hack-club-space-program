@@ -10,7 +10,7 @@ use std::{
 use derive_more::AsRef;
 
 use crate::{
-    consts::saves::nonweb::{MAIN_SAVE_FILE_NAME, SAVES_DIR, STORAGE_DIR},
+    consts::saves::{MAIN_SAVE_FILE_NAME, SAVES_DIR, STORAGE_DIR},
     storage::{SaveList, SaveListError, SaveName},
 };
 
