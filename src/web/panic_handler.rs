@@ -182,7 +182,7 @@ fn handle_panic(info: &PanicHookInfo<'_>) {
                 let len = write_bytes(&mut panic_buffer, 0, b"\nJS value returned:\n");
                 let message = buf_to_str(&mut panic_buffer, 0, len);
                 let js_message_2 = JsValue::from_str(message);
-                web_sys::console::error_3(&js_message, &js_message_2, &val)
+                web_sys::console::error_3(&js_message, &js_message_2, &val);
             }
             None => {
                 web_sys::console::error_1(&js_message);
@@ -323,7 +323,7 @@ fn buf_to_str<'a>(
     let end = end.min(PANIC_BUFFER_LEN);
     for _ in 0..=len {
         let slice = &panic_buffer[start_idx..end];
-        let res = core::str::from_utf8(&slice);
+        let res = core::str::from_utf8(slice);
 
         match res {
             Ok(_) => break,
@@ -365,7 +365,7 @@ fn get_stack_trace() -> StackTrace {
 
     match stack {
         Ok(s) => match extend_result {
-            Ok(_) => StackTrace::Extended { trace: s },
+            Ok(()) => StackTrace::Extended { trace: s },
             Err(e) => StackTrace::Partial {
                 trace: s,
                 extend_err: e,
@@ -387,14 +387,14 @@ fn display_panic(
 
     let dialog = document
         .create_element("dialog")
-        .map_err(|e| PanicDisplayError::CreateDialogError(e))?;
+        .map_err(PanicDisplayError::CreateDialogError)?;
 
     let _ = dialog.set_attribute("open", "true");
 
     let body = document.body().ok_or(PanicDisplayError::GetBodyError)?;
 
     body.append_child(&dialog)
-        .map_err(|e| PanicDisplayError::AttachDialogError(e))?;
+        .map_err(PanicDisplayError::AttachDialogError)?;
 
     // We don't care too much if this fails
     if let Ok(h1) = document.create_element("h1") {
@@ -457,7 +457,7 @@ fn display_panic(
 
     // Do the infallible set_text_content with &str, before
     // using the fallible set_text_content with JsString.
-    let info_element = (&pre).as_ref().unwrap_or(&dialog);
+    let info_element = pre.as_ref().unwrap_or(&dialog);
     info_element.set_text_content(Some(message));
 
     // Converting to JsString lets us display stack trace
@@ -478,7 +478,7 @@ fn display_panic(
         },
     };
     let js_message = js_message.concat(&stack_trace_js_str);
-    let res = set_text_content(&info_element, &js_message);
+    let res = set_text_content(info_element, &js_message);
 
     if let Err(e) = res {
         match e {
@@ -551,7 +551,7 @@ fn display_alert(
         }
     };
 
-    alert(&js_message).map_err(|e| PanicAlertError::AlertError(e))
+    alert(&js_message).map_err(PanicAlertError::AlertError)
 }
 
 #[inline(always)]

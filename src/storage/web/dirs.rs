@@ -79,7 +79,7 @@ pub(crate) enum StorageDirGetterError {
 }
 
 impl Display for StorageDirGetterError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         todo!("<StorageDirGetterError as Display>::fmt() | {self:?}");
     }
 }
@@ -95,7 +95,7 @@ pub(crate) enum StorageDirClearError {
 }
 
 impl Display for StorageDirClearError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         todo!("<StorageDirClearError as Display>::fmt() | {self:?}");
     }
 }
@@ -109,7 +109,7 @@ pub(crate) enum DirGetterError {
 }
 
 impl Display for DirGetterError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         todo!("<DirGetterError as Display>::fmt() | {self:?}");
     }
 }
@@ -123,7 +123,7 @@ pub(crate) enum FileGetterError {
 }
 
 impl Display for FileGetterError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         todo!("<FileGetterError as Display>::fmt() | {self:?}");
     }
 }
@@ -340,7 +340,7 @@ pub(crate) enum MainSaveReadError {
 }
 
 impl Display for MainSaveReadError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         todo!("<MainSaveReadError as Display>::fmt() | {self:?}");
     }
 }
@@ -358,7 +358,7 @@ pub(crate) enum MainSaveWriteError {
 }
 
 impl Display for MainSaveWriteError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         todo!("<MainSaveWriteError as Display>::fmt() | {self:?}");
     }
 }
@@ -379,7 +379,7 @@ impl MainSaveFile {
         let file_size = file.size() as usize;
         let mut stream = ReadableStream::from_raw(file.stream()).into_stream();
 
-        let mut decompressed = Vec::with_capacity(file_size);
+        let decompressed = Vec::with_capacity(file_size);
         let mut decoder = Decoder::new().map_err(MainSaveReadError::DecompressorInitError)?;
 
         let mut uninit: Vec<MaybeUninit<u8>> = Vec::new();
@@ -394,7 +394,7 @@ impl MainSaveFile {
                 .map_err(MainSaveReadError::StreamWrongType)?;
             let len = arr.byte_length() as usize;
 
-            uninit.resize_with(len, || MaybeUninit::uninit());
+            uninit.resize_with(len, MaybeUninit::uninit);
             let buf = arr.copy_to_uninit(uninit.as_mut_slice());
             let mut buf = InBuffer::around(buf);
 

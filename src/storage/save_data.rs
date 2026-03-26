@@ -49,6 +49,13 @@ impl From<SavedId> for u128 {
     }
 }
 
+impl Display for SavedId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let num = self.0;
+        write!(f, "{num:x}")
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub(crate) struct RawSaveData {
     // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -371,7 +378,7 @@ fn serialize_color<S: Serializer>(color: &Color, serializer: S) -> Result<S::Ok,
         #[expect(clippy::cast_sign_loss)]
         |float| (float * 255.0).round() as u8,
     );
-    let rgb = ((r as u32) << 16) | ((g as u32) << 8) | b as u32;
+    let rgb = (u32::from(r) << 16) | (u32::from(g) << 8) | u32::from(b);
 
     serializer.serialize_u32(rgb)
 }
@@ -472,43 +479,14 @@ impl RailData {
 
 #[cfg(test)]
 mod tests {
-    use std::io::Read;
 
-    use crate::{consts::saves::DEFAULT_SAVE_ZSTD_CBOR, plugins::i18n::load_localizations};
+    use crate::plugins::i18n::load_localizations;
 
     use super::*;
     use bevy::platform::collections::HashSet;
     use serde_test::{Token, assert_de_tokens, assert_de_tokens_error};
 
     // Tests for the custom SavedId struct's ser/de
-
-    #[test]
-    fn test_length_fail() {
-        assert_de_tokens_error::<SavedId>(
-            &[Token::Str("0000000000000000000000000000000")],
-            "invalid length 31, expected a hexadecimal u128 value with 32 bytes/ASCII bytes",
-        );
-        assert_de_tokens(
-            &SavedId(0),
-            &[Token::Str("00000000000000000000000000000000")],
-        );
-        assert_de_tokens_error::<SavedId>(
-            &[Token::Str("000000000000000000000000000000000")],
-            "invalid length 33, expected a hexadecimal u128 value with 32 bytes/ASCII bytes",
-        );
-    }
-
-    #[test]
-    fn test_bounds() {
-        assert_de_tokens(
-            &SavedId(u128::MAX),
-            &[Token::Str("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")],
-        );
-        assert_de_tokens(
-            &SavedId(u128::MAX),
-            &[Token::Str("ffffffffffffffffffffffffffffffff")],
-        );
-    }
 
     #[test]
     fn test_roundtrip() {

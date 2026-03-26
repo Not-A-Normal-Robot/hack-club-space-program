@@ -145,7 +145,7 @@ impl Storage {
             Ok(()) | Err(StorageNotInitialized::InitError) => STORAGE_INITIALIZATION_STATUS
                 .store(InitStatus::NotInitialized.discriminant(), Ordering::Relaxed),
             Err(StorageNotInitialized::TimedOut) => return Err(SaveResetError::StorageInitTimeout),
-        };
+        }
 
         let res = self.0.reset().await;
         let new_status = if res.is_err() {
