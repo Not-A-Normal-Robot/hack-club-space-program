@@ -89,7 +89,6 @@ keplerian_sim = { version = "0.7.3", features = ["serde"] }
 pastey = "0.2.1"
 rust-embed = "8.11.0"
 serde = { version = "1.0.228", features = ["derive"] }
-serde_repr = "0.1.20"
 strum = { version = "0.28.0", features = ["derive"] }
 thiserror = "2.0.18"
 unic-langid = "0.9.6"
@@ -118,6 +117,7 @@ strip = "debuginfo"
 [target.'cfg(target_family = "wasm")'.dependencies]
 wasm-bindgen = "0.2.114"
 wasm-bindgen-futures = "0.4.64"
+wasm-streams = "0.5.0"
 web-sys = { version = "0.3", features = [
     "Document",
     "Element",
@@ -125,10 +125,14 @@ web-sys = { version = "0.3", features = [
     "console",
     "Navigator",
     "StorageManager",
+    "Blob",
+    "File",
     "FileSystemDirectoryHandle",
     "FileSystemFileHandle",
     "FileSystemGetDirectoryOptions",
     "FileSystemGetFileOptions",
+    "ReadableStream",
+    "FileSystemWritableFileStream",
     "Performance",
     "HtmlTextAreaElement",
     "HtmlDocument",
@@ -141,9 +145,6 @@ wasm-bindgen-test = "0.3.64"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 smol-macros = "0.1.1"
-
-[target.wasm32-unknown-unknown.dependencies]
-serde_bytes = "0.11.19"
 
 [build-dependencies]
 cbor4ii = { version = "1.2.2", features = ["serde1", "use_std"] }

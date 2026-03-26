@@ -7,14 +7,19 @@ use core::{
     sync::atomic::{AtomicU8, Ordering},
 };
 use derive_more::{Deref, DerefMut};
-use serde_repr::{Deserialize_repr, Serialize_repr};
 use std::{borrow::Cow, io, sync::Mutex};
 #[cfg(not(target_family = "wasm"))]
 use std::{ffi::OsString, path::PathBuf};
 use thiserror::Error;
+#[cfg(target_family = "wasm")]
+use wasm_bindgen::JsValue;
 
 #[cfg(not(target_family = "wasm"))]
 use crate::storage::nonweb::risk::RiskyPathReason;
+#[cfg(target_family = "wasm")]
+use crate::storage::web::dirs::{
+    DirGetterError, FileGetterError, MainSaveReadError, StorageDirGetterError,
+};
 use crate::{
     consts::saves::INIT_TIMEOUT,
     fl,
@@ -267,7 +272,10 @@ pub(crate) enum SaveInitError {
     NoSaveDir,
     #[cfg(not(target_family = "wasm"))]
     DirCreation(io::Error),
-    None(core::convert::Infallible),
+    #[cfg(target_family = "wasm")]
+    StorageDirGetter(#[from] StorageDirGetterError),
+    #[cfg(target_family = "wasm")]
+    SavesDirGetter(#[from] DirGetterError),
 }
 
 impl Display for SaveInitError {
@@ -280,7 +288,7 @@ impl Display for SaveInitError {
                 "error__saveInit__dirCreation",
                 inner = inner.to_string()
             )),
-            Self::None(inf) => write!(f, "{inf}"),
+            _ => todo!("<SaveInitError as Display>::fmt()"),
         }
     }
 }
@@ -329,19 +337,6 @@ impl SaveName {
 impl Display for SaveName {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&self.to_str())
-    }
-}
-
-#[derive(Clone, Copy, Serialize_repr, Deserialize_repr)]
-#[repr(u8)]
-pub(crate) enum SaveDataKind {
-    MainSave = 0,
-    QuickSave = 1,
-}
-
-impl SaveDataKind {
-    pub(crate) const fn discriminant(self) -> u8 {
-        self as u8
     }
 }
 
@@ -447,6 +442,20 @@ pub(crate) enum SaveListError {
     /// Dir entry isn't a directory
     #[cfg(not(target_family = "wasm"))]
     NotADir(PathBuf),
+    #[cfg(target_family = "wasm")]
+    StorageDirGetter(#[from] StorageDirGetterError),
+    #[cfg(target_family = "wasm")]
+    SavesDirGetter(#[from] DirGetterError),
+    /// Something went wrong iterating through saves
+    /// and it's unknown if the iterator finished
+    #[cfg(target_family = "wasm")]
+    IterationError(JsValue),
+    /// Something went wrong trying to get the name
+    #[cfg(target_family = "wasm")]
+    NameGetError(JsValue),
+    /// Name is not a string
+    #[cfg(target_family = "wasm")]
+    NameTypeMismatch(JsValue),
 }
 
 impl Display for SaveListError {
@@ -474,6 +483,7 @@ impl Display for SaveListError {
                 "error__saveList__notDir",
                 path = path.to_string_lossy()
             )),
+            _ => todo!("<SaveListError as Display>::fmt()"),
         }
     }
 }
@@ -481,12 +491,26 @@ impl Display for SaveListError {
 #[derive(Debug, Error)]
 pub(crate) enum SaveReadError {
     StorageNotInitialized(#[from] StorageNotInitialized),
+    InvalidState(#[from] SaveDataError),
     #[cfg(not(target_family = "wasm"))]
     NoSaveDir,
     IoError(#[from] io::Error),
     #[cfg(not(target_family = "wasm"))]
     ParseError(#[from] cbor4ii::serde::DecodeError<std::io::Error>),
-    InvalidState(#[from] SaveDataError),
+    #[cfg(target_family = "wasm")]
+    StorageDirGetter(#[from] StorageDirGetterError),
+    /// Error getting the saves directory
+    #[cfg(target_family = "wasm")]
+    SavesDirGetter(DirGetterError),
+    /// Error getting the specific save directory
+    #[cfg(target_family = "wasm")]
+    SaveDirGetter(DirGetterError),
+    /// Error getting the main save file
+    #[cfg(target_family = "wasm")]
+    MainSaveFileGetter(#[from] FileGetterError),
+    /// Error reading/parsing the main save file
+    #[cfg(target_family = "wasm")]
+    MainSaveFileRead(#[from] MainSaveReadError),
 }
 
 impl Display for SaveReadError {
@@ -514,6 +538,7 @@ impl Display for SaveReadError {
 pub(crate) enum SaveResetError {
     /// Storage initialization attempts hasn't finished in time
     StorageInitTimeout,
+    InitError(#[from] SaveInitError),
     /// We couldn't decide on a save directory
     #[cfg(not(target_family = "wasm"))]
     NoSaveDir,
@@ -526,7 +551,8 @@ pub(crate) enum SaveResetError {
     /// Failed to delete save dir
     #[cfg(not(target_family = "wasm"))]
     DeleteError(#[from] io::Error),
-    InitError(#[from] SaveInitError),
+    #[cfg(target_family = "wasm")]
+    StorageDirGetter(#[from] StorageDirGetterError),
 }
 
 impl Display for SaveResetError {
@@ -551,6 +577,7 @@ impl Display for SaveResetError {
                 "error__saveReset__initError",
                 inner = inner.to_string()
             )),
+            _ => todo!("<SaveResetError as Display>::fmt() | {self:?}"),
         }
     }
 }
