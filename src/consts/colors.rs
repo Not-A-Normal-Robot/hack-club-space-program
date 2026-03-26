@@ -43,7 +43,10 @@ const fn hex_to_float(hex: [u8; 2]) -> f32 {
 ///
 /// # Panics
 /// This function panics if the ASCII hex bytes isn't valid hex.
-#[expect(clippy::trivially_copy_pass_by_ref)]
+#[cfg_attr(
+    not(target_family = "wasm"),
+    expect(clippy::trivially_copy_pass_by_ref)
+)]
 const fn hex_to_color(hex: &[u8; 7]) -> Color {
     let r = hex_to_float([hex[1], hex[2]]);
     let g = hex_to_float([hex[3], hex[4]]);

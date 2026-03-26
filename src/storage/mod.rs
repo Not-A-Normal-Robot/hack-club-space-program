@@ -7,9 +7,9 @@ use core::{
     sync::atomic::{AtomicU8, Ordering},
 };
 use derive_more::{Deref, DerefMut};
-use std::{borrow::Cow, io, sync::Mutex};
+use std::{borrow::Cow, sync::Mutex};
 #[cfg(not(target_family = "wasm"))]
-use std::{ffi::OsString, path::PathBuf};
+use std::{ffi::OsString, io, path::PathBuf};
 use thiserror::Error;
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::JsValue;

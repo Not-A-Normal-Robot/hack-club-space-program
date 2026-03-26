@@ -1,17 +1,15 @@
 use core::time::Duration;
 
 // TODO: Remove this when we implement saving and multi-save-files
-#[allow(dead_code)]
 pub(crate) static SAVE_NAME_STR: &str = "demo";
 
 // TODO: Remove this when we implement starting a new game
 /// The default save data, cbor-encoded, zstd-compressed.
-#[allow(dead_code)]
 pub(crate) static DEFAULT_SAVE_ZSTD_CBOR: &[u8] =
     include_bytes!("../../assets/_processed/default_save.cbor.zstd");
 
 /// How long to wait for save subsystem initialization to finish.
-#[expect(dead_code)]
+#[allow(dead_code)]
 pub(crate) const INIT_TIMEOUT: Duration = Duration::from_secs(60);
 
 /// The storage directory, relative to `dirs::data_dir()`.

@@ -1,3 +1,6 @@
+#![expect(clippy::inline_always)]
+#![expect(clippy::large_stack_arrays)]
+
 use std::{
     panic::PanicHookInfo,
     sync::{Mutex, MutexGuard},
@@ -64,11 +67,11 @@ fn set_text_content(node: &Node, content: &JsString) -> Result<(), Option<JsValu
 }
 
 enum PanicDisplayError {
-    GetWindowError,
-    GetDocumentError,
-    GetBodyError,
-    AttachDialogError(JsValue),
-    CreateDialogError(JsValue),
+    GetWindow,
+    GetDocument,
+    GetBody,
+    AttachDialog(JsValue),
+    CreateDialog(JsValue),
 }
 
 impl PanicDisplayError {
@@ -77,15 +80,11 @@ impl PanicDisplayError {
     #[inline(always)]
     fn write(&self, panic_buffer: &mut PanicBufferGuard<'_>, index: usize) -> usize {
         match self {
-            Self::GetWindowError => write_bytes(panic_buffer, index, b"error getting window"),
-            Self::GetDocumentError => write_bytes(panic_buffer, index, b"error getting document"),
-            Self::GetBodyError => write_bytes(panic_buffer, index, b"error getting body"),
-            Self::AttachDialogError(_) => {
-                write_bytes(panic_buffer, index, b"error attaching dialog")
-            }
-            Self::CreateDialogError(_) => {
-                write_bytes(panic_buffer, index, b"error creating dialog")
-            }
+            Self::GetWindow => write_bytes(panic_buffer, index, b"error getting window"),
+            Self::GetDocument => write_bytes(panic_buffer, index, b"error getting document"),
+            Self::GetBody => write_bytes(panic_buffer, index, b"error getting body"),
+            Self::AttachDialog(_) => write_bytes(panic_buffer, index, b"error attaching dialog"),
+            Self::CreateDialog(_) => write_bytes(panic_buffer, index, b"error creating dialog"),
         }
     }
 }
@@ -170,11 +169,10 @@ fn handle_panic(info: &PanicHookInfo<'_>) {
         *panic_buffer = [0; PANIC_BUFFER_LEN];
 
         let additional_info = match e {
-            PanicDisplayError::GetWindowError => None,
-            PanicDisplayError::GetDocumentError => None,
-            PanicDisplayError::GetBodyError => None,
-            PanicDisplayError::AttachDialogError(v) => Some(v),
-            PanicDisplayError::CreateDialogError(v) => Some(v),
+            PanicDisplayError::GetWindow
+            | PanicDisplayError::GetDocument
+            | PanicDisplayError::GetBody => None,
+            PanicDisplayError::AttachDialog(v) | PanicDisplayError::CreateDialog(v) => Some(v),
         };
 
         match additional_info {
@@ -380,21 +378,18 @@ fn display_panic(
     info: &PanicHookInfo<'_>,
     panic_buffer: &mut PanicBufferGuard<'_>,
 ) -> Result<(), PanicDisplayError> {
-    let window = web_sys::window().ok_or(PanicDisplayError::GetWindowError)?;
-    let document = window
-        .document()
-        .ok_or(PanicDisplayError::GetDocumentError)?;
+    let window = web_sys::window().ok_or(PanicDisplayError::GetWindow)?;
+    let document = window.document().ok_or(PanicDisplayError::GetDocument)?;
 
     let dialog = document
         .create_element("dialog")
-        .map_err(PanicDisplayError::CreateDialogError)?;
-
+        .map_err(PanicDisplayError::CreateDialog)?;
     let _ = dialog.set_attribute("open", "true");
 
-    let body = document.body().ok_or(PanicDisplayError::GetBodyError)?;
+    let body = document.body().ok_or(PanicDisplayError::GetBody)?;
 
     body.append_child(&dialog)
-        .map_err(PanicDisplayError::AttachDialogError)?;
+        .map_err(PanicDisplayError::AttachDialog)?;
 
     // We don't care too much if this fails
     if let Ok(h1) = document.create_element("h1") {
@@ -413,12 +408,10 @@ fn display_panic(
     }
 
     let pre = {
-        let pre = document.create_element("pre").ok();
-        if let Some(pre) = pre {
-            dialog.append_child(&pre).ok().map(|_| pre)
-        } else {
-            None
-        }
+        document
+            .create_element("pre")
+            .ok()
+            .and_then(|pre| dialog.append_child(&pre).ok().map(|_| pre))
     };
 
     let mut index = 0;
