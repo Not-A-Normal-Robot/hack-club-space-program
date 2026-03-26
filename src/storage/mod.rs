@@ -10,7 +10,7 @@ use core::{
 };
 use derive_more::{Deref, DerefMut};
 use serde_repr::{Deserialize_repr, Serialize_repr};
-use std::{borrow::Cow, sync::Mutex};
+use std::{borrow::Cow, io, sync::Mutex};
 #[cfg(not(target_family = "wasm"))]
 use std::{ffi::OsString, path::PathBuf};
 use thiserror::Error;
@@ -582,7 +582,6 @@ pub(crate) enum SaveReadError {
     StorageNotInitialized(#[from] StorageNotInitialized),
     #[cfg(not(target_family = "wasm"))]
     NoSaveDir,
-    #[cfg(not(target_family = "wasm"))]
     IoError(#[from] io::Error),
     #[cfg(not(target_family = "wasm"))]
     ParseError(#[from] cbor4ii::serde::DecodeError<std::io::Error>),
@@ -614,9 +613,13 @@ pub(crate) enum SaveReadError {
     /// Something went wrong extracting the save data from the object.
     #[cfg(target_family = "wasm")]
     ValueExtraction(wasm_bindgen::JsValue),
+    /// The save data is not of the correct type.
+    /// (Expects Uint8Array)
+    #[cfg(target_family = "wasm")]
+    ValueWrongType(wasm_bindgen::JsValue),
     /// Something went wrong parsing the jsvalue
     #[cfg(target_family = "wasm")]
-    ParseError(#[from] serde_wasm_bindgen::Error),
+    ParseError(#[from] cbor4ii::serde::DecodeError<core::convert::Infallible>),
     InvalidState(#[from] SaveDataError),
 }
 
@@ -677,6 +680,7 @@ impl Display for SaveReadError {
                 "error__saveRead__parseError",
                 inner = format!("{error}")
             )),
+            _ => todo!("error l10n"),
         }
     }
 }

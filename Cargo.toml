@@ -89,7 +89,6 @@ keplerian_sim = { version = "0.7.3", features = ["serde"] }
 pastey = "0.2.1"
 rust-embed = "8.11.0"
 serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.149"
 serde_repr = "0.1.20"
 strum = { version = "0.28.0", features = ["derive"] }
 thiserror = "2.0.18"
@@ -130,6 +129,7 @@ web-sys = { version = "0.3", features = [
 ] }
 idb = "0.6.5"
 serde-wasm-bindgen = "0.6.5"
+serde_json = "1.0.149"
 
 [target.'cfg(target_family = "wasm")'.dev-dependencies]
 wasm-bindgen-test = "0.3.64"

@@ -17,6 +17,7 @@
 
 use crate::{
     consts::saves::web::{
+        INDEX_KIND_DISCRIM_NAME, INDEX_NAME_KIND, INDEX_NAME_ONLY, KEY_SAVE_DISCRIM, KEY_SAVE_KIND,
         KEY_SAVE_NAME, KEY_SAVE_VALUE, SAVE_OBJECT_STORE_NAME, STORAGE_DB, STORAGE_DB_VERSION,
         get_default_wrapped_save,
     },
@@ -25,13 +26,15 @@ use crate::{
         SaveResetError, StorageImpl, save_data::UnvalidatedSaveData,
     },
 };
+use flate2::read::ZlibDecoder;
 use idb::{
-    DatabaseEvent, Factory, ObjectStoreParams, Query, TransactionMode, event::VersionChangeEvent,
+    DatabaseEvent, Factory, IndexParams, KeyPath, KeyRange, ObjectStoreParams, Query,
+    TransactionMode, event::VersionChangeEvent,
 };
-use serde::{Deserialize, Serialize};
-use std::{borrow::Cow, sync::mpsc::SyncSender};
-use wasm_bindgen::JsValue;
-use web_sys::js_sys::Reflect;
+use serde::{Deserialize, Serialize, de::Visitor};
+use std::{borrow::Cow, io::Read, sync::mpsc::SyncSender};
+use wasm_bindgen::{JsCast, JsValue};
+use web_sys::js_sys::{Array, JsString, Reflect, Uint8Array};
 
 fn handle_upgrade_inner(event: VersionChangeEvent) -> Result<(), SaveInitError> {
     let db = event.database().map_err(SaveInitError::UpgradeError)?;
@@ -39,9 +42,38 @@ fn handle_upgrade_inner(event: VersionChangeEvent) -> Result<(), SaveInitError> 
     let mut save_params = ObjectStoreParams::new();
     save_params
         .auto_increment(false)
-        .key_path(Some(idb::KeyPath::Single(String::from(KEY_SAVE_NAME))));
+        .key_path(Some(KeyPath::Array(vec![
+            KEY_SAVE_NAME.into(),
+            KEY_SAVE_KIND.into(),
+            KEY_SAVE_DISCRIM.into(),
+        ])));
 
-    db.create_object_store(SAVE_OBJECT_STORE_NAME, save_params)
+    let store = db
+        .create_object_store(SAVE_OBJECT_STORE_NAME, save_params)
+        .map_err(SaveInitError::UpgradeError)?;
+
+    store
+        .create_index(INDEX_NAME_ONLY, KeyPath::Single(KEY_SAVE_NAME.into()), None)
+        .map_err(SaveInitError::UpgradeError)?;
+
+    store
+        .create_index(
+            INDEX_KIND_DISCRIM_NAME,
+            KeyPath::Array(vec![
+                KEY_SAVE_KIND.into(),
+                KEY_SAVE_DISCRIM.into(),
+                KEY_SAVE_NAME.into(),
+            ]),
+            None,
+        )
+        .map_err(SaveInitError::UpgradeError)?;
+
+    store
+        .create_index(
+            INDEX_NAME_KIND,
+            KeyPath::Array(vec![KEY_SAVE_NAME.into(), KEY_SAVE_KIND.into()]),
+            None,
+        )
         .map_err(SaveInitError::UpgradeError)?;
 
     Ok(())
@@ -131,7 +163,26 @@ impl StorageImpl for WebStorage {
             }
         };
 
-        let req = match store.get_all(None, None) {
+        let index = match store.index(INDEX_KIND_DISCRIM_NAME) {
+            Ok(i) => i,
+            Err(e) => {
+                todo!("index not found error handling | {e}");
+            }
+        };
+
+        let range = {
+            let array = Array::new();
+            array.push_many(&[JsValue::from_str(""), JsValue::from_f64(0.0)]);
+            let array = JsValue::from(array);
+            KeyRange::only(&array)
+        };
+
+        let query = match range {
+            Ok(range) => Some(Query::KeyRange(range)),
+            Err(e) => todo!("invalid range error handling | {e}"),
+        };
+
+        let req = match index.get_all_keys(query, None) {
             Ok(r) => r,
             Err(e) => {
                 return SaveListError::ObjectStoreReadRequest(e).into();
@@ -194,12 +245,23 @@ impl StorageImpl for WebStorage {
 
         drop(trans);
 
-        let value = Reflect::get(&value, &JsValue::from_str(KEY_SAVE_VALUE))
-            .map_err(SaveReadError::ValueExtraction)?;
+        let arr = Reflect::get(&value, &JsValue::from_str(KEY_SAVE_VALUE))
+            .map_err(SaveReadError::ValueExtraction)?
+            .dyn_into::<Uint8Array>()
+            .map_err(SaveReadError::ValueWrongType)?;
 
-        Ok(serde_wasm_bindgen::from_value::<UnvalidatedSaveData>(
-            value,
-        )?)
+        let mut uninit: Box<[std::mem::MaybeUninit<u8>]> =
+            Box::new_uninit_slice(arr.byte_length() as usize);
+        let compressed = arr.copy_to_uninit(&mut uninit);
+
+        let mut decompressed = Vec::new();
+        let mut decoder = ZlibDecoder::new(compressed as &[u8]);
+        decoder.read_to_end(&mut decompressed)?;
+
+        drop(uninit);
+        drop(arr);
+
+        Ok(cbor4ii::serde::from_slice(&decompressed)?)
     }
 
     async fn reset(self) -> Result<(), SaveResetError> {
@@ -214,12 +276,80 @@ impl StorageImpl for WebStorage {
     }
 }
 
+/// Data that's been wrapped for `IndexedDB`.
 #[derive(Clone, Serialize, Deserialize)]
 pub(crate) struct WrappedData {
+    #[serde(rename = "name")]
     pub(crate) save_name: String,
+    #[serde(rename = "kind")]
     pub(crate) save_data_kind: SaveDataKind,
+    #[serde(rename = "discrim")]
+    pub(crate) save_data_discrim: SaveDataDiscrim,
     /// Zlib-compressed CBOR-encoded save data.
     pub(crate) data: Cow<'static, [u8]>,
+}
+
+/// A discriminator for different save objects of the same kind and
+/// belonging to the same save.
+///
+/// # Serialization
+/// This gets serialized as a hex string up to
+/// 32 chars in length. However, the zero case is
+/// special and is serialized as an empty string.
+#[derive(Clone, Copy, Default, PartialEq, Eq, Hash)]
+pub(crate) struct SaveDataDiscrim(pub u128);
+
+impl SaveDataDiscrim {
+    /// No discriminator.
+    ///
+    /// In `IndexedDB`, this will get serialized as an empty string.
+    pub(crate) const NONE: Self = Self(0);
+}
+
+impl Serialize for SaveDataDiscrim {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let num = self.0;
+        if num == 0 {
+            serializer.serialize_str("")
+        } else {
+            serializer.serialize_str(&format!("{num:x}"))
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for SaveDataDiscrim {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct DiscrimVisitor;
+
+        impl Visitor<'_> for DiscrimVisitor {
+            type Value = SaveDataDiscrim;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str(r#""[0-9a-fA-F]{0,32}""#)
+            }
+
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                if v.is_empty() {
+                    Ok(SaveDataDiscrim(0))
+                } else {
+                    u128::from_str_radix(v, 16)
+                        .map(SaveDataDiscrim)
+                        .map_err(E::custom)
+                }
+            }
+        }
+
+        deserializer.deserialize_str(DiscrimVisitor)
+    }
 }
 
 /// This module is public because `wasm_bindgen_test` requires it to.
@@ -233,7 +363,7 @@ pub mod _tests {
     #[wasm_bindgen_test]
     async fn test_storage() {
         let storage = crate::storage::get_storage();
-        storage.init_saves().await.unwrap();
+        let _ = storage.init_saves().await;
         storage.reset().await.unwrap();
         let res = storage.get_save_list().await;
         assert_eq!(res.errors.len(), 0);

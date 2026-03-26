@@ -7,10 +7,7 @@ use bevy::{platform::collections::HashMap, prelude::*};
 use core::fmt::Display;
 use derive_more::{Deref, DerefMut, Error};
 use keplerian_sim::{CompactOrbit2D, Orbit2D};
-use serde::{
-    Deserialize, Deserializer, Serialize, Serializer,
-    de::{Unexpected, Visitor},
-};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{borrow::Cow, fmt::Write};
 
 use crate::{
