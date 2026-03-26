@@ -3140,7 +3140,6 @@ dependencies = [
  "flate2",
  "i18n-embed",
  "i18n-embed-fl",
- "idb",
  "keplerian_sim",
  "pastey",
  "png",
@@ -3159,6 +3158,7 @@ dependencies = [
  "thiserror 2.0.18",
  "unic-langid",
  "wasm-bindgen",
+ "wasm-bindgen-futures",
  "wasm-bindgen-test",
  "web-sys",
 ]
@@ -3338,21 +3338,6 @@ name = "id-arena"
 version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3d3067d79b975e8844ca9eb072e16b31c3c1c36928edf9c6789548c524d0d954"
-
-[[package]]
-name = "idb"
-version = "0.6.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6554f394e990a1af530a528a7fdcad6e01b29cb1b990f89df3ffd62cf15f7828"
-dependencies = [
- "indexmap",
- "js-sys",
- "num-traits",
- "thiserror 2.0.18",
- "tokio",
- "wasm-bindgen",
- "web-sys",
-]
 
 [[package]]
 name = "image"
@@ -5693,15 +5678,6 @@ name = "tinyvec_macros"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
-
-[[package]]
-name = "tokio"
-version = "1.50.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "27ad5e34374e03cfffefc301becb44e9dc3c17584f414349ebe29ed26661822d"
-dependencies = [
- "pin-project-lite",
-]
 
 [[package]]
 name = "toml"

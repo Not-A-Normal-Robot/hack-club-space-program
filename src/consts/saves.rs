@@ -14,79 +14,16 @@ pub(crate) static DEFAULT_SAVE_ZLIB_CBOR: &[u8] =
 #[expect(dead_code)]
 pub(crate) const INIT_TIMEOUT: Duration = Duration::from_secs(60);
 
-#[cfg(not(target_family = "wasm"))]
-pub(crate) mod nonweb {
-    /// The storage directory, relative to `dirs::data_dir()`.
-    pub(crate) static STORAGE_DIR: &str = "hack-club-space-program";
+/// The storage directory, relative to `dirs::data_dir()`.
+pub(crate) static STORAGE_DIR: &str = "hack-club-space-program";
 
-    /// The saves directory, relative to the storage directory.
-    ///
-    /// Contains many directories, each for a specific save.
-    pub(crate) static SAVES_DIR: &str = "saves";
+/// The saves directory, relative to the storage directory.
+///
+/// Contains many directories, each for a specific save.
+pub(crate) static SAVES_DIR: &str = "saves";
 
-    /// The main save file's name, relative to the specific save's directory.
-    pub(crate) static MAIN_SAVE_FILE_NAME: &str = "main.cbor.zlib";
-}
-
-#[cfg(target_family = "wasm")]
-pub(crate) mod web {
-    use std::borrow::Cow;
-
-    use super::*;
-    use crate::storage::{
-        SaveDataKind,
-        web::{SaveDataDiscrim, WrappedData},
-    };
-    use serde_bytes::Bytes;
-    use wasm_bindgen::JsValue;
-
-    /// The save `IndexedDB` database name.
-    pub(crate) static STORAGE_DB: &str = if cfg!(test) {
-        "io.github.not-a-normal-robot.hack-club-space-program.testing-db"
-    } else {
-        "io.github.not-a-normal-robot.hack-club-space-program"
-    };
-
-    /// The current version fo the `IndexedDB` database.
-    pub(crate) const STORAGE_DB_VERSION: u32 = 1;
-
-    /// The name of the saves object store in the `IndexedDB` database.
-    pub(crate) static SAVE_OBJECT_STORE_NAME: &str = "saves";
-
-    /// The object key for the name of the save.
-    pub(crate) static KEY_SAVE_NAME: &str = "name";
-    /// The object key for the kind of object this is.
-    pub(crate) static KEY_SAVE_KIND: &str = "kind";
-    /// The object key for the discriminator.
-    pub(crate) static KEY_SAVE_DISCRIM: &str = "discrim";
-    /// The object key that indexes into a `Uint8Array` of
-    /// zlib-compressed CBOR-encoded save data.
-    pub(crate) static KEY_SAVE_VALUE: &str = "data";
-
-    /// Index based only on name.
-    ///
-    /// Used for e.g. getting the list of objects
-    /// associated with the save.
-    pub(crate) static INDEX_NAME_ONLY: &str = "name";
-    /// Index based only on names and kinds.
-    ///
-    /// Used for e.g. getting the list of quicksaves.
-    pub(crate) static INDEX_NAME_KIND: &str = "name,kind";
-    /// Index based on kind, discrim, and name, in that order.
-    ///
-    /// Used for e.g. listing the names of saves.
-    pub(crate) static INDEX_KIND_DISCRIM_NAME: &str = "kind,discrim,name";
-
-    pub(crate) fn get_default_wrapped_save() -> JsValue {
-        serde_wasm_bindgen::to_value(&WrappedData {
-            save_name: String::from(SAVE_NAME_STR),
-            save_data_kind: SaveDataKind::MainSave,
-            save_data_discrim: SaveDataDiscrim::NONE,
-            data: Cow::Borrowed(Bytes::new(DEFAULT_SAVE_ZLIB_CBOR)),
-        })
-        .expect("wrapped save data should be serializable")
-    }
-}
+/// The main save file's name, relative to the specific save's directory.
+pub(crate) static MAIN_SAVE_FILE_NAME: &str = "main.cbor.zlib";
 
 #[cfg(test)]
 mod tests {
