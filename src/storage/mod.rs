@@ -18,7 +18,7 @@ use wasm_bindgen::JsValue;
 use crate::storage::nonweb::risk::RiskyPathReason;
 #[cfg(target_family = "wasm")]
 use crate::storage::web::dirs::{
-    DirGetterError, FileGetterError, MainSaveReadError, StorageDirGetterError,
+    DirGetterError, FileGetterError, MainSaveReadError, StorageDirClearError, StorageDirGetterError,
 };
 use crate::{
     consts::saves::INIT_TIMEOUT,
@@ -556,7 +556,7 @@ pub(crate) enum SaveResetError {
     #[cfg(not(target_family = "wasm"))]
     DeleteError(#[from] io::Error),
     #[cfg(target_family = "wasm")]
-    StorageDirGetter(#[from] StorageDirGetterError),
+    StorageDirClearError(#[from] StorageDirClearError),
 }
 
 impl Display for SaveResetError {

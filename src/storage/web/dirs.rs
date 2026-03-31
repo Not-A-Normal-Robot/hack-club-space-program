@@ -15,7 +15,7 @@ use wasm_streams::ReadableStream;
 use web_sys::{
     FileSystemDirectoryHandle as FsDirHandle, FileSystemFileHandle as FsFileHandle,
     FileSystemGetDirectoryOptions as FsGetDirOptions, FileSystemGetFileOptions as FsGetFileOptions,
-    FileSystemWritableFileStream as WritableFileStream,
+    FileSystemRemoveOptions, FileSystemWritableFileStream as WritableFileStream,
     js_sys::{JsString, Reflect, Uint8Array},
 };
 use zstd::{
@@ -27,6 +27,16 @@ use crate::{
     consts::saves::{MAIN_SAVE_FILE_NAME, SAVES_DIR, STORAGE_DIR},
     storage::{SaveList, SaveListError, SaveName, save_data::UnvalidatedSaveData},
 };
+
+macro_rules! trace {
+    ($( $inner:tt )*) => {
+        if cfg!(feature = "trace") {
+            let string = format!($( $inner )*);
+            let value = ::wasm_bindgen::JsValue::from_str(&string);
+            ::web_sys::console::log_1(&value);
+        }
+    };
+}
 
 /// FS get-directory options
 fn dir_opt(create: bool) -> &'static FsGetDirOptions {
@@ -175,16 +185,30 @@ impl StorageDir {
             .ok_or(StorageDirClearError::NoWindow)?
             .navigator()
             .storage();
-        let _ = storage.persist();
         let root = JsFuture::from(storage.get_directory())
             .await
             .map_err(|e| StorageDirClearError::RootDirError(DirGetterError::GetError(e)))?
             .dyn_into::<FsDirHandle>()
             .map_err(|e| StorageDirClearError::RootDirError(DirGetterError::GotWrongType(e)))?;
 
-        JsFuture::from(root.remove_entry(STORAGE_DIR))
-            .await
-            .map_err(StorageDirClearError::DeleteError)?;
+        let rm_options = FileSystemRemoveOptions::new();
+        rm_options.set_recursive(true);
+
+        let rm_result =
+            JsFuture::from(root.remove_entry_with_options(STORAGE_DIR, &rm_options)).await;
+
+        if let Err(e) = rm_result {
+            let name_key = JsValue::from_str("name");
+            let Ok(name) = Reflect::get(&e, &name_key) else {
+                return Err(StorageDirClearError::DeleteError(e));
+            };
+
+            if name == "NotFoundError" {
+                return Ok(());
+            }
+
+            return Err(StorageDirClearError::DeleteError(e));
+        }
 
         Ok(())
     }
@@ -368,24 +392,24 @@ pub(super) struct MainSaveFile(#[deref] FsFileHandle);
 
 impl MainSaveFile {
     pub(crate) async fn read(&self) -> Result<UnvalidatedSaveData, MainSaveReadError> {
+        const OUT_TMP_SIZE: usize = 1024;
+
         let file = JsFuture::from(self.0.get_file())
             .await
             .map_err(FileGetterError::GetError)?
             .dyn_into::<web_sys::File>()
             .map_err(FileGetterError::GotWrongType)?;
 
-        #[expect(clippy::cast_possible_truncation)]
-        #[expect(clippy::cast_sign_loss)]
-        let file_size = file.size() as usize;
         let mut stream = ReadableStream::from_raw(file.stream()).into_stream();
 
-        let decompressed = Vec::with_capacity(file_size);
         let mut decoder = Decoder::new().map_err(MainSaveReadError::DecompressorInitError)?;
 
         let mut uninit: Vec<MaybeUninit<u8>> = Vec::new();
-        let mut out_buf: Vec<u8> = Vec::new();
-        let mut out_buf = OutBuffer::around(&mut out_buf);
+        let mut decompressed: Vec<u8> = Vec::new();
         let mut finished_frame = true;
+
+        let mut out_tmp = [0u8; OUT_TMP_SIZE];
+        let mut out_tmp = OutBuffer::around(&mut out_tmp);
 
         while let Some(result) = stream.next().await {
             let arr = result
@@ -394,30 +418,72 @@ impl MainSaveFile {
                 .map_err(MainSaveReadError::StreamWrongType)?;
             let len = arr.byte_length() as usize;
 
+            trace!("opfs: read {len} bytes");
+
             uninit.resize_with(len, MaybeUninit::uninit);
             let buf = arr.copy_to_uninit(uninit.as_mut_slice());
+            trace!("opfs: copied bytes: {buf:?}");
             let mut buf = InBuffer::around(buf);
 
             while buf.pos != len {
+                trace!("zstd: start of new decompression step");
+
                 let num = decoder
-                    .run(&mut buf, &mut out_buf)
+                    .run(&mut buf, &mut out_tmp)
                     .map_err(MainSaveReadError::DecompressError)?;
+
+                trace!("zstd: decompressor returned number {num}");
+                trace!("zstd: decompression step end");
+
+                if out_tmp.pos() > 0 {
+                    trace!(
+                        "zstd: decompressed bytes: {:?}",
+                        &out_tmp.as_slice()[..out_tmp.pos()]
+                    );
+                }
+
+                decompressed.extend_from_slice(&out_tmp.as_slice()[..out_tmp.pos()]);
+
+                // SAFETY: 0 is never greater than capacity
+                unsafe { out_tmp.set_pos(0) };
 
                 finished_frame = num == 0;
             }
         }
         drop(uninit);
 
+        trace!("opfs: finished reading file");
+
         loop {
+            trace!("zstd: start of new finishing operation");
             let res = decoder
-                .finish(&mut out_buf, finished_frame)
+                .finish(&mut out_tmp, finished_frame)
                 .map_err(MainSaveReadError::DecompressFinishError)?;
+
+            trace!("zstd: decompressor returned number {res}");
+            trace!("zstd: decompression step end");
+
+            if out_tmp.pos() > 0 {
+                trace!(
+                    "zstd: decompressed bytes: {:?}",
+                    &out_tmp.as_slice()[..out_tmp.pos()]
+                );
+            } else {
+                trace!("zstd: decompression step yielded nothing");
+            }
+
+            decompressed.extend_from_slice(&out_tmp.as_slice()[..out_tmp.pos()]);
+
+            // SAFETY: 0 is never greater than capacity
+            unsafe { out_tmp.set_pos(0) };
+
             if res == 0 {
                 break;
             }
         }
 
         drop(decoder);
+        trace!("zstd: all done");
 
         Ok(cbor4ii::serde::from_slice::<UnvalidatedSaveData>(
             &decompressed,

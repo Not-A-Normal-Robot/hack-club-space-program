@@ -133,6 +133,7 @@ web-sys = { version = "0.3", features = [
     "FileSystemFileHandle",
     "FileSystemGetDirectoryOptions",
     "FileSystemGetFileOptions",
+    "FileSystemRemoveOptions",
     "ReadableStream",
     "FileSystemWritableFileStream",
     "Performance",

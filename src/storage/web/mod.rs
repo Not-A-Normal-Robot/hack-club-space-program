@@ -78,7 +78,10 @@ impl StorageImpl for WebStorage {
     }
 
     async fn reset(self) -> Result<(), SaveResetError> {
-        todo!();
+        dirs::StorageDir::clear().await?;
+        self.init_saves().await?;
+
+        Ok(())
     }
 }
 
