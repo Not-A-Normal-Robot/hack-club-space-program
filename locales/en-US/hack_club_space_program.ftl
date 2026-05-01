@@ -27,6 +27,45 @@ aboutMenu__article__main__body =
     The source code of the game is available online in <https://github.com/Not-A-Normal-Robot/hack-club-space-program/>.
     
     Hack Club Flavortown is a hackathon for teenagers hosted by Hack Club: <https://flavortown.hackclub.com/>
+
+    # Gameplay
+
+    This WIP project has next to no gameplay. You aren't able to interact with anything yet, but you can view the rudimentary gravity/orbit simulation. Most of the work still currently resides in the backend.
+
+    In the bottom, there is an oribar (orientation bar) indicating the current orientation/angle that the vessel (the spinning rectangle) is currently facing. You'll also see a velocity indicator on the bottom right and the current control mode in the bottom left.
+
+    In the top right, you will see the altitude indicator. It has three modes you can switch between by clicking on it:
+    1. ASL: Above Sea Level. Displays the altitude above the sea level, or in the case of sealess celestial bodies, an arbitrary offset from the center of the celestial body.
+    2. AGL: Above Ground Level. Displays the altitude above terrain.
+    3. CTR: Center. Displays the distance between the vessel and the center of the celestial body.
+
+    ## Control
+    The control scheme is very incomplete, and right now you can only really move the camera around.
+    Like Vim, there are a couple control modes you can choose between.
+
+    ### "Main" Control Mode
+    This is the control mode you get put in when you start the game.
+    This serves as a "hub" for different control modes.
+    You can always press Escape to return to this mode.
+
+    In this mode, you can:
+    - Press `C` to enter "camera control" mode.
+    - ...All other modes are currently unimplemented/stubs.
+
+    ### "Camera control" mode
+    This is the mode where you can control the camera.
+
+    Here, **Shift** and **Ctrl** are speed modifiers which you can hold down to change the speed of camera movements. **Shift** makes camera movements faster, while **Ctrl** makes them slower.
+
+    In this mode, you can:
+    - Hold WASD or arrow keys to pan the camera relative to its focus
+    - Press C to re-Center the camera on its focus
+    - Hold Q or E to rotate the camera
+    - Press R to reset the Rotation of the camera
+    - Press - or + to alter the zoom of the camera
+    - Press 0 to reset the zoom of the camera
+    - Press [ or ] to switch the focus of the camera between multiple objects. (This currently does nothing)
+
 aboutMenu__article__gameLicense__title = License: Hack Club Space Program
 aboutMenu__article__dotoLicense__title = Font license: Doto
 aboutMenu__article__wdxlLicense__title = Font license: WDXL Lubrifont SC
